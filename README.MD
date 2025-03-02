@@ -19,12 +19,12 @@ This SDK provides **true flexibility** for dApps, allowing full customization wh
 ## **📖 Installation**
 To install the core SDK:  
 ```sh
-pnpm add @solana/headless-core
+pnpm add @agateh/solana-headless-core
 ```
 
 ## **Usage**
 ```ts
-import { createWallet } from "@solana/headless-core";
+import { createWallet } from "@agateh/solana-headless-core";
 
 const wallet = createWallet();
 console.log("Public Key:", wallet.publicKey.toBase58());
