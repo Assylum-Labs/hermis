@@ -1,5 +1,5 @@
 {
-  "name": "@solana/headless-core",
+  "name": "@agateh/solana-headless-core",
   "version": "1.0.0",
   "description": "Core wallet logic for the Solana Headless SDK",
   "main": "dist/index.js",
@@ -21,7 +21,7 @@
     "@types/node": "^22.13.8"
   },
   "keywords": [],
-  "author": "",
+  "author": "mctursh",
   "license": "ISC",
   "packageManager": "pnpm@10.5.2"
 }

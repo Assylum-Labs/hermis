@@ -1,5 +1,5 @@
 {
-  "name": "@solana/headless-format-config",
+  "name": "@agateh/solana-headless-format-config",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "mctursh",
   "license": "ISC",
   "packageManager": "pnpm@10.5.2"
 }
