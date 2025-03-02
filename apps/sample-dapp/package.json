@@ -1,0 +1,22 @@
+{
+  "name": "sample-dapp",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@solana/headless-core": "workspace:*"
+  },
+  "devDependencies": {
+    "@solana/headless-format-config": "workspace:*",
+    "@types/node": "^22.13.8"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.5.2"
+}

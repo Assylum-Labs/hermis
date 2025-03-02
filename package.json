@@ -1,0 +1,17 @@
+{
+  "name": "solana-headless-sdk",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.5.2",
+  "devDependencies": {
+    "@changesets/cli": "^2.28.1",
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2"
+  }
+}

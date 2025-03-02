@@ -1,0 +1,23 @@
+{
+  "name": "@solana/headless-core",
+  "version": "1.0.0",
+  "description": "Core wallet logic for the Solana Headless SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.2.3",
+    "@solana/web3.js": "^1.98.0"
+  },
+  "devDependencies": {
+    "@solana/headless-format-config": "workspace:*",
+    "@types/node": "^22.13.8"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.5.2"
+}
