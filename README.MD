@@ -8,23 +8,19 @@ This SDK provides **true flexibility** for dApps, allowing full customization wh
 
 ---
 
-## **🔹 Features**
-✅ **Fully Headless** – No predefined UI, complete developer control.  
-✅ **Solana-Native** – Optimized for **Solana first**, not an afterthought.  
-✅ **Multi-Wallet Support** – Compatible with Phantom, Backpack, Ledger, etc.  
-✅ **Authentication Flexibility** – OAuth, email, biometrics, and session management.  
-✅ **Gasless Transactions** – Optional transaction relaying for a seamless UX.  
-✅ **Modular Architecture** – Pick and use only the parts you need.  
-
----
+## **Features**
+**Fully Headless** – No predefined UI, complete developer control.  
+**Solana-Native** – Optimized for **Solana first**, not an afterthought.  
+**Multi-Wallet Support** – Compatible with Phantom, Backpack, Ledger, etc.  
+**Authentication Flexibility** – OAuth, email, biometrics, and session management.  
+**Gasless Transactions** – Optional transaction relaying for a seamless UX.  
+**Modular Architecture** – Pick and use only the parts you need.  
 
 ## **📖 Installation**
 To install the core SDK:  
 ```sh
 pnpm add @solana/headless-core
 ```
-
----
 
 ## **Usage**
 ```ts
@@ -34,7 +30,6 @@ const wallet = createWallet();
 console.log("Public Key:", wallet.publicKey.toBase58());
 ```
 
----
 
 ## **📜 License**
 **This project is licensed under Apache 2.0.**
@@ -42,7 +37,7 @@ console.log("Public Key:", wallet.publicKey.toBase58());
 
 ## **📮 Stay Updated**
 For updates and discussions:
-📢 **Twitter** : @[agateh](https://x.com/agateh)
+📢 **Twitter** : [@agateh](https://x.com/agateh)
 
 
 ## **📦 Monorepo Structure**
