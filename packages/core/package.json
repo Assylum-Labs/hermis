@@ -5,19 +5,27 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build --verbose --listEmittedFiles",
     "test": "vitest",
-    "prepublishOnly": "pnpm run build"
+    "prepublishOnly": "pnpm run build",
+    "clean": "rm -rf dist"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
   },
   "publishConfig": {
-    "access": "public"
+    "access": "restricted"
   },
   "dependencies": {
     "@noble/ed25519": "^2.2.3",
     "@solana/web3.js": "^1.98.0"
   },
   "devDependencies": {
-    "@solana/headless-format-config": "workspace:*",
+    "@agateh/solana-headless-format-config": "workspace:*",
     "@types/node": "^22.13.8"
   },
   "keywords": [],

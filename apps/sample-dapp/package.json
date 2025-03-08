@@ -9,7 +9,7 @@
     "dev": "tsc --watch"
   },
   "dependencies": {
-    "@agaeh/solana-headless-core": "workspace:*"
+    "@agateh/solana-headless-core": "workspace:*"
   },
   "devDependencies": {
     "@agateh/solana-headless-format-config": "workspace:*",
