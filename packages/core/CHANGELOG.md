@@ -1,5 +1,11 @@
 # @solana/headless-core
 
+## 1.1.0
+
+### Minor Changes
+
+- ac26b9b: In this Change, I added the basic funcntionalities of a wallet, I categorized it into wallets, transctions, connection, types and utils folder. I will add more robust function in the next minor release.
+
 ## 2.0.0
 
 ### Major Changes
