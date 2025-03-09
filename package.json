@@ -4,7 +4,14 @@
   "description": "",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "clean": "turbo run clean"
+    "clean": "turbo run clean",
+    "version-packages": "changeset version",
+    "release": "turbo run build --filter=@agateh/* && changeset publish",
+    "minor": "changeset add --minor",
+    "major": "changeset add --major",
+    "patch": "changeset add --patch",
+    "prerelease": "changeset pre enter next",
+    "graduate": "changeset pre exit"
   },
   "keywords": [],
   "author": "",
