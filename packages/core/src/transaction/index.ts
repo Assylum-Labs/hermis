@@ -92,7 +92,7 @@ export async function sendTransaction(
  * @returns A promise that resolves to the signed message bytes
  */
 export async function signMessage(
-  message: string, 
+  message: string | Uint8Array<ArrayBufferLike>, 
   wallet: Keypair | Adapter
 ): Promise<Uint8Array> {
   try {

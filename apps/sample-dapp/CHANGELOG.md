@@ -1,5 +1,12 @@
 # sample-dapp
 
+## 1.0.2-next.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @agateh/solana-headless-core@1.1.1-next.0
+
 ## 1.0.1
 
 ### Patch Changes

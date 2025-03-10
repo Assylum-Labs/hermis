@@ -1,40 +1,40 @@
-export class HeadlessWalletSDK {
-    private apiKey: string;
-    private baseUrl: string;
+// export class HeadlessWalletSDK {
+//     private apiKey: string;
+//     private baseUrl: string;
   
-    constructor(apiKey: string, baseUrl = "https://api.agateh.com") {
-      console.log("API key",apiKey);
+//     constructor(apiKey: string, baseUrl = "https://api.agateh.com") {
+//       console.log("API key",apiKey);
       
-        if (apiKey !== '1234') {
-            throw new Error("Invalid Apikey")
-        } else {
-            this.apiKey = apiKey;
-            this.baseUrl = baseUrl;
-        }
-    }
+//         if (apiKey !== '1234') {
+//             throw new Error("Invalid Apikey")
+//         } else {
+//             this.apiKey = apiKey;
+//             this.baseUrl = baseUrl;
+//         }
+//     }
   
-    async createWallet() {
-      return this.request("/wallet/create");
-    }
+//     async createWallet() {
+//       return this.request("/wallet/create");
+//     }
   
-    async signTransaction(transaction: any) {
-      return this.request("/wallet/sign", { transaction });
-    }
+//     async signTransaction(transaction: any) {
+//       return this.request("/wallet/sign", { transaction });
+//     }
   
-    private async request(endpoint: string, body: any = {}) {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${this.apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(body),
-      });
+//     private async request(endpoint: string, body: any = {}) {
+//       const response = await fetch(`${this.baseUrl}${endpoint}`, {
+//         method: "POST",
+//         headers: {
+//           "Authorization": `Bearer ${this.apiKey}`,
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify(body),
+//       });
   
-      if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
-      return response.json();
-    }
-  }
+//       if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+//       return response.json();
+//     }
+//   }
 
   // Export all functions and classes
 export * from './connection/index.js';

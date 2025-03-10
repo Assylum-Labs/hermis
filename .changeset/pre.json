@@ -8,5 +8,7 @@
     "@agateh/solana-headless-format-config": "1.0.0",
     "@agateh/solana-headless-react": "1.0.1"
   },
-  "changesets": []
+  "changesets": [
+    "curly-otters-study"
+  ]
 }

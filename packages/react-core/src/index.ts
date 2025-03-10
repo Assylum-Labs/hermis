@@ -1,17 +1,18 @@
 import { useState, useEffect, FC } from "react";
-import { HeadlessWalletSDK } from "@agateh/solana-headless-core";
+import { createWallet, PublicKey } from "@agateh/solana-headless-core";
 import { WalletInitProps } from "./types/index.js";
 
 
 export const useWallet = ({
   apiKey
 }: WalletInitProps) => {
-  const walletSDK = new HeadlessWalletSDK(apiKey);
-  const [wallet, setWallet] = useState<any>(null);
+  // const walletSDK = new HeadlessWalletSDK(apiKey);
+  const [wallet, setWallet] = useState<PublicKey>();
 
   useEffect(() => {
     try {
-        walletSDK.createWallet().then(setWallet);
+        const keyPair = createWallet()
+        setWallet(keyPair.publicKey)
     } catch (error) {
         console.error()
     }

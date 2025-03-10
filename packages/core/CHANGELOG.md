@@ -1,5 +1,11 @@
 # @solana/headless-core
 
+## 1.1.1-next.0
+
+### Patch Changes
+
+- Updated the ReadMe and created where doesn't already exist
+
 ## 1.1.0
 
 ### Minor Changes
