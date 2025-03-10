@@ -18,7 +18,7 @@
     }
   },
   "publishConfig": {
-    "access": "restricted"
+    "access": "public"
   },
   "dependencies": {
     "@noble/ed25519": "^2.2.3",
