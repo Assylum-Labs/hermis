@@ -1,0 +1,32 @@
+{
+  "name": "@agateh/solana-headless-adapter-base",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "prepublishOnly": "pnpm run build",
+    "clean": "rm -rf dist"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "dependencies": {
+    "@agateh/solana-headless-core": "workspace:*",
+    "@wallet-standard/base": "^1.1.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.5.2",
+  "devDependencies": {
+    "@agateh/solana-headless-format-config": "workspace:*",
+    "@types/node": "^22.13.8"
+  }
+}

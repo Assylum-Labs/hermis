@@ -77,6 +77,22 @@ importers:
         specifier: ^6.2.0
         version: 6.2.0(@types/node@22.13.8)
 
+  packages/adapter-base:
+    dependencies:
+      '@agateh/solana-headless-core':
+        specifier: workspace:*
+        version: link:../core
+      '@wallet-standard/base':
+        specifier: ^1.1.0
+        version: 1.1.0
+    devDependencies:
+      '@agateh/solana-headless-format-config':
+        specifier: workspace:*
+        version: link:../format-config
+      '@types/node':
+        specifier: ^22.13.8
+        version: 22.13.8
+
   packages/core:
     dependencies:
       '@noble/ed25519':
