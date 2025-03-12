@@ -1,4 +1,4 @@
-import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter } from '@agateh/solana-headless-core';
+import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter, WalletAdapterEvents } from '@agateh/solana-headless-core';
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
 
@@ -148,10 +148,7 @@ export class WalletAdapterManager extends EventEmitter {
     if (this.selectedAdapter?.name === walletName) return this.selectedAdapter;
     
     // Clean up any existing listeners
-    if (this.cleanupListeners) {
-      this.cleanupListeners();
-      this.cleanupListeners = null;
-    }
+    this.cleanupAdapterListeners();
     
     // If we have a current adapter, disconnect it
     if (this.selectedAdapter && this.selectedAdapter.connected) {
@@ -183,6 +180,13 @@ export class WalletAdapterManager extends EventEmitter {
     
     this.emit('adapterChange', adapter);
     return adapter;
+  }
+
+  private cleanupAdapterListeners() {
+    if (this.cleanupListeners) {
+      this.cleanupListeners();
+      this.cleanupListeners = null;
+    }
   }
   
   /**
@@ -258,6 +262,16 @@ export class WalletAdapterManager extends EventEmitter {
       }
     });
   }
+
+    /**
+     * 
+     * @param optional wallet adapter event 
+     * @returns The class to manage wallet adapters with event emission
+     */
+    public removeAllListeners<E extends keyof WalletAdapterEvents>(event?: E): this {
+        super.removeAllListeners(event);
+        return this;
+    }
   
   /**
    * Clean up resources when no longer needed
