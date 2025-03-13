@@ -52,7 +52,8 @@
       "jsx",
       "json",
       "node"
-    ]
+    ],
+    "setupFilesAfterEnv": ["./jest.setup.js"]
   },
   "keywords": [],
   "author": "mctursh",
