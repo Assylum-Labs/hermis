@@ -6,7 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "test": "vitest",
+    "test": "jest",
+    "test:watch": "jest --watch",
     "prepublishOnly": "pnpm run build",
     "clean": "rm -rf dist"
   },
@@ -28,6 +29,30 @@
   "devDependencies": {
     "@agateh/solana-headless-format-config": "workspace:*",
     "@types/node": "^22.13.8"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "extensionsToTreatAsEsm": [".ts"],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "roots": [
+      "<rootDir>/src/",
+      "<rootDir>/__tests__/"
+    ],
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*\\.(test|spec))\\.[jt]sx?$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ]
   },
   "keywords": [],
   "author": "mctursh",

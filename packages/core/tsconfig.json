@@ -2,8 +2,11 @@
   "extends": "@agateh/solana-headless-format-config/tsconfig.base.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+    "moduleResolution": "NodeNext", // or "Node16"
+    "module": "NodeNext", // or "Node16"
     "outDir": "./dist",
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "types": ["node", "jest"],
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
