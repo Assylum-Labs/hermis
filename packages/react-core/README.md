@@ -1,6 +1,8 @@
 # @agateh/solana-headless-react
 
-<p align="center">
+## Coming Soon!
+
+<!-- <p align="center">
   <img src="https://iq.wiki/_next/image?url=https%3A%2F%2Fipfs.everipedia.org%2Fipfs%2FQmTaB5ygg5qNMDKmnfPgottNRZTe7PXzMpe3Tg7Bdw57HN&w=1080&q=95" width="100" alt="Solana Logo">
   <h3 align="center">React Hooks for Solana Headless SDK</h3>
 </p>
@@ -157,4 +159,4 @@ function SendSol() {
 
 ## 📜 License
 
-This project is licensed under Apache 2.0.
+This project is licensed under Apache 2.0. -->
