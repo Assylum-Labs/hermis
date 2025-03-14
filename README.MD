@@ -6,6 +6,14 @@
 
 This SDK provides **complete flexibility** for dApp developers, allowing full customization while leveraging Solana's core capabilities.
 
+## 🧪 **Live Demo**
+
+Try our framework-agnostic implementation using the base adapter:
+
+[**View the Base Adapter Demo →**](https://agateh.github.io/solana-headless-sdk/)
+
+This vanilla JavaScript demo showcases the core functionality of our adapter-base package without any framework dependencies, demonstrating how you can integrate Solana wallets with complete UI freedom.
+
 ## 🌟 **Community Edition Features**
 
 - **Fully Headless** – No predefined UI, complete developer control
