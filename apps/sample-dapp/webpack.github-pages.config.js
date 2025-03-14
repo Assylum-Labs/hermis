@@ -9,8 +9,8 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
     clean: true,
-    // Set the public path to match GitHub Pages
-    publicPath: '/solana-headless-sdk/'
+
+    publicPath: ''
   },
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx'],
@@ -28,7 +28,7 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: './public/styles.css', to: 'styles.css' },
-        // Copy any other assets you need
+        
       ],
     }),
   ],
