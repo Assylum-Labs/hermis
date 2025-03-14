@@ -1,19 +1,18 @@
 {
-    "tasks": {
-      "build": {
-        "dependsOn": ["^build"],
-        "outputs": ["packages/**/dist/**"]
-      },
-      "build:pages": {
-        "dependsOn": ["^build"],
-        "outputs": ["apps/**/dist/**"]
-      },
-      "test": {
-        "dependsOn": ["build"]
-      },
-      "clean": {
-        "cache": false
-      }
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "packages/*/dist/**", "apps/*/dist/**"]
+    },
+    "build:pages": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "apps/*/dist/**"]
+    },
+    "test": {
+      "dependsOn": ["build"]
+    },
+    "clean": {
+      "cache": false
     }
   }
-  
+}
