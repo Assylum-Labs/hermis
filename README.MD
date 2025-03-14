@@ -43,7 +43,7 @@ This repository is a **pnpm monorepo** managed with [Turborepo](https://turbo.bu
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/solana-headless-sdk.git
+git clone https://github.com/agateh/solana-headless-sdk.git
 
 # Install dependencies
 pnpm install
@@ -63,9 +63,9 @@ This "open core" model provides a robust open-source foundation while offering a
 ## 📮 **Stay Updated**
 
 For updates and discussions:
-- Twitter: [@agateh](https://x.com/agateh)
+- Twitter: [@Agateh_](https://x.com/Agateh_)
 
 ## 💼 **Enterprise Inquiries**
 
 For information about Enterprise Edition licensing, features, and support:
-- Contact: [enterprise@agateh.com](mailto:enterprise@agateh.com)
+- Contact: [agateh.labs@gmail.com](mailto:agateh.labs@gmail.com)
