@@ -190,6 +190,33 @@ button:disabled {
     font-weight: 500;
 }
 
+/* Loading state for balance */
+.balance.loading {
+    color: #666;
+    position: relative;
+    padding-left: 20px;
+}
+
+.balance.loading::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 14px;
+    height: 14px;
+    border: 2px solid #ddd;
+    border-top-color: #9945FF;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: translateY(-50%) rotate(360deg);
+    }
+}
+
 /* Event log */
 .log-section {
     background-color: white;
@@ -236,6 +263,19 @@ button:disabled {
 
 .log-type-success {
     color: #28a745;
+}
+
+/* Signature text in log */
+.signature-text {
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 0.8rem;
+    background-color: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #clear-log-button {
