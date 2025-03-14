@@ -1,6 +1,6 @@
 {
   "name": "@agateh/solana-headless-adapter-base",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,6 +9,9 @@
     "build": "tsc",
     "prepublishOnly": "pnpm run build",
     "clean": "rm -rf dist"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "type": "module",
   "exports": {
