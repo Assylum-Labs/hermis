@@ -56,25 +56,29 @@ import {
   createConnection
 } from '@agateh/solana-headless-core';
 
-// Initialize adapters and connection
-const adapters = getStandardWalletAdapters();
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
+
+const wallets = [
+    new PhantomWalletAdapter(),
+    new SolflareWalletAdapter()
+    // ... other wallets adapters
+];
+
+const adapters = getStandardWalletAdapters(wallets);
 const connection = createConnection(WalletAdapterNetwork.Devnet);
 
-// Create wallet manager
 const walletManager = new WalletAdapterManager(adapters);
 
-// Setup event listeners
 walletManager.on('connect', (publicKey) => {
   console.log('Connected to wallet:', publicKey.toBase58());
 });
 
-// Select a wallet adapter
 const phantomAdapter = adapters.find(adapter => adapter.name === 'Phantom');
 if (phantomAdapter) {
   walletManager.selectAdapter(phantomAdapter.name);
 }
 
-// Connect to the selected wallet
 async function connectWallet() {
   try {
     const adapter = await walletManager.connect();
@@ -86,7 +90,6 @@ async function connectWallet() {
   }
 }
 
-// Call connectWallet when the user clicks a button
 document.getElementById('connect-button').addEventListener('click', connectWallet);
 ```
 
@@ -94,7 +97,7 @@ document.getElementById('connect-button').addEventListener('click', connectWalle
 
 ### Core Functions
 
-- `getStandardWalletAdapters()`: Get all available standard wallet adapters
+- `getStandardWalletAdapters()`: Get all available standard wallet adapters including ones passed as an arguement
 - `initAdapters(adapters)`: Initialize adapters for use
 - `selectAdapter(walletName)`: Select a wallet adapter by name
 - `getWalletAdapters(readyState)`: Get adapters filtered by ready state
