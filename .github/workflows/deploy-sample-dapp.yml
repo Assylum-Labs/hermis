@@ -1,0 +1,47 @@
+name: Agateh Headless Adapter Demo
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'apps/sample-dapp/**'
+      - 'packages/adapter-base/**'
+      - 'packages/core/**'
+      - '.github/workflows/deploy-sample-dapp.yml'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+          run_install: false
+
+      - name: Install dependencies
+        run: pnpm install
+      
+      - name: Build packages
+        run: pnpm build
+      
+      - name: Agateh Headless Adapter Demo
+        run: pnpm --filter "sample-dapp" build:pages
+      
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: apps/sample-dapp/dist
+          branch: gh-pages
