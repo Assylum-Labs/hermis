@@ -1,5 +1,15 @@
 # @solana/headless-core
 
+## 1.2.0
+
+### Minor Changes
+
+- For This Minor fix I added a demo forthe adapter base package hsowcasing how it would be used, I also wrote unit test for the dunctions of the core package
+
+### Patch Changes
+
+- 964194b: Updated the ReadMe and created where doesn't already exist
+
 ## 1.1.1-next.0
 
 ### Patch Changes

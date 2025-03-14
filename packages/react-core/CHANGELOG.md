@@ -1,5 +1,14 @@
 # @solana/headless-session
 
+## 1.0.2
+
+### Patch Changes
+
+- 964194b: Updated the ReadMe and created where doesn't already exist
+- Updated dependencies [964194b]
+- Updated dependencies
+  - @agateh/solana-headless-core@1.2.0
+
 ## 1.0.2-next.0
 
 ### Patch Changes
