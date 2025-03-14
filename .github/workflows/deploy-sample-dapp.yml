@@ -45,4 +45,4 @@ jobs:
         with:
           folder: apps/sample-dapp/dist
           branch: gh-pages
-          clean: true d
+          clean: true
