@@ -1,22 +1,22 @@
 {
   "name": "@agateh/solana-headless-react",
   "version": "1.0.2",
-  "description": "",
-  "main": "dist/index.js",
-  "module": "dist/index.mjs",
+  "description": "React hooks and components for Solana Headless SDK",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "build": "tsup",
     "prepublishOnly": "pnpm run build",
     "clean": "rm -rf dist"
   },
   "type": "module",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
-      "require": "./dist/index.cjs",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.cjs"
     }
   },
   "files": [
@@ -26,13 +26,23 @@
     "@agateh/solana-headless-core": "workspace:*",
     "react": "^19.0.0"
   },
-  "keywords": [],
+  "peerDependencies": {
+    "react": ">=16.8.0",
+    "@agateh/solana-headless-core": ">=1.0.0"
+  },
+  "keywords": [
+    "solana",
+    "wallet",
+    "react",
+    "hooks"
+  ],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.5.2",
   "devDependencies": {
     "@agateh/solana-headless-format-config": "workspace:*",
     "@types/node": "^22.13.8",
-    "@types/react": "^19.0.10"
+    "@types/react": "^19.0.10",
+    "tsup": "^8.0.0"
   }
 }

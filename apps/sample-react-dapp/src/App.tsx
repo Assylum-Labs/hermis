@@ -24,7 +24,7 @@ function App() {
       <div className="card">
         <button onClick={() => setCount((count) => count + 1)}>
           count is {count}
-          count is {wallet?.toBase58()}
+          {wallet && <div>Connected wallet: {wallet.toBase58()}</div>}
         </button>
         <p>
           Edit <code>src/App.tsx</code> and save to test HMR

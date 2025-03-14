@@ -1,24 +1,39 @@
+// packages/react-core/src/index.ts
 import { useState, useEffect, FC } from "react";
-import { createWallet, PublicKey } from "@agateh/solana-headless-core";
+import { Keypair, PublicKey } from "@agateh/solana-headless-core";
+import { createWallet } from "@agateh/solana-headless-core";
 import { WalletInitProps } from "./types/index.js";
+import AppProvider from "./AgateContextProvider.js";
 
-
+/**
+ * React hook to use a Solana wallet
+ * @param apiKey API key for the Agateh service
+ */
 export const useWallet = ({
   apiKey
 }: WalletInitProps) => {
-  // const walletSDK = new HeadlessWalletSDK(apiKey);
-  const [wallet, setWallet] = useState<PublicKey>();
+  const [wallet, setWallet] = useState<PublicKey | null>(null);
+  const [keypair, setKeypair] = useState<Keypair | null>(null);
 
   useEffect(() => {
     try {
-        const keyPair = createWallet()
-        setWallet(keyPair.publicKey)
+      const keyPair = createWallet();
+      setKeypair(keyPair);
+      setWallet(keyPair.publicKey);
     } catch (error) {
-        console.error()
+      console.error("Error creating wallet:", error);
     }
   }, []);
 
-  return { wallet };
+  return { 
+    wallet,
+    keypair,
+    publicKey: wallet
+  };
 };
 
-// export * from "./AgateContextProvider"
+// Export the context provider
+export { AppProvider as AgateContextProvider };
+
+// Export types
+export * from "./types/index.js";
