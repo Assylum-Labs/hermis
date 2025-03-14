@@ -4,6 +4,8 @@
   "description": "",
   "scripts": {
     "clean": "turbo run clean",
+    "build": "turbo run build",
+    "build:dapp": "turbo run build:pages --filter=sample-dapp",
     "version-packages": "changeset version",
     "release": "turbo run build --filter=@agateh/* && changeset publish",
     "minor": "changeset add --minor",

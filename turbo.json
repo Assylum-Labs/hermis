@@ -4,6 +4,10 @@
         "dependsOn": ["^build"],
         "outputs": ["packages/**/dist/**"]
       },
+      "build:pages": {
+        "dependsOn": ["^build"],
+        "outputs": ["apps/**/dist/**"]
+      },
       "test": {
         "dependsOn": ["build"]
       },
