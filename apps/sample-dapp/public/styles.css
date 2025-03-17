@@ -293,3 +293,73 @@ button:disabled {
         grid-column: span 1;
     }
 }
+
+/* Mobile specific styling */
+.mobile-notice {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 10px;
+    border-left: 4px solid #ffeeba;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    border-radius: 4px;
+}
+
+.mobile-view .wallet-container {
+    grid-template-columns: 1fr;
+}
+
+.mobile-view .wallet-details-section,
+.mobile-view .transaction-section {
+    grid-column: span 1;
+}
+
+.mobile-view button {
+    padding: 12px 20px;
+    font-size: 1rem;
+}
+
+.mobile-view .wallet-list {
+    max-height: 250px;
+}
+
+.mobile-view .wallet-item {
+    padding: 12px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header {
+        margin-bottom: 20px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.1rem;
+    }
+    
+    .wallet-item img {
+        width: 25px;
+        height: 25px;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .button-group button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .event-log {
+        height: 150px;
+    }
+}

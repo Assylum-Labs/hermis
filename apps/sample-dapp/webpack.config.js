@@ -18,6 +18,18 @@ module.exports = {
     compress: true,
     port: 3000,
     hot: true,
+
+    host: '0.0.0.0', // Listen on all interfaces, not just localhost
+    allowedHosts: 'all', // Optional: allows any host to connect
+    // If you need HTTPS:
+    // https: true,
+    
+    // For webpack-dev-server v4+, you might also need:
+    client: {
+      webSocketURL: {
+        hostname: '0.0.0.0',
+      },
+    },
   },
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx'],

@@ -30,7 +30,7 @@ export declare function getWalletAdapters(readyState?: WalletReadyState): Wallet
  */
 export declare function getAdaptersByReadyState(adapters: Adapter[], readyState: WalletReadyState): Adapter[];
 /**
- * Sort wallet adapters by priority (Installed > Loadable > others)
+ * Sort wallet adapters by priority (Mobile > Installed > Loadable > others)
  * @param adapters Array of wallet adapters
  * @returns Sorted array of wallet adapters
  */

@@ -13,7 +13,7 @@ export declare function createWalletConnectionManager(adapters: Adapter[], local
     /**
      * Select an adapter by wallet name
      */
-    selectWallet: (walletName: WalletName | null) => import("@agateh/solana-headless-core").WalletAdapter | null;
+    selectWallet: (walletName: WalletName | null) => import("@solana/wallet-adapter-base").WalletAdapter | null;
     /**
      * Connect to the selected wallet
      */
@@ -25,7 +25,7 @@ export declare function createWalletConnectionManager(adapters: Adapter[], local
     /**
      * Auto-connect to the stored wallet
      */
-    autoConnect: () => Promise<import("@agateh/solana-headless-core").WalletAdapter | null>;
+    autoConnect: () => Promise<import("@solana/wallet-adapter-base").WalletAdapter | null>;
 };
 /**
  * Class to manage wallet adapters with event emission

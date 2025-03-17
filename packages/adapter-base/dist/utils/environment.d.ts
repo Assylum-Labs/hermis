@@ -7,6 +7,24 @@ export declare function getUserAgent(): string | null;
  */
 export declare function getUriForAppIdentity(): string | undefined;
 /**
+ * Check if the device is iOS
+ * @param userAgentString The user agent string
+ * @returns true if running on iOS device
+ */
+export declare function isIOS(userAgentString: string): boolean;
+/**
+ * Check if the device is Android
+ * @param userAgentString The user agent string
+ * @returns true if running on Android device
+ */
+export declare function isAndroid(userAgentString: string): boolean;
+/**
+ * Check if the current device is mobile
+ * @param userAgentString User agent string
+ * @returns true if it's a mobile device
+ */
+export declare function isMobileDevice(userAgentString: string): boolean;
+/**
  * Determine the current environment (desktop or mobile web)
  * @param config Configuration with adapters and userAgentString
  * @returns The detected environment
@@ -19,6 +37,11 @@ export declare function getEnvironment({ adapters, userAgentString }: Environmen
  * @returns true if the environment is mobile
  */
 export declare function getIsMobile(adapters: Adapter[], userAgentString?: string | null): boolean;
+/**
+ * Check if the user is on iOS and can be redirected
+ * @returns true if the user can be redirected
+ */
+export declare function isIosAndRedirectable(): boolean;
 /**
  * Infer Solana cluster from endpoint
  * @param endpoint RPC endpoint URL

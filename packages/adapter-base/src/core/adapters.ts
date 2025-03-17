@@ -1,5 +1,6 @@
 import { Adapter, WalletName, WalletReadyState, PublicKey } from '@agateh/solana-headless-core';
 import { WalletProvider } from '../types.js';
+import { SolanaMobileWalletAdapterWalletName } from '../standard/constants.js';
 
 // Store for all initialized adapters
 let _adapters: Adapter[] = [];
@@ -70,7 +71,7 @@ export function getAdaptersByReadyState(adapters: Adapter[], readyState: WalletR
 }
 
 /**
- * Sort wallet adapters by priority (Installed > Loadable > others)
+ * Sort wallet adapters by priority (Mobile > Installed > Loadable > others)
  * @param adapters Array of wallet adapters
  * @returns Sorted array of wallet adapters
  */
@@ -80,18 +81,26 @@ export function sortWalletAdapters(adapters: Adapter[]): Adapter[] {
   
   // Sort the adapters by ready state priority
   return sortedAdapters.sort((a, b) => {
+    // Mobile wallet adapter gets top priority on mobile
+    if (a.name === SolanaMobileWalletAdapterWalletName) return -1;
+    if (b.name === SolanaMobileWalletAdapterWalletName) return 1;
+
+    // Then installed wallets
     if (a.readyState === WalletReadyState.Installed && b.readyState !== WalletReadyState.Installed) {
       return -1;
     }
     if (a.readyState !== WalletReadyState.Installed && b.readyState === WalletReadyState.Installed) {
       return 1;
     }
+    
+    // Then loadable wallets
     if (a.readyState === WalletReadyState.Loadable && b.readyState !== WalletReadyState.Loadable) {
       return -1;
     }
     if (a.readyState !== WalletReadyState.Loadable && b.readyState === WalletReadyState.Loadable) {
       return 1;
     }
+    
     return 0;
   });
 }

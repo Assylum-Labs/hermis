@@ -2,6 +2,12 @@
     "extends": "@agateh/solana-headless-format-config/tsconfig.base.json",
     "compilerOptions": {
       "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
+      "moduleResolution": "bundler",
+      "module": "Preserve",
+      "paths": {
+            "@solana-mobile/wallet-adapter-mobile": ["./node_modules/@solana-mobile/wallet-adapter-mobile/lib/types"]
+        },
+        "skipLibCheck": true,
       "outDir": "./dist",
       "rootDir": "./src"
     },

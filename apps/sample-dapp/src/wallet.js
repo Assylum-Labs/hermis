@@ -2,7 +2,8 @@ import {
   WalletAdapterManager, 
   getStandardWalletAdapters,
   sortWalletAdapters,
-  getAdaptersByReadyState
+  getAdaptersByReadyState,
+  getIsMobile
 } from '@agateh/solana-headless-adapter-base';
 
 import {
@@ -14,6 +15,7 @@ import {
 
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
+import { TrustWalletAdapter } from '@solana/wallet-adapter-trust';
 
 const walletListEl = document.getElementById('wallet-list');
 const connectButton = document.getElementById('connect-button');
@@ -30,10 +32,30 @@ const clearLogButton = document.getElementById('clear-log-button');
 
 const connection = createConnection(WalletAdapterNetwork.Devnet);
 
-const wallets = [new PhantomWalletAdapter(), new SolflareWalletAdapter()];
+// Define base wallet adapters - Mobile adapter will be added automatically if needed
+const wallets = [
+  new PhantomWalletAdapter(),
+  new SolflareWalletAdapter(),
+  new TrustWalletAdapter()
+];
 
+// Check if we're on a mobile device to add some mobile-specific UI
+const isMobile = getIsMobile(wallets);
+if (isMobile) {
+  document.body.classList.add('mobile-view');
+  if (!document.querySelector('.mobile-notice')) {
+    const mobileNotice = document.createElement('div');
+    mobileNotice.className = 'mobile-notice';
+    mobileNotice.textContent = 'When connecting, you will be redirected to your wallet app. Return to this page after approving the connection.';
+    const connectionSection = document.querySelector('.connection-section');
+    if (connectionSection) {
+      connectionSection.prepend(mobileNotice);
+    }
+  }
+}
 
 let walletManager;
+let globalAdapters = [] 
 let previousPublicKey = null;
 let isFetchingBalance = false;
 
@@ -55,18 +77,27 @@ clearLogButton.addEventListener('click', () => {
   addLogEntry('Log cleared', 'info');
 });
 
-function initializeWalletIntegration() {
+async function initializeWalletIntegration() {
   addLogEntry('Initializing wallet integration...', 'info');
+  addLogEntry(`Device environment: ${isMobile ? 'Mobile' : 'Desktop'}`, 'info');
   
-  const adapters = getStandardWalletAdapters(wallets);
+  // Get standard wallet adapters, which will include mobile adapter if appropriate
+  globalAdapters = await getStandardWalletAdapters(wallets, connection.rpcEndpoint);
+  console.log(globalAdapters);
   
-  if (adapters.length === 0) {
+  
+  if (globalAdapters.length === 0) {
     walletListEl.innerHTML = '<p class="empty-message">No wallet adapters available. Please install a Solana wallet extension.</p>';
     addLogEntry('No wallet adapters found', 'warning');
     return;
   }
   
-  const sortedAdapters = sortWalletAdapters(adapters);
+  addLogEntry(`Found ${globalAdapters.length} wallet adapters`, 'success');
+  globalAdapters.forEach(adapter => {
+    addLogEntry(`Available adapter: ${adapter.name} (${getReadyStateLabel(adapter.readyState)})`, 'info');
+  });
+  
+  const sortedAdapters = sortWalletAdapters(globalAdapters);
   
   walletManager = new WalletAdapterManager(sortedAdapters, 'selectedWallet');
   
@@ -81,7 +112,7 @@ function initializeWalletIntegration() {
   
   tryAutoConnect();
   
-  addLogEntry(`Initialized with ${adapters.length} wallet adapters`, 'success');
+  addLogEntry(`Initialized with ${globalAdapters.length} wallet adapters`, 'success');
 }
 
 function cleanupWalletIntegration() {
@@ -142,6 +173,9 @@ function handleDisconnect() {
 function handleError(error) {
   console.error('Wallet error:', error);
   addLogEntry(`Wallet error: ${error.message || 'Unknown error'}`, 'error');
+  if (error.stack) {
+    addLogEntry(`Error stack: ${error.stack}`, 'error');
+  }
   alert(`Wallet error: ${error.message || 'Unknown error'}`);
 }
 
@@ -196,58 +230,63 @@ function handleReadyStateChange(readyState) {
 }
 
 function renderWalletList() {
-  const adapters = walletManager.getAdapters();
+  // const adapters = globalAdapters
+  // const adapters = walletManager.getAdapters();
+  console.log(globalAdapters);
+  
   
   walletListEl.innerHTML = '';
   
-  if (adapters.length === 0) {
+  if (globalAdapters.length === 0) {
     walletListEl.innerHTML = '<p class="empty-message">No wallets found. Please install a Solana wallet.</p>';
     return;
   }
   
-  const installedAdapters = getAdaptersByReadyState(adapters, WalletReadyState.Installed);
-  const loadableAdapters = getAdaptersByReadyState(adapters, WalletReadyState.Loadable);
-  const notDetectedAdapters = getAdaptersByReadyState(adapters, WalletReadyState.NotDetected);
+  const installedAdapters = getAdaptersByReadyState(globalAdapters, WalletReadyState.Installed);
+  // const loadableAdapters = getAdaptersByReadyState(adapters, WalletReadyState.Loadable);
+  // const notDetectedAdapters = getAdaptersByReadyState(adapters, WalletReadyState.NotDetected);
+  // const Adapters = getAdaptersByReadyState(adapters, WalletReadyState.NotDetected);
   
-  if (installedAdapters.length > 0) {
+  if (globalAdapters.length > 0) {
     const sectionHeader = document.createElement('div');
     sectionHeader.className = 'wallet-section-header';
     sectionHeader.textContent = 'Installed Wallets';
     walletListEl.appendChild(sectionHeader);
     
-    installedAdapters.forEach((adapter, index) => {
+    // installedAdapters.forEach((adapter, index) => {
+      globalAdapters.forEach((adapter, index) => {
       walletListEl.appendChild(createWalletItem(adapter, index + 1));
     });
   }
   
-  if (loadableAdapters.length > 0) {
-    const sectionHeader = document.createElement('div');
-    sectionHeader.className = 'wallet-section-header';
-    sectionHeader.textContent = 'Loadable Wallets';
-    walletListEl.appendChild(sectionHeader);
+  // if (loadableAdapters.length > 0) {
+  //   const sectionHeader = document.createElement('div');
+  //   sectionHeader.className = 'wallet-section-header';
+  //   sectionHeader.textContent = 'Loadable Wallets';
+  //   walletListEl.appendChild(sectionHeader);
     
-    loadableAdapters.forEach((adapter, index) => {
-      walletListEl.appendChild(createWalletItem(adapter, installedAdapters.length + index + 1));
-    });
-  }
+  //   loadableAdapters.forEach((adapter, index) => {
+  //     walletListEl.appendChild(createWalletItem(adapter, installedAdapters.length + index + 1));
+  //   });
+  // }
   
-  if (notDetectedAdapters.length > 0) {
-    const sectionHeader = document.createElement('div');
-    sectionHeader.className = 'wallet-section-header';
-    sectionHeader.textContent = 'Not Detected Wallets';
-    walletListEl.appendChild(sectionHeader);
+  // if (notDetectedAdapters.length > 0) {
+  //   const sectionHeader = document.createElement('div');
+  //   sectionHeader.className = 'wallet-section-header';
+  //   sectionHeader.textContent = 'Not Detected Wallets';
+  //   walletListEl.appendChild(sectionHeader);
     
-    notDetectedAdapters.forEach((adapter, index) => {
-      walletListEl.appendChild(createWalletItem(
-        adapter, 
-        installedAdapters.length + loadableAdapters.length + index + 1
-      ));
-    });
-  }
+  //   notDetectedAdapters.forEach((adapter, index) => {
+  //     walletListEl.appendChild(createWalletItem(
+  //       adapter, 
+  //       installedAdapters.length + loadableAdapters.length + index + 1
+  //     ));
+  //   });
+  // }
   
   const selectedAdapter = walletManager.getSelectedAdapter();
   if (selectedAdapter) {
-    highlightSelectedWallet(selectedAdapter.name);
+    highlightSelectedWallet(selectedAdapter.name)
   }
 }
 
@@ -292,6 +331,8 @@ function getReadyStateLabel(readyState) {
       return 'Loadable';
     case WalletReadyState.NotDetected:
       return 'Not Detected';
+    case WalletReadyState.Unsupported:
+      return 'Not Supported';
     default:
       return 'Unknown';
   }
@@ -362,7 +403,6 @@ function updateAdapterDetails(adapter) {
   selectedAdapterInfo.innerHTML = detailsHTML;
 }
 
-
 async function tryAutoConnect() {
   addLogEntry('Attempting auto-connect...', 'info');
   try {
@@ -382,14 +422,21 @@ async function tryAutoConnect() {
 async function connectWallet() {
   addLogEntry('Connecting wallet...', 'info');
   try {
+    const adapter = walletManager.getSelectedAdapter();
+    
+    // Log extra details about the connection attempt
+    addLogEntry(`Attempting to connect using adapter: ${adapter?.name}`, 'info');
+    
     await walletManager.connect();
   } catch (error) {
-    addLogEntry(`Connection error: ${error.message}`, 'error');
+    addLogEntry(`Connection error: ${error.message || 'Unknown error'}`, 'error');
+    if (error.stack) {
+      addLogEntry(`Error stack: ${error.stack}`, 'error');
+    }
     console.error('Connection error:', error);
-    alert(`Failed to connect: ${error.message}`);
+    alert(`Failed to connect: ${error.message || 'Unknown error'}`);
   }
 }
-
 
 async function connectSignWallet() {
   addLogEntry('Waiting for Signin wallet...', 'info');
@@ -420,8 +467,11 @@ async function connectSignWallet() {
   } catch (error) {
     await disconnectWallet()
     addLogEntry(`Sign message error: ${error.message}`, 'error');
+    if (error.stack) {
+      addLogEntry(`Error stack: ${error.stack}`, 'error');
+    }
     console.error('Sign message error:', error);
-    alert(`Failed to connect: ${error.message}`);
+    alert(`Failed to sign message: ${error.message}`);
   }
 }
 

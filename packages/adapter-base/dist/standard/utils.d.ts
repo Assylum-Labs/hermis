@@ -8,9 +8,16 @@ import { StandardConnectMethod, StandardDisconnectMethod, StandardEventsMethod, 
  */
 export declare function isWalletAdapterCompatibleStandardWallet(wallet: StandardWallet): wallet is TypedStandardWallet;
 /**
+ * Create a Mobile Wallet Adapter
+ * @param endpoint Optional RPC endpoint
+ * @returns Mobile wallet adapter or null if not available
+ */
+export declare function createMobileWalletAdapter(endpoint?: string): Promise<Adapter | null>;
+/**
  * Get wallet adapters for all available standard wallets
  * @param existingAdapters Existing (non-standard) adapters to include in result
+ * @param endpoint Optional endpoint for mobile wallet adapter
  * @returns Array of all adapters including standard wallet adapters
  */
-export declare function getStandardWalletAdapters(existingAdapters?: Adapter[]): Adapter[];
+export declare function getStandardWalletAdapters(existingAdapters?: Adapter[], endpoint?: string): Promise<Adapter[]>;
 export { StandardConnectMethod, StandardDisconnectMethod, StandardEventsMethod, SolanaSignAndSendTransactionMethod, SolanaSignTransactionMethod, SolanaSignMessageMethod, SolanaSignInMethod };
