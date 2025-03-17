@@ -1,1 +1,1 @@
-export declare const SolanaMobileWalletAdapterWalletName: import("@solana/wallet-adapter-base").WalletName<string>;
+export declare const SolanaMobileWalletAdapterWalletName = "Mobile Wallet Adapter";

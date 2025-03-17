@@ -20,6 +20,7 @@ import { TrustWalletAdapter } from '@solana/wallet-adapter-trust';
 const walletListEl = document.getElementById('wallet-list');
 const connectButton = document.getElementById('connect-button');
 const connectSignButton = document.getElementById('connect-sign-button');
+const signMessageButton = document.getElementById('sign-message-button');
 const disconnectButton = document.getElementById('disconnect-button');
 const connectionStatus = document.getElementById('connection-status');
 const walletAddress = document.getElementById('wallet-address');
@@ -85,6 +86,10 @@ async function initializeWalletIntegration() {
   globalAdapters = await getStandardWalletAdapters(wallets, connection.rpcEndpoint);
   console.log(globalAdapters);
   
+  // Hide the Connect & Sign button on mobile
+  if (isMobile) {
+    connectSignButton.style.display = 'none';
+  }
   
   if (globalAdapters.length === 0) {
     walletListEl.innerHTML = '<p class="empty-message">No wallet adapters available. Please install a Solana wallet extension.</p>';
@@ -109,6 +114,11 @@ async function initializeWalletIntegration() {
   disconnectButton.addEventListener('click', disconnectWallet);
   getBalanceButton.addEventListener('click', getBalance);
   connectSignButton.addEventListener('click', connectSignWallet);
+  signMessageButton.addEventListener('click', signMessageOnly);
+  
+  // Initially hide the sign message button and disable it
+  signMessageButton.style.display = 'none';
+  signMessageButton.disabled = true;
   
   tryAutoConnect();
   
@@ -125,6 +135,8 @@ function cleanupWalletIntegration() {
   connectButton.removeEventListener('click', connectWallet);
   disconnectButton.removeEventListener('click', disconnectWallet);
   getBalanceButton.removeEventListener('click', getBalance);
+  connectSignButton.removeEventListener('click', connectSignWallet);
+  signMessageButton.removeEventListener('click', signMessageOnly);
 }
 
 function setupWalletManagerEvents() {
@@ -144,7 +156,9 @@ function handleConnect(publicKey) {
   walletAddress.textContent = `Wallet address: ${publicKey.toBase58()}`;
   
   connectButton.disabled = true;
-  connectSignButton.disabled = true
+  connectSignButton.disabled = true;
+  signMessageButton.style.display = 'block';
+  signMessageButton.disabled = false;
   disconnectButton.disabled = false;
   transactionActions.style.display = 'block';
   
@@ -160,7 +174,9 @@ function handleDisconnect() {
   walletAddress.textContent = 'Wallet address: Not available';
   
   connectButton.disabled = false;
-  connectSignButton.disabled = false
+  connectSignButton.disabled = false;
+  signMessageButton.style.display = 'none';
+  signMessageButton.disabled = true;
   disconnectButton.disabled = true;
   transactionActions.style.display = 'none';
   balanceDisplay.textContent = '';
@@ -182,8 +198,13 @@ function handleError(error) {
 function handleAdapterChange(adapter) {
   if (adapter) {
     connectionStatus.textContent = `Selected: ${adapter.name}, Status: Not connected`;
-    connectButton.disabled = false;
-    connectSignButton.disabled = false
+    
+    // Check if adapter is loadable or installed before enabling connect button
+    const isAdapterUsable = adapter.readyState === WalletReadyState.Installed || 
+                          adapter.readyState === WalletReadyState.Loadable;
+                          
+    connectButton.disabled = !isAdapterUsable;
+    connectSignButton.disabled = !isAdapterUsable || isMobile;
     
     highlightSelectedWallet(adapter.name);
     
@@ -193,7 +214,7 @@ function handleAdapterChange(adapter) {
   } else {
     connectionStatus.textContent = 'No wallet selected';
     connectButton.disabled = true;
-    connectSignButton.disabled = true
+    connectSignButton.disabled = true;
     
     selectedAdapterInfo.innerHTML = '<p>No wallet selected</p>';
     
@@ -230,11 +251,6 @@ function handleReadyStateChange(readyState) {
 }
 
 function renderWalletList() {
-  // const adapters = globalAdapters
-  // const adapters = walletManager.getAdapters();
-  console.log(globalAdapters);
-  
-  
   walletListEl.innerHTML = '';
   
   if (globalAdapters.length === 0) {
@@ -242,47 +258,62 @@ function renderWalletList() {
     return;
   }
   
+  // Group adapters by ready state
   const installedAdapters = getAdaptersByReadyState(globalAdapters, WalletReadyState.Installed);
-  // const loadableAdapters = getAdaptersByReadyState(adapters, WalletReadyState.Loadable);
-  // const notDetectedAdapters = getAdaptersByReadyState(adapters, WalletReadyState.NotDetected);
-  // const Adapters = getAdaptersByReadyState(adapters, WalletReadyState.NotDetected);
+  const loadableAdapters = getAdaptersByReadyState(globalAdapters, WalletReadyState.Loadable);
+  const notDetectedAdapters = getAdaptersByReadyState(globalAdapters, WalletReadyState.NotDetected);
+  const unsupportedAdapters = globalAdapters.filter(adapter => 
+    adapter.readyState === WalletReadyState.Unsupported);
   
-  if (globalAdapters.length > 0) {
+  let itemIndex = 1;
+  
+  // Render installed adapters
+  if (installedAdapters.length > 0) {
     const sectionHeader = document.createElement('div');
     sectionHeader.className = 'wallet-section-header';
     sectionHeader.textContent = 'Installed Wallets';
     walletListEl.appendChild(sectionHeader);
     
-    // installedAdapters.forEach((adapter, index) => {
-      globalAdapters.forEach((adapter, index) => {
-      walletListEl.appendChild(createWalletItem(adapter, index + 1));
+    installedAdapters.forEach(adapter => {
+      walletListEl.appendChild(createWalletItem(adapter, itemIndex++));
     });
   }
   
-  // if (loadableAdapters.length > 0) {
-  //   const sectionHeader = document.createElement('div');
-  //   sectionHeader.className = 'wallet-section-header';
-  //   sectionHeader.textContent = 'Loadable Wallets';
-  //   walletListEl.appendChild(sectionHeader);
+  // Render loadable adapters
+  if (loadableAdapters.length > 0) {
+    const sectionHeader = document.createElement('div');
+    sectionHeader.className = 'wallet-section-header';
+    sectionHeader.textContent = 'Loadable Wallets';
+    walletListEl.appendChild(sectionHeader);
     
-  //   loadableAdapters.forEach((adapter, index) => {
-  //     walletListEl.appendChild(createWalletItem(adapter, installedAdapters.length + index + 1));
-  //   });
-  // }
+    loadableAdapters.forEach(adapter => {
+      walletListEl.appendChild(createWalletItem(adapter, itemIndex++));
+    });
+  }
   
-  // if (notDetectedAdapters.length > 0) {
-  //   const sectionHeader = document.createElement('div');
-  //   sectionHeader.className = 'wallet-section-header';
-  //   sectionHeader.textContent = 'Not Detected Wallets';
-  //   walletListEl.appendChild(sectionHeader);
+  // Render not detected adapters
+  if (notDetectedAdapters.length > 0) {
+    const sectionHeader = document.createElement('div');
+    sectionHeader.className = 'wallet-section-header';
+    sectionHeader.textContent = 'Not Detected Wallets';
+    walletListEl.appendChild(sectionHeader);
     
-  //   notDetectedAdapters.forEach((adapter, index) => {
-  //     walletListEl.appendChild(createWalletItem(
-  //       adapter, 
-  //       installedAdapters.length + loadableAdapters.length + index + 1
-  //     ));
-  //   });
-  // }
+    notDetectedAdapters.forEach(adapter => {
+      walletListEl.appendChild(createWalletItem(adapter, itemIndex++, true));
+    });
+  }
+  
+  // Render unsupported adapters (with visual indicator)
+  if (unsupportedAdapters.length > 0) {
+    const sectionHeader = document.createElement('div');
+    sectionHeader.className = 'wallet-section-header';
+    sectionHeader.textContent = 'Unsupported Wallets';
+    walletListEl.appendChild(sectionHeader);
+    
+    unsupportedAdapters.forEach(adapter => {
+      walletListEl.appendChild(createWalletItem(adapter, itemIndex++, true));
+    });
+  }
   
   const selectedAdapter = walletManager.getSelectedAdapter();
   if (selectedAdapter) {
@@ -290,11 +321,11 @@ function renderWalletList() {
   }
 }
 
-function createWalletItem(adapter, index) {
+function createWalletItem(adapter, index, disabled = false) {
   const { name, icon, readyState } = adapter;
   
   const walletItem = document.createElement('div');
-  walletItem.className = 'wallet-item';
+  walletItem.className = `wallet-item ${disabled ? 'disabled' : ''}`;
   walletItem.dataset.walletName = name;
   
   let iconUrl = icon;
@@ -307,7 +338,9 @@ function createWalletItem(adapter, index) {
     iconUrl = 'https://raw.githubusercontent.com/solana-labs/wallet-adapter/master/packages/wallets/icons/generic.svg';
   }
   
-  const statusClass = readyState === WalletReadyState.Installed ? 'installed' : '';
+  const statusClass = readyState === WalletReadyState.Installed ? 'installed' : 
+                     readyState === WalletReadyState.Unsupported ? 'unsupported' :
+                     readyState === WalletReadyState.NotDetected ? 'not-detected' : '';
   
   walletItem.innerHTML = `
     <span class="wallet-index">${index}.</span>
@@ -316,9 +349,16 @@ function createWalletItem(adapter, index) {
     <div class="status ${statusClass}">${getReadyStateLabel(readyState)}</div>
   `;
   
-  walletItem.addEventListener('click', () => {
-    selectWallet(name);
-  });
+  if (!disabled) {
+    walletItem.addEventListener('click', () => {
+      selectWallet(name);
+    });
+  } else {
+    // Apply a visual indication that this wallet is not selectable
+    walletItem.style.opacity = '0.6';
+    walletItem.style.cursor = 'not-allowed';
+    walletItem.title = `${name} cannot be selected (${getReadyStateLabel(readyState)})`;
+  }
   
   return walletItem;
 }
@@ -439,30 +479,14 @@ async function connectWallet() {
 }
 
 async function connectSignWallet() {
-  addLogEntry('Waiting for Signin wallet...', 'info');
+  addLogEntry('Connecting wallet and preparing to sign message...', 'info');
   try {
     const selectedAdapter = walletManager.getSelectedAdapter()
     if (selectedAdapter) {
       await walletManager.connect();
       
       // Sign a test message
-      const message = 'Test message for wallet authentication';
-      addLogEntry(`Signing message: "${message}"`, 'info');
-      
-      const messageBytes = new TextEncoder().encode(message);
-      const signature = await signMessage(messageBytes, selectedAdapter);
-      
-      // Convert signature to Base64 for display
-      let signatureBase64;
-      try {
-        // Browser approach
-        signatureBase64 = btoa(String.fromCharCode.apply(null, Array.from(signature)));
-      } catch (error) {
-        // Fallback
-        signatureBase64 = Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join('');
-      }
-      
-      addLogEntry(`Message signed successfully! Signature: ${signatureBase64}`, 'success');
+      await signMessageWithAdapter(selectedAdapter);
     }
   } catch (error) {
     await disconnectWallet()
@@ -473,6 +497,43 @@ async function connectSignWallet() {
     console.error('Sign message error:', error);
     alert(`Failed to sign message: ${error.message}`);
   }
+}
+
+async function signMessageOnly() {
+  addLogEntry('Signing message...', 'info');
+  try {
+    const selectedAdapter = walletManager.getSelectedAdapter();
+    if (selectedAdapter && selectedAdapter.connected) {
+      await signMessageWithAdapter(selectedAdapter);
+    } else {
+      throw new Error('Wallet not connected');
+    }
+  } catch (error) {
+    addLogEntry(`Sign message error: ${error.message}`, 'error');
+    console.error('Sign message error:', error);
+    alert(`Failed to sign message: ${error.message}`);
+  }
+}
+
+async function signMessageWithAdapter(adapter) {
+  // Sign a test message
+  const message = 'Test message for wallet authentication';
+  addLogEntry(`Signing message: "${message}"`, 'info');
+  
+  const messageBytes = new TextEncoder().encode(message);
+  const signature = await signMessage(messageBytes, adapter);
+  
+  // Convert signature to Base64 for display
+  let signatureBase64;
+  try {
+    // Browser approach
+    signatureBase64 = btoa(String.fromCharCode.apply(null, Array.from(signature)));
+  } catch (error) {
+    // Fallback
+    signatureBase64 = Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  
+  addLogEntry(`Message signed successfully! Signature: ${signatureBase64}`, 'success');
 }
 
 async function disconnectWallet() {
