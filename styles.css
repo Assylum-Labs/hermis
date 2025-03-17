@@ -74,6 +74,14 @@ h2 {
     border-radius: 5px;
 }
 
+.wallet-section-header {
+    font-weight: 600;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    color: #555;
+}
+
 .wallet-item {
     display: flex;
     align-items: center;
@@ -87,7 +95,7 @@ h2 {
     border-bottom: none;
 }
 
-.wallet-item:hover {
+.wallet-item:hover:not(.disabled) {
     background-color: #f8f9fa;
 }
 
@@ -106,6 +114,119 @@ h2 {
 
 .wallet-item .installed {
     color: #28a745;
+}
+
+/* Signature text in log */
+.signature-text {
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 0.8rem;
+    background-color: #f0f0f0;
+    padding: 2px 4px;
+    border-radius: 3px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#clear-log-button {
+    background-color: #6c757d;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .wallet-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .wallet-details-section,
+    .transaction-section {
+        grid-column: span 1;
+    }
+}
+
+/* Mobile specific styling */
+.mobile-notice {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 10px;
+    border-left: 4px solid #ffeeba;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    border-radius: 4px;
+}
+
+.mobile-view .wallet-container {
+    grid-template-columns: 1fr;
+}
+
+.mobile-view .wallet-details-section,
+.mobile-view .transaction-section {
+    grid-column: span 1;
+}
+
+.mobile-view button {
+    padding: 12px 20px;
+    font-size: 1rem;
+}
+
+.mobile-view .wallet-list {
+    max-height: 250px;
+}
+
+.mobile-view .wallet-item {
+    padding: 12px;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header {
+        margin-bottom: 20px;
+    }
+    
+    h1 {
+        font-size: 1.5rem;
+    }
+    
+    h2 {
+        font-size: 1.1rem;
+    }
+    
+    .wallet-item img {
+        width: 25px;
+        height: 25px;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .button-group button {
+        width: 100%;
+        margin-bottom: 10px;
+    }
+    
+    .event-log {
+        height: 150px;
+    }
+}
+
+
+.wallet-item .not-detected {
+    color: #ffc107;
+}
+
+.wallet-item .unsupported {
+    color: #dc3545;
+}
+
+.wallet-item.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 /* Connection status */
@@ -139,7 +260,7 @@ button {
     transition: background-color 0.2s;
 }
 
-button:hover {
+button:hover:not(:disabled) {
     background-color: #8a3deb;
 }
 
@@ -263,103 +384,4 @@ button:disabled {
 
 .log-type-success {
     color: #28a745;
-}
-
-/* Signature text in log */
-.signature-text {
-    word-break: break-all;
-    font-family: monospace;
-    font-size: 0.8rem;
-    background-color: #f0f0f0;
-    padding: 2px 4px;
-    border-radius: 3px;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-#clear-log-button {
-    background-color: #6c757d;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .wallet-container {
-        grid-template-columns: 1fr;
-    }
-    
-    .wallet-details-section,
-    .transaction-section {
-        grid-column: span 1;
-    }
-}
-
-/* Mobile specific styling */
-.mobile-notice {
-    background-color: #fff3cd;
-    color: #856404;
-    padding: 10px;
-    border-left: 4px solid #ffeeba;
-    margin-bottom: 15px;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    border-radius: 4px;
-}
-
-.mobile-view .wallet-container {
-    grid-template-columns: 1fr;
-}
-
-.mobile-view .wallet-details-section,
-.mobile-view .transaction-section {
-    grid-column: span 1;
-}
-
-.mobile-view button {
-    padding: 12px 20px;
-    font-size: 1rem;
-}
-
-.mobile-view .wallet-list {
-    max-height: 250px;
-}
-
-.mobile-view .wallet-item {
-    padding: 12px;
-}
-
-@media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-    
-    header {
-        margin-bottom: 20px;
-    }
-    
-    h1 {
-        font-size: 1.5rem;
-    }
-    
-    h2 {
-        font-size: 1.1rem;
-    }
-    
-    .wallet-item img {
-        width: 25px;
-        height: 25px;
-    }
-    
-    .button-group {
-        flex-direction: column;
-    }
-    
-    .button-group button {
-        width: 100%;
-        margin-bottom: 10px;
-    }
-    
-    .event-log {
-        height: 150px;
-    }
 }
