@@ -1,5 +1,11 @@
 # @agateh/solana-headless-adapter-base
 
+## 1.1.1
+
+### Patch Changes
+
+- Updated README for docs and then improved methods for environmental detection
+
 ## 1.1.0
 
 ### Minor Changes
