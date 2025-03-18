@@ -1,5 +1,11 @@
 # sample-react-dapp
 
+## 0.0.3
+
+### Patch Changes
+
+- @agateh/solana-headless-react@1.0.3
+
 ## 0.0.2
 
 ### Patch Changes

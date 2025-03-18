@@ -1,5 +1,12 @@
 # @agateh/solana-headless-adapter-base
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated dependencies
+  - @agateh/solana-headless-core@1.2.1
+
 ## 1.1.1
 
 ### Patch Changes

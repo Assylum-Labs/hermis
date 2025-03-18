@@ -1,6 +1,6 @@
 {
   "name": "@agateh/solana-headless-core",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Core wallet logic for the Solana Headless SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

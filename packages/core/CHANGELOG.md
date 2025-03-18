@@ -1,5 +1,11 @@
 # @solana/headless-core
 
+## 1.2.1
+
+### Patch Changes
+
+- Updated README to flect what the package actually does
+
 ## 1.2.0
 
 ### Minor Changes

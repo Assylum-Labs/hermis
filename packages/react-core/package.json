@@ -1,6 +1,6 @@
 {
   "name": "@agateh/solana-headless-react",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "React hooks and components for Solana Headless SDK",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -28,7 +28,7 @@
   },
   "peerDependencies": {
     "react": ">=16.8.0",
-    "@agateh/solana-headless-core": ">=1.0.0"
+    "@agateh/solana-headless-core": ">=1.2.1"
   },
   "keywords": [
     "solana",

@@ -18,7 +18,7 @@
 - **Wallet Creation & Management**: Create, import, and manage Solana wallets
 - **Transaction Handling**: Sign and send transactions to the Solana network
 - **Network Management**: Easy connection to different Solana networks (Mainnet, Devnet, Testnet)
-- **Minimal Dependencies**: Built with focus on performance and minimal bundlesize
+- **Minimal Dependencies**: Built with focus on performance and minimal bundle size
 - **Framework Agnostic**: Use with any UI framework or backend implementation
 
 ## 📦 Installation
@@ -37,118 +37,132 @@ yarn add @agateh/solana-headless-core
 ## 🚀 Quick Start
 
 ```typescript
-import { HeadlessWalletSDK } from "@agateh/solana-headless-core";
-
-// Initialize the SDK with your API key
-const sdk = new HeadlessWalletSDK("your-api-key");
+import { 
+  createConnection, 
+  createWallet, 
+  WalletAdapterNetwork 
+} from "@agateh/solana-headless-core";
 
 // Create a new wallet
-const createWallet = async () => {
-  const wallet = await sdk.createWallet();
-  console.log("New wallet created:", wallet);
-};
+const wallet = createWallet();
+console.log("New wallet created with public key:", wallet.publicKey.toBase58());
 
-// Sign a transaction
-const signTransaction = async (transaction) => {
-  const signedTx = await sdk.signTransaction(transaction);
-  return signedTx;
-};
+// Connect to a Solana network
+const connection = createConnection(WalletAdapterNetwork.Devnet);
+
+// Create a wallet manager
+import { WalletManager } from "@agateh/solana-headless-core";
+const manager = new WalletManager(WalletAdapterNetwork.Devnet);
+
+// Connect to a wallet adapter
+const phantomAdapter = /* ... get an adapter from the @agateh/solana-headless-adapter-base */;
+await manager.connect(phantomAdapter);
+
+// Get the wallet's balance
+const balance = await manager.getBalance();
+console.log(`Wallet balance: ${balance} SOL`);
 ```
 
 ## 📋 API Reference
 
-### `HeadlessWalletSDK`
-
-The main class that provides wallet functionality:
+### Connection Management
 
 ```typescript
-const sdk = new HeadlessWalletSDK(apiKey, baseUrl);
-```
+// Create a connection to a Solana network
+import { createConnection, WalletAdapterNetwork } from "@agateh/solana-headless-core";
 
-#### Methods:
+// Connect to mainnet
+const mainnetConnection = createConnection(WalletAdapterNetwork.Mainnet);
 
-- `createWallet()`: Creates a new wallet
-- `signTransaction(transaction)`: Signs a transaction with the wallet
+// Connect to devnet
+const devnetConnection = createConnection(WalletAdapterNetwork.Devnet);
 
-### Low-level Utilities
+// Connect to testnet
+const testnetConnection = createConnection(WalletAdapterNetwork.Testnet);
 
-In addition to the main SDK class, several utility functions are available:
+// Connect to a custom RPC endpoint
+const customConnection = createConnection("https://my-custom-solana-rpc.com");
 
-- `createConnection(network)`: Creates a new Solana connection to specified network
-- `createWallet()`: Creates a new wallet (keypair)
-- `importWallet(secretKey)`: Imports a wallet from a secret key
-- `exportWallet(wallet)`: Exports a wallet's secret key
-- `signTransaction(transaction, wallet)`: Signs a transaction
-- `sendTransaction(connection, transaction, wallet)`: Sends a signed transaction
-- `signMessage(message, wallet)`: Signs a message
+// With custom commitment
+const confirmedConnection = createConnection(
+  WalletAdapterNetwork.Mainnet, 
+  "confirmed"
+);
 
-## 🛠️ Development
-
-This package is part of the Solana Headless SDK monorepo.
-
-```bash
-# Clone the repository
-git clone https://github.com/yourusername/solana-headless-sdk.git
-
-# Install dependencies
-pnpm install
-
-# Build the core package
-pnpm --filter "@agateh/solana-headless-core" build
-```
-
-## 📚 Examples
-
-### Creating a Wallet
-
-```typescript
-import { HeadlessWalletSDK } from "@agateh/solana-headless-core";
-
-const sdk = new HeadlessWalletSDK("your-api-key");
-
-async function setupWallet() {
-  try {
-    const wallet = await sdk.createWallet();
-    console.log("Wallet created:", wallet);
-    return wallet;
-  } catch (error) {
-    console.error("Error creating wallet:", error);
+// With full connection config
+const customConfigConnection = createConnection(
+  WalletAdapterNetwork.Mainnet, 
+  {
+    commitment: "finalized",
+    confirmTransactionInitialTimeout: 30000
   }
-}
+);
 ```
 
-### Signing and Sending a Transaction
+### Wallet Management
 
 ```typescript
-import { HeadlessWalletSDK } from "@agateh/solana-headless-core";
-import { Transaction, SystemProgram, PublicKey } from "@solana/web3.js";
+// Create, import, and export wallets
+import { 
+  createWallet, 
+  importWallet, 
+  exportWallet 
+} from "@agateh/solana-headless-core";
 
-const sdk = new HeadlessWalletSDK("your-api-key");
+// Create a new wallet
+const newWallet = createWallet();
 
-async function sendTokens(recipientAddress, amount) {
-  try {
-    // Create a transaction
-    const transaction = new Transaction().add(
-      SystemProgram.transfer({
-        fromPubkey: wallet.publicKey,
-        toPubkey: new PublicKey(recipientAddress),
-        lamports: amount,
-      })
-    );
-    
-    // Sign and send the transaction
-    const signature = await sdk.signTransaction(transaction);
-    console.log("Transaction sent with signature:", signature);
-    return signature;
-  } catch (error) {
-    console.error("Error sending transaction:", error);
-  }
-}
+// Import an existing wallet
+const secretKey = new Uint8Array([/* your secret key */]);
+const importedWallet = importWallet(secretKey);
+
+// Export a wallet's secret key
+const exportedSecretKey = exportWallet(newWallet);
+```
+
+### Wallet Manager
+
+```typescript
+import { WalletManager, WalletAdapterNetwork } from "@agateh/solana-headless-core";
+
+// Create a wallet manager for devnet
+const manager = new WalletManager(WalletAdapterNetwork.Devnet);
+
+// Connect to a wallet adapter
+await manager.connect(adapter);
+
+// Get wallet balance
+const balance = await manager.getBalance();
+
+// Get wallet public key
+const publicKey = manager.getPublicKey();
+```
+
+### Transaction Operations
+
+```typescript
+import { 
+  signTransaction, 
+  sendTransaction, 
+  signMessage 
+} from "@agateh/solana-headless-core";
+import { Transaction } from "@solana/web3.js";
+
+// Sign a transaction with a wallet
+const signedTransaction = await signTransaction(transaction, wallet);
+
+// Send a signed transaction to the network
+const signature = await sendTransaction(connection, signedTransaction, wallet);
+
+// Sign a message
+const message = "Hello, Solana!";
+const signedMessage = await signMessage(message, adapter);
 ```
 
 ## 🔗 Related Packages
 
-- [@agateh/solana-headless-react](../react-core/README.md): React hooks and components for Solana wallet integration
+- [@agateh/solana-headless-adapter-base](../adapter-base/README.md): Base adapter implementations
+- [@agateh/solana-headless-react](../react-core/README.md): React integration for Solana Headless SDK
 
 ## 📜 License
 
