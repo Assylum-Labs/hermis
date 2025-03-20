@@ -59,6 +59,7 @@ let walletManager;
 let globalAdapters = [] 
 let previousPublicKey = null;
 let isFetchingBalance = false;
+let clickedWalletName = ''
 
 window.addEventListener('DOMContentLoaded', initializeWalletIntegration);
 
@@ -391,7 +392,12 @@ function highlightSelectedWallet(walletName) {
 }
 
 function selectWallet(walletName) {
-  walletManager.selectAdapter(walletName);
+  highlightSelectedWallet(walletName)
+  clickedWalletName = walletName
+  connectionStatus.textContent = `Selected: ${walletName}, Status: Not connected`
+  connectButton.disabled = false;
+  connectSignButton.disabled = false;
+  // walletManager.selectAdapter(walletName); 
 }
 
 function updateAdapterDetails(adapter) {
@@ -462,7 +468,16 @@ async function tryAutoConnect() {
 async function connectWallet() {
   addLogEntry('Connecting wallet...', 'info');
   try {
+    if(clickedWalletName){
+      walletManager.selectAdapter(clickedWalletName);
+    }
+
     const adapter = walletManager.getSelectedAdapter();
+
+    if(!adapter){
+      addLogEntry('No wallet Selected', 'info');
+      return
+    }
     
     // Log extra details about the connection attempt
     addLogEntry(`Attempting to connect using adapter: ${adapter?.name}`, 'info');
@@ -481,11 +496,17 @@ async function connectWallet() {
 async function connectSignWallet() {
   addLogEntry('Connecting wallet and preparing to sign message...', 'info');
   try {
+    if(clickedWalletName){
+      walletManager.selectAdapter(clickedWalletName);
+    }
+
     const selectedAdapter = walletManager.getSelectedAdapter()
+    console.log('Seelcted Wallet name', clickedWalletName);
+    console.log('Selected Adapter', selectedAdapter);
+    
     if (selectedAdapter) {
       await walletManager.connect();
       
-      // Sign a test message
       await signMessageWithAdapter(selectedAdapter);
     }
   } catch (error) {
@@ -505,9 +526,7 @@ async function signMessageOnly() {
     const selectedAdapter = walletManager.getSelectedAdapter();
     if (selectedAdapter && selectedAdapter.connected) {
       await signMessageWithAdapter(selectedAdapter);
-    } else {
-      throw new Error('Wallet not connected');
-    }
+    } 
   } catch (error) {
     addLogEntry(`Sign message error: ${error.message}`, 'error');
     console.error('Sign message error:', error);
@@ -516,20 +535,16 @@ async function signMessageOnly() {
 }
 
 async function signMessageWithAdapter(adapter) {
-  // Sign a test message
   const message = 'Test message for wallet authentication';
   addLogEntry(`Signing message: "${message}"`, 'info');
   
   const messageBytes = new TextEncoder().encode(message);
   const signature = await signMessage(messageBytes, adapter);
   
-  // Convert signature to Base64 for display
   let signatureBase64;
   try {
-    // Browser approach
     signatureBase64 = btoa(String.fromCharCode.apply(null, Array.from(signature)));
   } catch (error) {
-    // Fallback
     signatureBase64 = Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join('');
   }
   
