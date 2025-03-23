@@ -1,6 +1,6 @@
 import { Adapter } from '@agateh/solana-headless-core';
 import { getStandardWalletAdapters as getBaseStandardWalletAdapters } from '@agateh/solana-headless-adapter-base';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 /**
  * Hook for getting standard wallet adapters
@@ -18,6 +18,15 @@ export function useStandardWalletAdapters(
   endpoint?: string
 ): Adapter[] {
   const [adapters, setAdapters] = useState<Adapter[]>(existingAdapters);
+
+  // Memoize the existingAdapters array to prevent unnecessary effect reruns
+  const memoizedAdapters = useMemo(() => existingAdapters, [
+    // If you need to detect changes within the array, add specific dependencies
+    // For example, if you need to detect when array length changes:
+    existingAdapters.length,
+    // Or if you can identify adapters by a stable ID, you can include those:
+    // ...existingAdapters.map(adapter => adapter.name)
+  ]);
   
   // Fetch standard wallet adapters on mount and when dependencies change
   useEffect(() => {
@@ -48,7 +57,9 @@ export function useStandardWalletAdapters(
     return () => {
       mounted = false;
     };
-  }, [existingAdapters, endpoint]);
+//   }, [endpoint]);
+  }, [memoizedAdapters, endpoint]);
+//   }, [existingAdapters, endpoint]);
   
   return adapters;
 }

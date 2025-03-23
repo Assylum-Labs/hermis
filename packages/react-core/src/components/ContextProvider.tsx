@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useState, useEffect } from 'react';
+import React, { FC, ReactNode, useState, useEffect, useMemo } from 'react';
 import { Adapter, WalletAdapterNetwork } from '@agateh/solana-headless-core';
 // import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 // import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
@@ -53,6 +53,16 @@ export const ContextProvider: FC<ContextProviderProps> = ({
 }) => {
   // Set up default adapters
   const [adapters, setAdapters] = useState<Adapter[]>([]);
+
+  const memoizedAdapters = useMemo(() => 
+    additionalAdapters, [
+      // If you need to detect changes within the array, add specific dependencies
+      // For example, if you need to detect when array length changes:
+      
+      additionalAdapters.length,
+      // Or if you can identify adapters by a stable ID, you can include those:
+      // ...existingAdapters.map(adapter => adapter.name)
+    ]);
   
   // Initialize default adapters
   useEffect(() => {
@@ -71,7 +81,7 @@ export const ContextProvider: FC<ContextProviderProps> = ({
     
     // Add additional adapters
     setAdapters([...baseAdapters, ...additionalAdapters]);
-  }, [additionalAdapters]);
+  }, [memoizedAdapters]);
 //   }, [additionalAdapters, includeDefaultAdapters]);
   
   // Get standard wallet adapters - this handles async detection

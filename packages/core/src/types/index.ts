@@ -15,7 +15,7 @@ import {
     LAMPORTS_PER_SOL,
     VersionedTransactionResponse,
     SignatureStatus,
-    
+    SystemProgram,
 } from '@solana/web3.js';
 
 import {
@@ -77,6 +77,7 @@ export {
     VersionedTransaction,
     SendOptions,
     SignatureStatus,
+    SystemProgram,
     LAMPORTS_PER_SOL,
     TOKEN_PROGRAM_ID,
     // Keypair,

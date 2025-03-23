@@ -22,7 +22,7 @@ export interface BalanceInfo {
  * @returns Balance information
  */
 export function useSolanaBalance(
-  address?: PublicKey,
+  address?: PublicKey | null,
   refreshInterval?: number
 ): BalanceInfo {
   const { connection } = useConnection();

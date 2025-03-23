@@ -10,7 +10,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@agateh/solana-headless-adapter-base": "workspace:*",
+    "@agateh/solana-headless-core": "workspace:*",
     "@agateh/solana-headless-react": "workspace:*",
+    "@solana/wallet-adapter-phantom": "^0.9.24",
+    "@solana/wallet-adapter-solflare": "^0.6.28",
+    "@solana/web3.js": "^1.98.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },

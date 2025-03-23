@@ -25,7 +25,8 @@
     "@noble/ed25519": "^2.2.3",
     "@solana/spl-token": "^0.4.13",
     "@solana/wallet-adapter-base": "^0.9.23",
-    "@solana/web3.js": "^1.98.0"
+    "@solana/web3.js": "^1.98.0",
+    "buffer": "^6.0.3"
   },
   "devDependencies": {
     "@agateh/solana-headless-format-config": "workspace:*",

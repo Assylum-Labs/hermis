@@ -1,0 +1,119 @@
+.wallet-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+  
+  .wallet-modal-content {
+    background-color: white;
+    border-radius: 12px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .wallet-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .wallet-modal-header h3 {
+    margin: 0;
+    color: #333;
+    font-size: 1.25rem;
+  }
+  
+  .wallet-modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #999;
+    cursor: pointer;
+    padding: 0;
+    margin: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+  }
+  
+  .wallet-modal-close:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .wallet-modal-body {
+    padding: 20px;
+  }
+  
+  .wallet-list-section {
+    margin-bottom: 24px;
+  }
+  
+  .wallet-list-section h4 {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 12px;
+  }
+  
+  .wallet-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .wallet-list-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .wallet-list-item:hover {
+    background-color: #f5f7fa;
+  }
+  
+  .wallet-list-item img {
+    width: 32px;
+    height: 32px;
+    margin-right: 12px;
+    object-fit: contain;
+  }
+  
+  .wallet-list-item span {
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .wallet-none-message {
+    color: #888;
+    font-style: italic;
+    padding: 10px 0;
+  }
+  
+  .wallet-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid #eee;
+  }
+  
+  .wallet-modal-note {
+    font-size: 0.8rem;
+    color: #888;
+    margin: 0;
+    line-height: 1.4;
+  }
