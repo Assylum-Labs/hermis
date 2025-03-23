@@ -5,6 +5,6 @@
  * @returns An object with get and set methods
  */
 export declare function createLocalStorageUtility<T>(key: string, defaultValue: T): {
-    get(): T;
-    set(value: T): void;
+    get(): Promise<T>;
+    set(value: T): Promise<void>;
 };

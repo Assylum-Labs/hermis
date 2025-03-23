@@ -6,7 +6,7 @@
  */
 export function createLocalStorageUtility(key, defaultValue) {
     return {
-        get() {
+        async get() {
             try {
                 if (typeof window === 'undefined')
                     return defaultValue;
@@ -20,7 +20,7 @@ export function createLocalStorageUtility(key, defaultValue) {
                 return defaultValue;
             }
         },
-        set(value) {
+        async set(value) {
             try {
                 if (typeof window === 'undefined')
                     return;

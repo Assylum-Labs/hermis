@@ -23,6 +23,7 @@
     "dist"
   ],
   "dependencies": {
+    "@agateh/solana-headless-adapter-base": "workspace:*",
     "@agateh/solana-headless-core": "workspace:*",
     "react": "^19.0.0"
   },

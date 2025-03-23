@@ -1,4 +1,4 @@
-import { Adapter, WalletName, EventEmitter, WalletAdapterEvents } from '@agateh/solana-headless-core';
+import { Adapter, WalletName, EventEmitter, WalletAdapterEvents, Transaction } from '@agateh/solana-headless-core';
 /**
  * Create a simple wallet connection manager
  * @param adapters Array of adapters to manage
@@ -79,4 +79,7 @@ export declare class WalletAdapterManager extends EventEmitter {
      * Clean up resources when no longer needed
      */
     dispose(): void;
+    signTransaction(transaction: Transaction): Promise<Transaction | null>;
+    signAllTransaction(transaction: Transaction[]): Promise<Transaction[] | null>;
+    signMessage(message: string | Uint8Array<ArrayBufferLike>): Promise<Uint8Array | null>;
 }

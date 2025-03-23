@@ -1,4 +1,4 @@
-import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter, WalletAdapterEvents } from '@agateh/solana-headless-core';
+import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter, WalletAdapterEvents, TransactionSignature, signTransaction, Transaction, signAllTransactions, signMessage } from '@agateh/solana-headless-core';
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
 
@@ -12,10 +12,11 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
     const storageUtil = createLocalStorageUtility<string | null>(localStorageKey, null);
     let currentAdapter: Adapter | null = null;
 
-    const storedWalletName = storageUtil.get();
-    if (storedWalletName) {
-        currentAdapter = adapters.find(a => a.name === storedWalletName) || null;
-    }
+    storageUtil.get().then((storedWalletName) => {
+        if (storedWalletName) {
+            currentAdapter = adapters.find(a => a.name === storedWalletName) || null;
+        }
+    })
 
     return {
         /**
@@ -114,15 +115,16 @@ export class WalletAdapterManager extends EventEmitter {
         this.storageUtil = createLocalStorageUtility<string | null>(localStorageKey, null);
 
         // Initialize from storage
-        const storedWalletName = this.storageUtil.get();
-        if (storedWalletName) {
-            this.selectedAdapter = this.adapters.find(a => a.name === storedWalletName) || null;
-
-            // Set up event listeners if we have a stored adapter
-            if (this.selectedAdapter) {
-                this.setupEventListeners();
+        this.storageUtil.get().then((storedWalletName) => {
+            if (storedWalletName) {
+                this.selectedAdapter = this.adapters.find(a => a.name === storedWalletName) || null;
+    
+                // Set up event listeners if we have a stored adapter
+                if (this.selectedAdapter) {
+                    this.setupEventListeners();
+                }
             }
-        }
+        })
     }
 
     /**
@@ -301,5 +303,53 @@ export class WalletAdapterManager extends EventEmitter {
         }
 
         this.removeAllListeners();
+    }
+
+    public async signTransaction(
+        transaction: Transaction
+    ): Promise<Transaction | null> {
+        if (!this.selectedAdapter) {
+            this.emitSafeError("No Adapter connected")
+            return null;
+        }
+
+        try {
+            return await signTransaction(transaction, this.selectedAdapter)
+        } catch (error) {
+            this.emitSafeError(error)
+            return null
+        }
+    }
+
+    public async signAllTransaction(
+        transaction: Transaction[]
+    ): Promise<Transaction[] | null> {
+        if (!this.selectedAdapter) {
+            this.emitSafeError("No Adapter connected")
+            return null;
+        }
+
+        try {
+            return await signAllTransactions(transaction, this.selectedAdapter)
+        } catch (error) {
+            this.emitSafeError(error)
+            return null
+        }
+    }
+
+    public async signMessage(
+        message: string | Uint8Array<ArrayBufferLike>
+    ): Promise<Uint8Array | null> {
+        if (!this.selectedAdapter) {
+            this.emitSafeError("No Adapter connected")
+            return null;
+        }
+
+        try {
+            return await signMessage(message, this.selectedAdapter)
+        } catch (error) {
+            this.emitSafeError(error)
+            return null
+        }
     }
 }

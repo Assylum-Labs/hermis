@@ -5,11 +5,11 @@
  * @returns An object with get and set methods
  */
 export function createLocalStorageUtility<T>(key: string, defaultValue: T): {
-    get(): T,
-    set(value: T): void
+    get(): Promise<T>,
+    set(value: T): Promise<void>
   } {
     return {
-      get(): T {
+     async get(): Promise<T> {
         try {
           if (typeof window === 'undefined') return defaultValue;
           
@@ -22,7 +22,7 @@ export function createLocalStorageUtility<T>(key: string, defaultValue: T): {
           return defaultValue;
         }
       },
-      set(value: T): void {
+      async set(value: T): Promise<void> {
         try {
           if (typeof window === 'undefined') return;
           

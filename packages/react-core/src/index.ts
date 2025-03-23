@@ -1,39 +1,43 @@
-// packages/react-core/src/index.ts
-import { useState, useEffect, FC } from "react";
-import { Keypair, PublicKey } from "@agateh/solana-headless-core";
-import { createWallet } from "@agateh/solana-headless-core";
-import { WalletInitProps } from "./types/index.js";
-import AppProvider from "./AgateContextProvider.js";
+// Providers
+export * from './providers/WalletProvider.js';
+export * from './providers/ConnectionProvider.js';
 
-/**
- * React hook to use a Solana wallet
- * @param apiKey API key for the Agateh service
- */
-export const useWallet = ({
-  apiKey
-}: WalletInitProps) => {
-  const [wallet, setWallet] = useState<PublicKey | null>(null);
-  const [keypair, setKeypair] = useState<Keypair | null>(null);
+// Core hooks
+export * from './hooks/useWallet.js';
+export * from './hooks/useConnection.js';
+export * from './hooks/useStandardWalletAdapters.js';
+export * from './hooks/useLocalStorage.js';
+export * from './hooks/useAnchorWallet.js';
 
-  useEffect(() => {
-    try {
-      const keyPair = createWallet();
-      setKeypair(keyPair);
-      setWallet(keyPair.publicKey);
-    } catch (error) {
-      console.error("Error creating wallet:", error);
-    }
-  }, []);
+// Additional hooks
+export * from './hooks/useWalletMultiButton.jsx';
+export * from './hooks/useWalletModal.jsx';
+export * from './hooks/useSolanaBalance.jsx';
+export * from './hooks/useWalletAdapters.jsx';
+export * from './hooks/useSolanaTokenAccounts.js';
+export * from './hooks/useSolanaTransaction.js';
+export * from './hooks/useSolanaNFTs.js';
+export * from './hooks/useWalletAdapter.js';
 
-  return { 
-    wallet,
-    keypair,
-    publicKey: wallet
-  };
-};
+// Components
+export * from './components/AgatehWalletProvider.js';
+export * from './components/WalletConnectionManager.jsx';
+export * from './components/ContextProvider.jsx';
 
-// Export the context provider
-export { AppProvider as AgateContextProvider };
+// Utilities
+export * from './utils/errors.js';
 
-// Export types
-export * from "./types/index.js";
+// Re-export relevant types from core and adapter-base
+export { 
+  WalletAdapterNetwork, 
+  WalletReadyState,
+  WalletError 
+} from '@agateh/solana-headless-core';
+
+export {
+  getIsMobile,
+  getStandardWalletAdapters,
+  sortWalletAdapters,
+  getAdaptersByReadyState,
+  SolanaMobileWalletAdapterWalletName
+} from '@agateh/solana-headless-adapter-base';

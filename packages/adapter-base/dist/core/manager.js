@@ -1,4 +1,4 @@
-import { WalletReadyState, EventEmitter } from '@agateh/solana-headless-core';
+import { WalletReadyState, EventEmitter, signTransaction, signAllTransactions, signMessage } from '@agateh/solana-headless-core';
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
 /**
@@ -10,10 +10,11 @@ import { addWalletAdapterEventListeners } from './adapters.js';
 export function createWalletConnectionManager(adapters, localStorageKey = 'walletName') {
     const storageUtil = createLocalStorageUtility(localStorageKey, null);
     let currentAdapter = null;
-    const storedWalletName = storageUtil.get();
-    if (storedWalletName) {
-        currentAdapter = adapters.find(a => a.name === storedWalletName) || null;
-    }
+    storageUtil.get().then((storedWalletName) => {
+        if (storedWalletName) {
+            currentAdapter = adapters.find(a => a.name === storedWalletName) || null;
+        }
+    });
     return {
         /**
          * Get the current adapter
@@ -101,14 +102,15 @@ export class WalletAdapterManager extends EventEmitter {
         this.adapters = adapters.filter(adapter => adapter.readyState !== WalletReadyState.Unsupported);
         this.storageUtil = createLocalStorageUtility(localStorageKey, null);
         // Initialize from storage
-        const storedWalletName = this.storageUtil.get();
-        if (storedWalletName) {
-            this.selectedAdapter = this.adapters.find(a => a.name === storedWalletName) || null;
-            // Set up event listeners if we have a stored adapter
-            if (this.selectedAdapter) {
-                this.setupEventListeners();
+        this.storageUtil.get().then((storedWalletName) => {
+            if (storedWalletName) {
+                this.selectedAdapter = this.adapters.find(a => a.name === storedWalletName) || null;
+                // Set up event listeners if we have a stored adapter
+                if (this.selectedAdapter) {
+                    this.setupEventListeners();
+                }
             }
-        }
+        });
     }
     /**
      * Get all wallet adapters
@@ -271,5 +273,44 @@ export class WalletAdapterManager extends EventEmitter {
             this.cleanupListeners = null;
         }
         this.removeAllListeners();
+    }
+    async signTransaction(transaction) {
+        if (!this.selectedAdapter) {
+            this.emitSafeError("No Adapter connected");
+            return null;
+        }
+        try {
+            return await signTransaction(transaction, this.selectedAdapter);
+        }
+        catch (error) {
+            this.emitSafeError(error);
+            return null;
+        }
+    }
+    async signAllTransaction(transaction) {
+        if (!this.selectedAdapter) {
+            this.emitSafeError("No Adapter connected");
+            return null;
+        }
+        try {
+            return await signAllTransactions(transaction, this.selectedAdapter);
+        }
+        catch (error) {
+            this.emitSafeError(error);
+            return null;
+        }
+    }
+    async signMessage(message) {
+        if (!this.selectedAdapter) {
+            this.emitSafeError("No Adapter connected");
+            return null;
+        }
+        try {
+            return await signMessage(message, this.selectedAdapter);
+        }
+        catch (error) {
+            this.emitSafeError(error);
+            return null;
+        }
     }
 }
