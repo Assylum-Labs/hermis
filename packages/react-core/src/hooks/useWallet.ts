@@ -32,7 +32,7 @@ import {
     disconnecting: boolean;
   
     select(walletName: WalletName | null): Promise<void>;
-    connect(): Promise<void>;
+    connect(): Promise<boolean>;
     disconnect(): Promise<void>;
   
     sendTransaction: WalletAdapterProps['sendTransaction'];
@@ -40,6 +40,8 @@ import {
     signAllTransactions: SignerWalletAdapterProps['signAllTransactions'] | undefined;
     signMessage: MessageSignerWalletAdapterProps['signMessage'] | undefined;
     signIn: SignInMessageSignerWalletAdapterProps['signIn'] | undefined;
+
+    hasFeature(feature: 'signMessage' | 'signTransaction' | 'signAllTransactions' | 'signIn'): boolean;
   }
   
   /**

@@ -159,22 +159,22 @@ function App() {
     previousPublicKeyRef.current = publicKey;
   }, [publicKey, addLogEntry]);
 
-  useEffect(() => {
+  // useEffect(() => {
     
-    const handleConnectEffect = async() => {
-      if(!wallet) return
-      // if(!wallet || !connected) return
-      try {
-        await connect();
-      } catch (error) {
-        addLogEntry(`Failed to connect`, 'error');
-      }
-    }
+  //   const handleConnectEffect = async() => {
+  //     if(!wallet) return
+  //     // if(!wallet || !connected) return
+  //     try {
+  //       await connect();
+  //     } catch (error) {
+  //       addLogEntry(`Failed to connect`, 'error');
+  //     }
+  //   }
 
-    handleConnectEffect()
+  //   handleConnectEffect()
   
-    return () => {}
-  }, [wallet, connected])
+  //   return () => {}
+  // }, [wallet, connected])
   
 
   // Helper function to get readable wallet state
@@ -207,11 +207,13 @@ function App() {
       addLogEntry('No wallet selected', 'warning');
       return;
     }
-
+    
     addLogEntry('Connecting wallet...', 'info');
     try {
-      select(clickedWalletName as WalletName);
-      // await connect();
+      console.log("Connected Before", connected);
+      await select(clickedWalletName as WalletName);
+      await connect();
+      console.log("Connected After", connected);
     } catch (error) {
       console.error('Connection error:', error);
       addLogEntry(`Connection error: ${(error as Error).message || 'Unknown error'}`, 'error');
@@ -229,7 +231,16 @@ function App() {
     try {
       await select(clickedWalletName as WalletName);
       // await connect();
-      await handleSignMessage();
+      const isConnected = await connect();
+    
+    console.log("Connection result:", isConnected);
+    
+    if (isConnected) {
+      addLogEntry('Successfully connected to wallet!', 'success');
+    } else {
+      addLogEntry('Connection attempted but wallet reported not connected', 'warning');
+    }
+      await handleSignMessage(isConnected);
     } catch (error) {
       console.error('Connect and sign error:', error);
       addLogEntry(`Sign message error: ${(error as Error).message}`, 'error');
@@ -238,11 +249,14 @@ function App() {
   };
 
   // Sign a message
-  const handleSignMessage = async () => {
+  const handleSignMessage = async (isConnected?: boolean) => {
     console.log('signMessage', signMessage);
-      console.log('connected', connected);
     
-    if (!connected || !signMessage) {
+    const connectStatus = isConnected || connected
+    console.log('connected', connectStatus);
+    
+    // if (!signMessage) {
+    if (!connectStatus || !signMessage) {
       addLogEntry('Wallet not connected or does not support signing', 'error');
       return;
     }
@@ -265,6 +279,7 @@ function App() {
     } catch (error) {
       console.error('Sign message error:', error);
       addLogEntry(`Sign message error: ${(error as Error).message}`, 'error');
+      await disconnect();
     }
   };
 
@@ -465,7 +480,7 @@ function App() {
               disabled={!clickedWalletName || connecting || connected || isMobile}
               style={isMobile ? { display: 'none' } : undefined}
             >
-              Connect & Sign
+              Sign In
             </button>
             <button 
               onClick={() => setIsModalOpen(true)}
@@ -474,7 +489,7 @@ function App() {
               Connect with Modal
             </button>
             <button 
-              onClick={handleSignMessage} 
+              onClick={() =>handleSignMessage()} 
               disabled={!connected || !signMessage}
               style={{ display: connected && signMessage ? 'block' : 'none' }}
             >

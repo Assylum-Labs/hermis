@@ -14,8 +14,8 @@ import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 
 // Optional: Use IndexedDB for persistence instead of localStorage
 // This is more robust for larger amounts of data and works in private browsing
-const indexedDBStorage = createIndexedDBStorageFactory('solana-wallet-demo', 'wallet-data');
-setStorageProviderFactory(indexedDBStorage);
+// const indexedDBStorage = createIndexedDBStorageFactory('solana-wallet-demo', 'wallet-data');
+// setStorageProviderFactory(indexedDBStorage);
 
 // Create a root element to render the app
 const root = createRoot(document.getElementById('root')!);

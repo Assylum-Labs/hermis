@@ -6,7 +6,7 @@ import { useWallet } from './useWallet.js';
  */
 export interface WalletMultiButtonState {
   buttonState: 'connecting' | 'connected' | 'disconnecting' | 'has-wallet' | 'no-wallet';
-  onConnect: () => Promise<void>;
+  onConnect: () => Promise<boolean>;
   onDisconnect: () => Promise<void>;
   onSelectWallet: () => void;
   walletIcon?: string;

@@ -17,7 +17,7 @@ export interface WalletConnectionInfo {
   /** Icon URL of the selected wallet, or null if none selected */
   walletIcon: string | null;
   /** Function to connect to the selected wallet */
-  connect: () => Promise<void>;
+  connect: () => Promise<boolean>;
   /** Function to disconnect from the wallet */
   disconnect: () => Promise<void>;
   /** Function to select a wallet by name */
