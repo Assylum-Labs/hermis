@@ -26,6 +26,7 @@ import {
     Adapter,
     WalletAdapterNetwork,
     WalletError,
+    WalletNotReadyError,
     WalletName,
     WalletReadyState,
     WalletAdapterEvents,
@@ -89,6 +90,7 @@ export {
     SupportedTransactionVersions, 
     WalletAdapter,
     
+    WalletNotReadyError,
     WalletError,
     WalletAdapterNetwork,
     WalletReadyState,

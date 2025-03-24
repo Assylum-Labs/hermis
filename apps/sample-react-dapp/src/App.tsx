@@ -159,6 +159,24 @@ function App() {
     previousPublicKeyRef.current = publicKey;
   }, [publicKey, addLogEntry]);
 
+  useEffect(() => {
+    
+    const handleConnectEffect = async() => {
+      if(!wallet) return
+      // if(!wallet || !connected) return
+      try {
+        await connect();
+      } catch (error) {
+        addLogEntry(`Failed to connect`, 'error');
+      }
+    }
+
+    handleConnectEffect()
+  
+    return () => {}
+  }, [wallet, connected])
+  
+
   // Helper function to get readable wallet state
   const getReadyStateLabel = (readyState: WalletReadyState) => {
     switch (readyState) {
@@ -183,6 +201,8 @@ function App() {
 
   // Connect to wallet
   const handleConnectWallet = async () => {
+    console.log("CLicked wallet", clickedWalletName);
+    
     if (!clickedWalletName) {
       addLogEntry('No wallet selected', 'warning');
       return;
@@ -191,7 +211,7 @@ function App() {
     addLogEntry('Connecting wallet...', 'info');
     try {
       select(clickedWalletName as WalletName);
-      await connect();
+      // await connect();
     } catch (error) {
       console.error('Connection error:', error);
       addLogEntry(`Connection error: ${(error as Error).message || 'Unknown error'}`, 'error');
@@ -207,8 +227,8 @@ function App() {
 
     addLogEntry('Connecting wallet and preparing to sign message...', 'info');
     try {
-      select(clickedWalletName as WalletName);
-      await connect();
+      await select(clickedWalletName as WalletName);
+      // await connect();
       await handleSignMessage();
     } catch (error) {
       console.error('Connect and sign error:', error);
@@ -219,6 +239,9 @@ function App() {
 
   // Sign a message
   const handleSignMessage = async () => {
+    console.log('signMessage', signMessage);
+      console.log('connected', connected);
+    
     if (!connected || !signMessage) {
       addLogEntry('Wallet not connected or does not support signing', 'error');
       return;

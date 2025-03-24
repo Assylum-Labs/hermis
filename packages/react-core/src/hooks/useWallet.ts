@@ -31,7 +31,7 @@ import {
     connected: boolean;
     disconnecting: boolean;
   
-    select(walletName: WalletName | null): void;
+    select(walletName: WalletName | null): Promise<void>;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
   
