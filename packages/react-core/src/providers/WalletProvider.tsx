@@ -1,4 +1,4 @@
-import React, { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { 
   Adapter, 
   PublicKey, 
@@ -95,17 +95,14 @@ export function WalletProvider({
   const { connection } = useConnection();
   const adaptersWithStandardAdapters = useStandardWalletAdapters(adapters, connection?.rpcEndpoint);
 
-  // Use the provided storage factory if supplied
   const [walletName, setWalletName] = useLocalStorage<WalletName | null>(
     storageKey,
     null,
     storageFactory
   );
 
-  // Ref to keep track of the latest adapter for immediately accessing after selection
   const latestAdapterRef = useRef<Adapter | null>(null);
   
-  // Centralized adapter state
   const [adapterState, setAdapterState] = useState<AdapterState>({
     adapter: null,
     connected: false,
@@ -118,7 +115,6 @@ export function WalletProvider({
   const isUnloadingRef = useRef(false);
   const hasUserSelectedAWallet = useRef(false);
 
-  // Update error handler ref when prop changes
   useEffect(() => {
     onErrorRef.current = onError;
     return () => {
@@ -126,7 +122,6 @@ export function WalletProvider({
     };
   }, [onError]);
 
-  // Error handling function
   const handleErrorRef = useRef((error: WalletError, adapter?: Adapter) => {
     if (!isUnloadingRef.current) {
       if (onErrorRef.current) {
@@ -141,7 +136,6 @@ export function WalletProvider({
     return error;
   });
 
-  // Find adapter by name
   const findAdapter = useCallback(
     (name: WalletName | null) => {
       return name ? adaptersWithStandardAdapters.find((a) => a.name === name) ?? null : null;
@@ -149,7 +143,6 @@ export function WalletProvider({
     [adaptersWithStandardAdapters]
   );
 
-  // Initialize adapter on mount or when walletName changes
   useEffect(() => {
     const adapter = findAdapter(walletName);
     
@@ -157,7 +150,6 @@ export function WalletProvider({
 
     latestAdapterRef.current = adapter;
     
-    // Initialize adapter state
     setAdapterState({
       adapter,
       connected: adapter?.connected || false,
@@ -167,12 +159,10 @@ export function WalletProvider({
     });
   }, [walletName, findAdapter]);
 
-  // Change wallet selection
   const changeWallet = useCallback(
     (nextWalletName: WalletName | null) => {
       if (walletName === nextWalletName) return;
 
-      // Disconnect current adapter before switching (except special cases)
       const currentAdapter = adapterState.adapter;
       if (
         currentAdapter &&
@@ -187,19 +177,15 @@ export function WalletProvider({
     [adapterState.adapter, setWalletName, walletName]
   );
 
-  // Select wallet asynchronously with promise resolution
   const updateWalletNameAsync = useCallback(
     async (newValue: WalletName | null): Promise<void> => {
       hasUserSelectedAWallet.current = true;
       
       return new Promise<void>((resolve) => {
-        // Find the selected adapter
         const selectedAdapter = findAdapter(newValue);
         
-        // Update the latest adapter ref immediately
         latestAdapterRef.current = selectedAdapter;
         
-        // Update the adapter state
         setAdapterState((prev) => ({
           ...prev,
           adapter: selectedAdapter,
@@ -207,17 +193,14 @@ export function WalletProvider({
           publicKey: selectedAdapter?.publicKey || null
         }));
         
-        // Change the stored wallet name
         changeWallet(newValue);
         
-        // Resolve the promise
-        setTimeout(resolve, 50); // Small delay to ensure state updates
+        setTimeout(resolve, 50);
       });
     },
     [changeWallet, findAdapter]
   );
 
-  // Listen for disconnect events to update wallet name state
   useEffect(() => {
     const currentAdapter = adapterState.adapter;
     if (!currentAdapter) return;
@@ -234,7 +217,6 @@ export function WalletProvider({
     };
   }, [adapterState.adapter, setWalletName]);
 
-  // Wrap adapters to conform to the `Wallet` interface
   const [wallets, setWallets] = useState(() =>
     adapters
       .map((adapter) => ({
@@ -244,14 +226,11 @@ export function WalletProvider({
       .filter(({ readyState }) => readyState !== WalletReadyState.Unsupported)
   );
 
-  // Track adapter readyState changes
   useEffect(() => {
-    // When the adapters change, wrap them to conform to the `Wallet` interface
     setWallets((wallets) =>
       adapters
         .map((adapter, index) => {
           const wallet = wallets[index];
-          // If the wallet hasn't changed, return the same instance
           return wallet && wallet.adapter === adapter && wallet.readyState === adapter.readyState
             ? wallet
             : {
@@ -267,7 +246,6 @@ export function WalletProvider({
         const index = prevWallets.findIndex(({ adapter }) => adapter === this);
         if (index === -1) return prevWallets;
 
-        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const { adapter } = prevWallets[index]!;
         return [
           ...prevWallets.slice(0, index),
@@ -282,15 +260,12 @@ export function WalletProvider({
     };
   }, [adapters]);
 
-  // Current wallet from wallets array
   const wallet = useMemo(
     () => wallets.find((wallet) => wallet.adapter === adapterState.adapter) ?? null, 
     [adapterState.adapter, wallets]
   );
 
-  // Handle beforeunload for cleanup
   useEffect(() => {
-    // Skip for mobile wallet adapters in mobile environment
     if (walletName === SolanaMobileWalletAdapterWalletName && getIsMobile(adaptersWithStandardAdapters)) {
       isUnloadingRef.current = false;
       return;
@@ -307,7 +282,6 @@ export function WalletProvider({
     };
   }, [adaptersWithStandardAdapters, walletName]);
 
-  // Single effect to handle all adapter events
   useEffect(() => {
     const currentAdapter = adapterState.adapter;
     if (!currentAdapter) return;
@@ -344,7 +318,6 @@ export function WalletProvider({
     currentAdapter.on('disconnect', handleDisconnect);
     currentAdapter.on('error', handleError);
     
-    // Initialize state from current adapter values
     if (currentAdapter.connected && currentAdapter.publicKey) {
       handleConnect(currentAdapter.publicKey);
     }
@@ -356,20 +329,16 @@ export function WalletProvider({
     };
   }, [adapterState.adapter]);
 
-  //
-  //  Auto-connect handler
   const handleAutoConnectRequest = useCallback(async () => {
     const currentAdapter = adapterState.adapter;
     if (!autoConnect || !currentAdapter) return;
 
     try {
-      // Use custom auto-connect logic if provided
       if (typeof autoConnect === 'function') {
         const shouldAutoConnect = await autoConnect(currentAdapter);
         if (!shouldAutoConnect) return;
       }
 
-      // Use different connection methods based on user interaction
       setAdapterState(prev => ({ ...prev, connecting: true }));
       
       if (hasUserSelectedAWallet.current) {
@@ -383,14 +352,12 @@ export function WalletProvider({
     }
   }, [autoConnect, adapterState.adapter]);
 
-  // Auto-connect on mount if enabled
   useEffect(() => {
     if (adapterState.adapter) {
       handleAutoConnectRequest();
     }
   }, [handleAutoConnectRequest, adapterState.adapter]);
 
-  // Handle connect
   const handleConnect = useCallback(async () => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
@@ -400,11 +367,9 @@ export function WalletProvider({
     try {
       await currentAdapter.connect();
       
-      // Check if connection was successful
       const isConnected = currentAdapter.connected;
       const publicKey = currentAdapter.publicKey;
       
-      // Update state
       setAdapterState(prev => ({ 
         ...prev, 
         adapter: currentAdapter,
@@ -413,7 +378,6 @@ export function WalletProvider({
         publicKey: publicKey 
       }));
       
-      // Return the connection status directly
       return isConnected;
     } catch (error) {
       handleErrorRef.current(error as WalletError, currentAdapter);
@@ -422,7 +386,6 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  // Handle disconnect
   const handleDisconnect = useCallback(async () => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) return;
@@ -446,7 +409,6 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  // Handle send transaction
   const handleSendTransaction = useCallback(async (
     transaction: Transaction | VersionedTransaction,
     connection: any,
@@ -463,7 +425,6 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  // Handle sign transaction
   const handleSignTransaction = useCallback(async <T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
@@ -480,7 +441,6 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  // Handle sign all transactions
   const handleSignAllTransactions = useCallback(async <T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
@@ -497,7 +457,6 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  // Handle sign message
   const handleSignMessage = useCallback(async (message: Uint8Array) => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
@@ -514,7 +473,6 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  // Handle sign in
   const handleSignIn = useCallback(async (input?: any) => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
@@ -531,7 +489,6 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  // Feature support checker
   const hasFeature = useCallback((feature: 'signMessage' | 'signTransaction' | 'signAllTransactions' | 'signIn') => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) return false;

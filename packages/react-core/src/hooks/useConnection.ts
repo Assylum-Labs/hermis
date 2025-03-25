@@ -5,7 +5,7 @@ import { createContext, useContext } from 'react';
  * State for the connection context
  */
 export interface ConnectionContextState {
-  connection: Connection;
+    connection: Connection;
 }
 
 /**
@@ -19,5 +19,5 @@ export const ConnectionContext = createContext<ConnectionContextState>({} as Con
  * @returns ConnectionContextState
  */
 export function useConnection(): ConnectionContextState {
-  return useContext(ConnectionContext);
+    return useContext(ConnectionContext);
 }

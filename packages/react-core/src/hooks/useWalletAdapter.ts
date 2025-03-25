@@ -13,12 +13,10 @@ export function useWalletAdapter(adapterName?: WalletName): Adapter | null {
   
   return useMemo(() => {
     if (adapterName) {
-      // Find the specific adapter by name
       const adapter = wallets.find((walletItem) => walletItem.adapter.name === adapterName)?.adapter || null;
       return adapter;
     }
     
-    // Otherwise return the currently selected wallet adapter
     return wallet?.adapter || null;
   }, [wallet, wallets, adapterName]);
 }

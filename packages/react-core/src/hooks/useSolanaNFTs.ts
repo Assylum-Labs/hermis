@@ -7,26 +7,26 @@ import { useWallet } from './useWallet.js';
  * NFT metadata information
  */
 export interface NFTMetadata {
-  name?: string;
-  symbol?: string;
-  description?: string;
-  image?: string;
-  externalUrl?: string;
-  attributes?: Array<{
-    trait_type: string;
-    value: string;
-  }>;
-  [key: string]: any;
+    name?: string;
+    symbol?: string;
+    description?: string;
+    image?: string;
+    externalUrl?: string;
+    attributes?: Array<{
+        trait_type: string;
+        value: string;
+    }>;
+    [key: string]: any;
 }
 
 /**
  * NFT information
  */
 export interface NFTInfo {
-  mint: PublicKey;
-  tokenAccount: PublicKey;
-  metadata: NFTMetadata | null;
-  uri: string | null;
+    mint: PublicKey;
+    tokenAccount: PublicKey;
+    metadata: NFTMetadata | null;
+    uri: string | null;
 }
 
 /**
@@ -36,69 +36,58 @@ export interface NFTInfo {
  * @returns Object with NFTs and loading state
  */
 export function useSolanaNFTs(owner?: PublicKey) {
-  const { connection } = useConnection();
-  const { publicKey } = useWallet();
-  const [nfts, setNfts] = useState<NFTInfo[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+    const { connection } = useConnection();
+    const { publicKey } = useWallet();
+    const [nfts, setNfts] = useState<NFTInfo[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<Error | null>(null);
 
-  const ownerAddress = owner || publicKey;
+    const ownerAddress = owner || publicKey;
 
-  const fetchNFTs = useCallback(async () => {
-    if (!ownerAddress) {
-      setNfts([]);
-      return;
-    }
+    const fetchNFTs = useCallback(async () => {
+        if (!ownerAddress) {
+            setNfts([]);
+            return;
+        }
 
-    setLoading(true);
-    setError(null);
+        setLoading(true);
+        setError(null);
 
-    try {
-      // This is a simplified implementation
-      // In a real application, you would:
-      // 1. Use Metaplex SDK or similar to properly fetch NFTs
-      // 2. Handle pagination for large collections
-      // 3. Properly resolve metadata URIs
-      
-      // Get token accounts that have a balance of 1 (likely NFTs)
-      const { value: tokenAccounts } = await connection.getParsedTokenAccountsByOwner(
-        ownerAddress,
-        { programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') }
-      );
+        try {
+            const { value: tokenAccounts } = await connection.getParsedTokenAccountsByOwner(
+                ownerAddress,
+                { programId: new PublicKey('TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA') }
+            );
 
-      const potentialNFTs = tokenAccounts
-        .filter(account => {
-          const amount = account.account.data.parsed.info.tokenAmount;
-          return amount.decimals === 0 && amount.uiAmount === 1;
-        })
-        .map(account => ({
-          mint: new PublicKey(account.account.data.parsed.info.mint),
-          tokenAccount: account.pubkey,
-          metadata: null,
-          uri: null
-        }));
+            const potentialNFTs = tokenAccounts
+                .filter(account => {
+                    const amount = account.account.data.parsed.info.tokenAmount;
+                    return amount.decimals === 0 && amount.uiAmount === 1;
+                })
+                .map(account => ({
+                    mint: new PublicKey(account.account.data.parsed.info.mint),
+                    tokenAccount: account.pubkey,
+                    metadata: null,
+                    uri: null
+                }));
 
-      // Note: Fetching actual metadata would require additional calls
-      // using the Metaplex SDK or similar libraries that understand
-      // Solana's NFT standards (Metaplex, etc.)
-      
-      setNfts(potentialNFTs);
-    } catch (err) {
-      console.error('Error fetching NFTs:', err);
-      setError(err as Error);
-    } finally {
-      setLoading(false);
-    }
-  }, [connection, ownerAddress]);
+            setNfts(potentialNFTs);
+        } catch (err) {
+            console.error('Error fetching NFTs:', err);
+            setError(err as Error);
+        } finally {
+            setLoading(false);
+        }
+    }, [connection, ownerAddress]);
 
-  useEffect(() => {
-    fetchNFTs();
-  }, [fetchNFTs]);
+    useEffect(() => {
+        fetchNFTs();
+    }, [fetchNFTs]);
 
-  return {
-    nfts,
-    loading,
-    error,
-    refetch: fetchNFTs
-  };
+    return {
+        nfts,
+        loading,
+        error,
+        refetch: fetchNFTs
+    };
 }

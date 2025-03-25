@@ -12,4 +12,4 @@ root.render(
       <App />
     </WalletContextProvider>
   </StrictMode>
-);
+); 

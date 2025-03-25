@@ -48,20 +48,20 @@ export const AgatehProvider: FC<AgatehWalletProviderProps> = ({
 }) => {
   const [adapters, setAdapters] = useState<Adapter[]>([]);
 
-  const memoizedAdapters = useMemo(() => 
+  const memoizedAdapters = useMemo(() =>
     additionalAdapters, [
-      
-      additionalAdapters.length,
-    ]);
-  
+
+    additionalAdapters.length,
+  ]);
+
   useEffect(() => {
     const baseAdapters: Adapter[] = [];
-    
+
     setAdapters([...baseAdapters, ...additionalAdapters]);
   }, [memoizedAdapters]);
-  
+
   const allAdapters = useStandardWalletAdapters(adapters, rpcEndpoint);
-  
+
   return (
     <ContextProvider
       adapters={allAdapters}

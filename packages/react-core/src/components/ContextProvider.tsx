@@ -50,11 +50,11 @@ export const ContextProvider: FC<ContextProviderProps> = ({
   const connectionConfig = useMemo(() => ({
     commitment: 'confirmed',
   }) as ConnectionConfig, []);
-  
+
   return (
     <ConnectionProvider endpoint={rpcEndpoint} config={connectionConfig}>
-      <BaseWalletProvider 
-        wallets={adapters} 
+      <BaseWalletProvider
+        wallets={adapters}
         autoConnect={autoConnect}
         storageKey={storageKey}
         storageFactory={storageFactory}

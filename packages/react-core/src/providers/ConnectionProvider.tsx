@@ -1,4 +1,4 @@
-import React, { FC, ReactNode, useMemo } from 'react';
+import { FC, ReactNode, useMemo } from 'react';
 import { Connection, ConnectionConfig } from '@agateh/solana-headless-core';
 import { ConnectionContext } from '../hooks/useConnection.js';
 
@@ -27,7 +27,6 @@ export const ConnectionProvider: FC<ConnectionProviderProps> = ({
   endpoint,
   config = { commitment: 'confirmed' },
 }) => {
-  // Create a memoized connection instance with the provided endpoint and config
   const connection = useMemo(() => 
     new Connection(endpoint, config), 
     [endpoint, config]

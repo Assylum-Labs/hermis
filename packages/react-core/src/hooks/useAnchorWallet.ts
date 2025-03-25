@@ -23,7 +23,6 @@ export function useAnchorWallet(): AnchorWallet | undefined {
   
   return useMemo(
     () => {
-      // Return AnchorWallet if all required properties and methods are available
       if (publicKey && signTransaction && signAllTransactions) {
         return { publicKey, signTransaction, signAllTransactions };
       }

@@ -7,10 +7,10 @@ import { useWallet } from './useWallet.js';
  * Interface for grouped wallet adapters
  */
 export interface GroupedWalletAdapters {
-  installed: Adapter[];
-  loadable: Adapter[];
-  notDetected: Adapter[];
-  all: Adapter[];
+    installed: Adapter[];
+    loadable: Adapter[];
+    notDetected: Adapter[];
+    all: Adapter[];
 }
 
 /**
@@ -19,21 +19,21 @@ export interface GroupedWalletAdapters {
  * @returns Object with grouped and sorted wallet adapters
  */
 export function useWalletAdapters(): GroupedWalletAdapters {
-  const { wallets } = useWallet();
-  
-  return useMemo(() => {
-    const adapters = wallets.map(wallet => wallet.adapter);
-    const sortedAdapters = sortWalletAdapters(adapters);
-    
-    const installed = getAdaptersByReadyState(sortedAdapters, WalletReadyState.Installed);
-    const loadable = getAdaptersByReadyState(sortedAdapters, WalletReadyState.Loadable);
-    const notDetected = getAdaptersByReadyState(sortedAdapters, WalletReadyState.NotDetected);
-    
-    return {
-      installed,
-      loadable,
-      notDetected,
-      all: sortedAdapters
-    };
-  }, [wallets]);
+    const { wallets } = useWallet();
+
+    return useMemo(() => {
+        const adapters = wallets.map(wallet => wallet.adapter);
+        const sortedAdapters = sortWalletAdapters(adapters);
+
+        const installed = getAdaptersByReadyState(sortedAdapters, WalletReadyState.Installed);
+        const loadable = getAdaptersByReadyState(sortedAdapters, WalletReadyState.Loadable);
+        const notDetected = getAdaptersByReadyState(sortedAdapters, WalletReadyState.NotDetected);
+
+        return {
+            installed,
+            loadable,
+            notDetected,
+            all: sortedAdapters
+        };
+    }, [wallets]);
 }
