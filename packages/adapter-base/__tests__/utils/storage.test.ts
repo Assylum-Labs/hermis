@@ -2,47 +2,53 @@
 
 import { createLocalStorageUtility } from '../../src/utils/storage';
 
-// Mock localStorage
-const mockLocalStorage = (() => {
-  let store = {};
+// Mock localStorage with a more complete implementation
+const createMockLocalStorage = () => {
+  let store: Record<string, string> = {};
   return {
-    getItem: jest.fn((key) => store[key] || null),
-    setItem: jest.fn((key, value) => {
+    getItem: jest.fn((key: string) => store[key] || null),
+    setItem: jest.fn((key: string, value: string) => {
       store[key] = value;
     }),
-    removeItem: jest.fn((key) => {
+    removeItem: jest.fn((key: string) => {
       delete store[key];
     }),
     clear: jest.fn(() => {
       store = {};
     }),
-    _getStore: () => store // For testing
+    key: jest.fn((index: number) => Object.keys(store)[index] || null),
+    get length() { return Object.keys(store).length; },
+    _getStore: () => store // For testing purposes
   };
-})();
-
-// Save original localStorage
-const originalLocalStorage = global.localStorage;
+};
 
 describe('Local Storage Utility', () => {
+  // Save original localStorage
+  const originalLocalStorage = Object.getOwnPropertyDescriptor(window, 'localStorage');
+  let mockLocalStorage: ReturnType<typeof createMockLocalStorage>;
+
   beforeEach(() => {
     // Setup mock localStorage
-    Object.defineProperty(global, 'localStorage', {
+    mockLocalStorage = createMockLocalStorage();
+    Object.defineProperty(window, 'localStorage', {
       value: mockLocalStorage,
-      writable: true
+      writable: true,
+      configurable: true
     });
     
     // Clear the mock storage before each test
     mockLocalStorage.clear();
   });
-  
+
   afterEach(() => {
-    // Restore original localStorage
-    Object.defineProperty(global, 'localStorage', {
-      value: originalLocalStorage,
-      writable: true
-    });
+    // Restore original localStorage if it existed
+    if (originalLocalStorage) {
+      Object.defineProperty(window, 'localStorage', originalLocalStorage);
+    } else {
+      delete (window as any).localStorage;
+    }
   });
-  
+
   describe('createLocalStorageUtility', () => {
     test('should create a storage utility with get and set methods', () => {
       const storageUtil = createLocalStorageUtility('testKey', 'defaultValue');
@@ -74,7 +80,7 @@ describe('Local Storage Utility', () => {
     
     test('set should store JSON in localStorage', async () => {
       const testObj = { test: 'value', number: 42 };
-      const storageUtil = createLocalStorageUtility('testKey', null);
+      const storageUtil = createLocalStorageUtility<typeof testObj | null>('testKey', null);
       
       await storageUtil.set(testObj);
       
@@ -112,7 +118,7 @@ describe('Local Storage Utility', () => {
       });
       
       // set() should handle errors gracefully
-      await storageUtil.set('testValue');
+      await storageUtil.set('value');
       expect(console.error).toHaveBeenCalled();
       
       // Restore console.error
@@ -120,8 +126,13 @@ describe('Local Storage Utility', () => {
     });
     
     test('should handle non-browser environment gracefully', async () => {
-      // Remove localStorage to simulate non-browser environment
-      delete global.localStorage;
+      // Temporarily remove localStorage to simulate non-browser environment
+      const originalLocalStorage = window.localStorage;
+      Object.defineProperty(window, 'localStorage', {
+        value: undefined,
+        writable: true,
+        configurable: true
+      });
       
       const storageUtil = createLocalStorageUtility('testKey', 'defaultValue');
       
@@ -130,10 +141,14 @@ describe('Local Storage Utility', () => {
       expect(value).toBe('defaultValue');
       
       // set() should not throw an error
-      await expect(storageUtil.set('testValue')).resolves.not.toThrow();
+      await expect(storageUtil.set('value')).resolves.not.toThrow();
       
       // Restore global.localStorage for other tests
-      global.localStorage = mockLocalStorage;
+      Object.defineProperty(window, 'localStorage', {
+        value: originalLocalStorage,
+        writable: true,
+        configurable: true
+      });
     });
   });
 });

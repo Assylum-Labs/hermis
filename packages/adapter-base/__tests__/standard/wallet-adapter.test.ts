@@ -1,122 +1,147 @@
-// packages/adapter-base/__tests__/standard/wallet-adapter.test.ts
-
-import { PublicKey, WalletReadyState } from '@agateh/solana-headless-core';
-import { StandardWalletAdapter } from '../../src/standard/wallet-adapter';
-import {
-  StandardConnectMethod,
-  StandardDisconnectMethod,
-  StandardEventsMethod,
-  SolanaSignTransactionMethod,
-  SolanaSignMessageMethod
+import { WalletReadyState } from '@agateh/solana-headless-core';
+import { 
+    StandardConnectMethod,
+    StandardDisconnectMethod,
+    StandardEventsMethod,
+    SolanaSignTransactionMethod,
+    SolanaSignMessageMethod
 } from '../../src/standard/utils';
+
+// Import Wallet type from wallet-standard/base
+import { Wallet } from '@wallet-standard/base';
 
 // Mock the necessary imports
 jest.mock('@agateh/solana-headless-core', () => {
+  
   return {
     WalletReadyState: {
       Installed: 'Installed',
     },
-    PublicKey: jest.fn().mockImplementation((value) => ({
-      toBase58: () => value,
-      toString: () => value,
-      equals: (other) => value === other?.toString()
+    PublicKey: jest.fn().mockImplementation((key) => ({
+      toString: () => key,
+      toBase58: () => key,
+      equals: (other: any) => key === other?.toString(),
+      toBytes: () => new Uint8Array([1, 2, 3, 4])
     })),
     WalletError: class WalletError extends Error {
-      constructor(message, error) {
+      constructor(message: string, public error?: any) {
         super(message);
         this.name = 'WalletError';
-        this.error = error;
       }
     },
     EventEmitter: class EventEmitter {
-      constructor() {
-        this.events = {};
-      }
-      on(event, listener) {
-        if (!this.events[event]) this.events[event] = [];
+      private events: Record<string, Function[]> = {};
+
+      on(event: string, listener: Function): this {
+        if (!this.events[event]) {
+          this.events[event] = [];
+        }
         this.events[event].push(listener);
         return this;
       }
-      emit(event, ...args) {
-        if (!this.events[event]) return false;
-        this.events[event].forEach(listener => listener(...args));
-        return true;
+
+      emit(event: string, ...args: any[]): boolean {
+        const listeners = this.events[event] || [];
+        listeners.forEach(listener => listener(...args));
+        return listeners.length > 0;
       }
-      off(event, listener) {
-        if (!this.events[event]) return this;
-        this.events[event] = this.events[event].filter(l => l !== listener);
+
+      off(event: string, listener: Function): this {
+        if (this.events[event]) {
+          this.events[event] = this.events[event].filter(l => l !== listener);
+        }
         return this;
       }
-      // Add other EventEmitter methods as needed for tests
+
+      removeAllListeners(event?: string): this {
+        if (event) {
+          delete this.events[event];
+        } else {
+          this.events = {};
+        }
+        return this;
+      }
+
+      listeners(event: string): Function[] {
+        return this.events[event] || [];
+      }
+
+      listenerCount(event: string): number {
+        return (this.events[event] || []).length;
+      }
+
+      eventNames(): string[] {
+        return Object.keys(this.events);
+      }
     }
   };
 });
 
-// Create mock wallet features
-const createMockStandardWalletFeatures = () => {
-  const mockConnect = jest.fn().mockResolvedValue({
-    accounts: [
-      {
-        address: 'mockAddress',
-        publicKey: new Uint8Array([1, 2, 3, 4]),
-        features: ['solana:publicKey']
-      }
-    ]
-  });
-
-  const mockDisconnect = jest.fn().mockResolvedValue(undefined);
-
-  const mockEventHandlers = {};
-  const mockOn = jest.fn().mockImplementation((event, listener) => {
-    mockEventHandlers[event] = listener;
-    return () => {
-      delete mockEventHandlers[event];
-    };
-  });
-
-  const mockSignTransaction = jest.fn().mockImplementation(({ transaction }) => {
-    return Promise.resolve({
-      signedTransaction: transaction
-    });
-  });
-
-  const mockSignMessage = jest.fn().mockImplementation(({ message }) => {
-    return Promise.resolve({
-      signature: new Uint8Array([5, 6, 7, 8])
-    });
-  });
-
-  return {
-    [StandardConnectMethod]: {
-      connect: mockConnect
-    },
-    [StandardDisconnectMethod]: {
-      disconnect: mockDisconnect
-    },
-    [StandardEventsMethod]: {
-      on: mockOn
-    },
-    [SolanaSignTransactionMethod]: {
-      signTransaction: mockSignTransaction,
-      supportedTransactionVersions: [0]
-    },
-    [SolanaSignMessageMethod]: {
-      signMessage: mockSignMessage
-    },
-    // Mock methods for testing
-    _mockEventHandlers: mockEventHandlers,
-    _triggerEvent: (event, data) => {
-      if (mockEventHandlers[event]) {
-        mockEventHandlers[event](data);
-      }
-    }
-  };
-};
-
 describe('StandardWalletAdapter', () => {
-  let mockStandardWallet;
-  let mockWalletFeatures;
-  let adapter;
+  // Create mock standard wallet features
+  const createMockStandardWalletFeatures = () => {
+    const mockConnect = jest.fn().mockResolvedValue({
+      accounts: [
+        {
+          address: 'mockAddress',
+          publicKey: new Uint8Array([1, 2, 3, 4]),
+          features: ['solana:publicKey']
+        }
+      ]
+    });
+
+    const mockDisconnect = jest.fn().mockResolvedValue(undefined);
+
+    const mockEventHandlers: Record<string, Function> = {};
+    const mockOn = jest.fn().mockImplementation((event, listener) => {
+      mockEventHandlers[event] = listener;
+      return () => {
+        delete mockEventHandlers[event];
+      };
+    });
+
+    const mockSignTransaction = jest.fn().mockImplementation(({ transaction }) => {
+      return Promise.resolve({
+        signedTransaction: transaction
+      });
+    });
+
+    const mockSignMessage = jest.fn().mockImplementation(({ message }) => {
+      return Promise.resolve({
+        signature: new Uint8Array([5, 6, 7, 8])
+      });
+    });
+
+    return {
+      [StandardConnectMethod]: {
+        connect: mockConnect
+      },
+      [StandardDisconnectMethod]: {
+        disconnect: mockDisconnect
+      },
+      [StandardEventsMethod]: {
+        on: mockOn
+      },
+      [SolanaSignTransactionMethod]: {
+        signTransaction: mockSignTransaction,
+        supportedTransactionVersions: [0]
+      },
+      [SolanaSignMessageMethod]: {
+        signMessage: mockSignMessage
+      },
+      // Mock methods for testing
+      _mockEventHandlers: mockEventHandlers,
+      _triggerEvent: (event: string, data: any) => {
+        if (mockEventHandlers[event]) {
+          mockEventHandlers[event](data);
+        }
+      }
+    };
+  };
+
+  let mockStandardWallet: Wallet;
+  let mockWalletFeatures: ReturnType<typeof createMockStandardWalletFeatures>;
+  let adapter: any;
 
   beforeEach(() => {
     mockWalletFeatures = createMockStandardWalletFeatures();
@@ -124,17 +149,21 @@ describe('StandardWalletAdapter', () => {
     mockStandardWallet = {
       name: 'Mock Standard Wallet',
       icon: 'data:image/svg+xml;base64,mock',
-      website: 'https://mockwallet.com',
+      version: '1.0.0',
+      chains: ['solana:mainnet'],
+      accounts: [],
       features: mockWalletFeatures
     };
     
+    // Import the actual StandardWalletAdapter 
+    const { StandardWalletAdapter } = require('../../src/standard/wallet-adapter');
     adapter = new StandardWalletAdapter(mockStandardWallet);
   });
 
   describe('initialization', () => {
     test('should properly initialize with wallet data', () => {
       expect(adapter.name).toBe('Mock Standard Wallet');
-      expect(adapter.url).toBe('https://mockwallet.com');
+      expect(adapter.url).toBe('');
       expect(adapter.icon).toBe('data:image/svg+xml;base64,mock');
       expect(adapter.readyState).toBe(WalletReadyState.Installed);
       expect(adapter.publicKey).toBeNull();
@@ -144,8 +173,13 @@ describe('StandardWalletAdapter', () => {
     });
 
     test('should throw if wallet is not adapter compatible', () => {
-      const incompatibleWallet = {
+      const { StandardWalletAdapter } = require('../../src/standard/wallet-adapter');
+      const incompatibleWallet: Wallet = {
         name: 'Incompatible Wallet',
+        icon: `data:image/svg+xml;base64,${''}`,
+        version: '1.0.0',
+        chains: ['solana:mainnet'],
+        accounts: [],
         features: {}
       };
 
@@ -155,19 +189,14 @@ describe('StandardWalletAdapter', () => {
 
   describe('connect', () => {
     test('should connect to the wallet', async () => {
-      await adapter.connect();
-
-      expect(mockWalletFeatures[StandardConnectMethod].connect).toHaveBeenCalled();
-      expect(adapter.connected).toBe(true);
-      expect(adapter.publicKey).toBeDefined();
-    });
-
-    test('should emit connect event with public key', async () => {
       const connectSpy = jest.fn();
       adapter.on('connect', connectSpy);
 
       await adapter.connect();
 
+      expect(mockWalletFeatures[StandardConnectMethod].connect).toHaveBeenCalled();
+      expect(adapter.connected).toBe(true);
+      expect(adapter.publicKey).toBeDefined();
       expect(connectSpy).toHaveBeenCalledWith(expect.any(Object));
     });
 
@@ -216,22 +245,14 @@ describe('StandardWalletAdapter', () => {
       // First connect
       await adapter.connect();
       
-      await adapter.disconnect();
-      
-      expect(mockWalletFeatures[StandardDisconnectMethod].disconnect).toHaveBeenCalled();
-      expect(adapter.connected).toBe(false);
-      expect(adapter.publicKey).toBeNull();
-    });
-
-    test('should emit disconnect event', async () => {
-      // First connect
-      await adapter.connect();
-      
       const disconnectSpy = jest.fn();
       adapter.on('disconnect', disconnectSpy);
       
       await adapter.disconnect();
       
+      expect(mockWalletFeatures[StandardDisconnectMethod].disconnect).toHaveBeenCalled();
+      expect(adapter.connected).toBe(false);
+      expect(adapter.publicKey).toBeNull();
       expect(disconnectSpy).toHaveBeenCalled();
     });
   });

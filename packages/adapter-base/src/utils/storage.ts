@@ -6,7 +6,7 @@
  */
 export function createLocalStorageUtility<T>(key: string, defaultValue: T): {
     get(): Promise<T>,
-    set(value: T): Promise<void>
+    set(value: T | null): Promise<void>
   } {
     return {
      async get(): Promise<T> {
@@ -22,7 +22,7 @@ export function createLocalStorageUtility<T>(key: string, defaultValue: T): {
           return defaultValue;
         }
       },
-      async set(value: T): Promise<void> {
+      async set(value: T | null): Promise<void> {
         try {
           if (typeof window === 'undefined') return;
           
