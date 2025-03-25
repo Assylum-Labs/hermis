@@ -49,45 +49,103 @@ export function resetStorageProviderFactory(): void {
  * @returns [state, setState] tuple
  */
 export function useLocalStorage<T>(
-  key: string, 
-  defaultState: T,
-  customStorageFactory?: StorageProviderFactory
-): [T, Dispatch<SetStateAction<T>>] {
-  // Use custom factory if provided, otherwise use global factory
-  const storageFactory = customStorageFactory || globalStorageFactory;
-  
-  // Create a storage provider for this key
-  const storageProviderRef = useRef<StorageProvider<T>>(
-    storageFactory<T>(key, defaultState)
-  );
-  
-  // Initialize state with persisted value or default
-  const [state, setState] = useState<T>(defaultState);
-  
-  // Track the first render to avoid unnecessary storage updates
-  const isFirstRenderRef = useRef(true);
-  
-  // Update storage when state changes
-  useEffect(() => {
-    const updateStorage = async() => {
-        if (isFirstRenderRef.current) {
-          isFirstRenderRef.current = false;
-          return;
-        }
-        
+    key: string, 
+    defaultState: T,
+    customStorageFactory?: StorageProviderFactory
+  ): [T, Dispatch<SetStateAction<T>>, boolean] {  // Added loading state
+    const storageFactory = customStorageFactory || globalStorageFactory;
+    const storageProviderRef = useRef<StorageProvider<T>>(storageFactory<T>(key, defaultState));
+    const [state, setState] = useState<T>(defaultState);
+    const [loading, setLoading] = useState(true);
+    const isFirstRenderRef = useRef(true);
+    
+    // Load initial value from storage
+    useEffect(() => {
+      let mounted = true;
+      
+      const loadInitialValue = async () => {
         try {
-           await
-           storageProviderRef.current.set(state);
+          setLoading(true);
+          const storedValue = await storageProviderRef.current.get();
+          if (mounted) {
+            setState(storedValue);
+          }
+        } catch (error) {
+          console.error(`Error reading from storage for key ${key}:`, error);
+        } finally {
+          if (mounted) {
+            setLoading(false);
+            isFirstRenderRef.current = false;
+          }
+        }
+      };
+      
+      loadInitialValue();
+      
+      return () => {
+        mounted = false;
+      };
+    }, [key]);
+    
+    // Save to storage when state changes
+    useEffect(() => {
+      if (isFirstRenderRef.current) {
+        return;
+      }
+      
+      const saveValue = async () => {
+        try {
+          await storageProviderRef.current.set(state);
         } catch (error) {
           console.error(`Error writing to storage for key ${key}:`, error);
         }
-    }
-
-    updateStorage()
-  }, [key, state]);
+      };
+      
+      saveValue();
+    }, [key, state]);
+    
+    return [state, setState, loading];
+  }
+// export function useLocalStorage<T>(
+//   key: string, 
+//   defaultState: T,
+//   customStorageFactory?: StorageProviderFactory
+// ): [T, Dispatch<SetStateAction<T>>] {
+//   // Use custom factory if provided, otherwise use global factory
+//   const storageFactory = customStorageFactory || globalStorageFactory;
   
-  return [state, setState];
-}
+//   // Create a storage provider for this key
+//   const storageProviderRef = useRef<StorageProvider<T>>(
+//     storageFactory<T>(key, defaultState)
+//   );
+  
+//   // Initialize state with persisted value or default
+//   const [state, setState] = useState<T>(defaultState);
+  
+//   // Track the first render to avoid unnecessary storage updates
+//   const isFirstRenderRef = useRef(true);
+  
+//   // Update storage when state changes
+//   useEffect(() => {
+//     const updateStorage = async() => {
+//         if (isFirstRenderRef.current) {
+//           isFirstRenderRef.current = false;
+//           return;
+//         }
+        
+//         try {
+//            await
+//            storageProviderRef.current.set(state);
+//         } catch (error) {
+//           console.error(`Error writing to storage for key ${key}:`, error);
+//         }
+//     }
+
+//     updateStorage()
+//   }, [key, state]);
+  
+//   return [state, setState];
+// }
 
 /**
  * Example of creating an IndexedDB storage provider factory

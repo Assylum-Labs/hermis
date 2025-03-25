@@ -153,7 +153,8 @@ export function WalletProvider({
   useEffect(() => {
     const adapter = findAdapter(walletName);
     
-    // Update latestAdapterRef
+    if(!autoConnect) return
+
     latestAdapterRef.current = adapter;
     
     // Initialize adapter state
@@ -426,14 +427,21 @@ export function WalletProvider({
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) return;
     
-    setAdapterState(prev => ({ ...prev, disconnecting: true }));
+    setAdapterState(prev => ({ 
+      ...prev,
+      connected: false,
+      adapter: null,
+      publicKey: null,
+      connecting: false,
+      disconnecting: true
+    }));
     
     try {
       await currentAdapter.disconnect();
+      setWalletName(null)
     } catch (error) {
       handleErrorRef.current(error as WalletError, currentAdapter);
     } finally {
-      // Ensure disconnecting state is reset even on error
       setAdapterState(prev => ({ ...prev, disconnecting: false }));
     }
   }, [adapterState.adapter]);

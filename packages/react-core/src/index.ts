@@ -20,9 +20,9 @@ export * from './hooks/useSolanaNFTs.js';
 export * from './hooks/useWalletAdapter.js';
 
 // Components
-export * from './components/AgatehWalletProvider.js';
+export * from './components/ContextProvider.js';
 export * from './components/WalletConnectionManager.jsx';
-export * from './components/ContextProvider.jsx';
+export * from './components/AgatehProvider.js';
 
 // Utilities
 export * from './utils/errors.js';

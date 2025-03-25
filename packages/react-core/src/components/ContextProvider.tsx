@@ -1,19 +1,19 @@
-import React, { FC, ReactNode, useState, useEffect, useMemo } from 'react';
-import { Adapter, WalletAdapterNetwork } from '@agateh/solana-headless-core';
-// import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
-// import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
-import { AgatehWalletProvider } from './AgatehWalletProvider.js';
-import { useStandardWalletAdapters } from '../hooks/useStandardWalletAdapters.js';
+import React, { FC, ReactNode, useMemo } from 'react';
+import { Adapter, ConnectionConfig, WalletAdapterNetwork } from '@agateh/solana-headless-core';
+import { WalletProvider as BaseWalletProvider } from '../providers/WalletProvider.js';
+import { ConnectionProvider } from '../providers/ConnectionProvider.js';
 import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
 
 /**
- * Props for the ContextProvider component
+ * Props for the combined wallet and connection provider
  */
 export interface ContextProviderProps {
   /** Children components */
   children: ReactNode;
+  /** Wallet adapters to use */
+  adapters: Adapter[];
   /** RPC endpoint for Solana connection */
-  rpcEndpoint?: string;
+  rpcEndpoint: string;
   /** Network to connect to */
   network?: WalletAdapterNetwork;
   /** Whether to automatically connect to the last used wallet */
@@ -22,82 +22,46 @@ export interface ContextProviderProps {
   storageKey?: string;
   /** Custom storage factory for persisting wallet selection */
   storageFactory?: StorageProviderFactory;
-  /** Additional wallet adapters to use */
-  additionalAdapters?: Adapter[];
   /** Error handler for wallet errors */
   onError?: (error: any, adapter?: Adapter) => void;
-//   /** Whether to include default adapters (Phantom and Solflare) */
-//   includeDefaultAdapters?: boolean;
 }
 
 /**
- * Complete context provider with default adapters
+ * Combined provider for Solana wallet and connection
  * 
- * This component provides a complete setup for Solana wallet functionality
- * with default adapters (Phantom and Solflare) and automatic detection of
- * standard wallets.
+ * This component combines both the ConnectionProvider and WalletProvider
+ * for easier setup of Solana wallet functionality in React applications.
  * 
- * @param props ContextProviderProps
+ * It supports custom storage mechanisms via the storageFactory prop.
+ * 
+ * @param props AgatehWalletProviderProps
  * @returns Provider component
  */
 export const ContextProvider: FC<ContextProviderProps> = ({
   children,
-  rpcEndpoint = 'https://api.mainnet-beta.solana.com',
+  adapters,
+  rpcEndpoint,
   network = WalletAdapterNetwork.Mainnet,
   autoConnect = false,
   storageKey = 'walletName',
   storageFactory,
-  additionalAdapters = [],
   onError,
-//   includeDefaultAdapters = true,
 }) => {
-  // Set up default adapters
-  const [adapters, setAdapters] = useState<Adapter[]>([]);
-
-  const memoizedAdapters = useMemo(() => 
-    additionalAdapters, [
-      // If you need to detect changes within the array, add specific dependencies
-      // For example, if you need to detect when array length changes:
-      
-      additionalAdapters.length,
-      // Or if you can identify adapters by a stable ID, you can include those:
-      // ...existingAdapters.map(adapter => adapter.name)
-    ]);
-  
-  // Initialize default adapters
-  useEffect(() => {
-    const baseAdapters: Adapter[] = [];
-    
-    // Add default adapters if enabled
-    // if (includeDefaultAdapters) {
-    //   try {
-    //     // Only add adapters if packages are available
-    //     // baseAdapters.push(new PhantomWalletAdapter());
-    //     // baseAdapters.push(new SolflareWalletAdapter());
-    //   } catch (error) {
-    //     console.warn('Could not initialize default wallet adapters:', error);
-    //   }
-    // }
-    
-    // Add additional adapters
-    setAdapters([...baseAdapters, ...additionalAdapters]);
-  }, [memoizedAdapters]);
-//   }, [additionalAdapters, includeDefaultAdapters]);
-  
-  // Get standard wallet adapters - this handles async detection
-  const allAdapters = useStandardWalletAdapters(adapters, rpcEndpoint);
+  const connectionConfig = useMemo(() => ({
+    commitment: 'confirmed',
+  }) as ConnectionConfig, []);
   
   return (
-    <AgatehWalletProvider
-      adapters={allAdapters}
-      rpcEndpoint={rpcEndpoint}
-      network={network}
-      autoConnect={autoConnect}
-      storageKey={storageKey}
-      storageFactory={storageFactory}
-      onError={onError}
-    >
-      {children}
-    </AgatehWalletProvider>
+    <ConnectionProvider endpoint={rpcEndpoint} config={connectionConfig}>
+      <BaseWalletProvider 
+        wallets={adapters} 
+        autoConnect={autoConnect}
+        storageKey={storageKey}
+        storageFactory={storageFactory}
+        onError={onError}
+      >
+        {children}
+      </BaseWalletProvider>
+    </ConnectionProvider>
   );
 };

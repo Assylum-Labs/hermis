@@ -159,22 +159,13 @@ function App() {
     previousPublicKeyRef.current = publicKey;
   }, [publicKey, addLogEntry]);
 
-  // useEffect(() => {
-    
-  //   const handleConnectEffect = async() => {
-  //     if(!wallet) return
-  //     // if(!wallet || !connected) return
-  //     try {
-  //       await connect();
-  //     } catch (error) {
-  //       addLogEntry(`Failed to connect`, 'error');
-  //     }
-  //   }
-
-  //   handleConnectEffect()
+  useEffect(() => {
+    if(!wallet?.adapter) return
+    setClickedWalletName(wallet?.adapter.name)
   
-  //   return () => {}
-  // }, [wallet, connected])
+    return () => {}
+  }, [connected, wallet])
+  
   
 
   // Helper function to get readable wallet state
@@ -288,6 +279,7 @@ function App() {
     addLogEntry('Disconnecting wallet...', 'info');
     try {
       await disconnect();
+      setClickedWalletName(null)
     } catch (error) {
       console.error('Disconnection error:', error);
       addLogEntry(`Disconnection error: ${(error as Error).message}`, 'error');
