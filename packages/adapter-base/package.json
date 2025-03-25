@@ -32,5 +32,34 @@
   "devDependencies": {
     "@agateh/solana-headless-format-config": "workspace:*",
     "@types/node": "^22.13.8"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "jsdom",
+    "extensionsToTreatAsEsm": [
+      ".ts"
+    ],
+    "moduleNameMapper": {
+      "^(\\.{1,2}/.*)\\.js$": "$1"
+    },
+    "roots": [
+      "<rootDir>/src/",
+      "<rootDir>/__tests__/"
+    ],
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*\\.(test|spec))\\.[jt]sx?$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ],
+    "setupFilesAfterEnv": [
+      "./jest.setup.js"
+    ]
   }
 }
