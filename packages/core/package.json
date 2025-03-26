@@ -62,7 +62,7 @@
     ]
   },
   "keywords": [],
-  "author": "mctursh",
-  "license": "ISC",
+  "author": "Mctursh",
+  "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2"
 }

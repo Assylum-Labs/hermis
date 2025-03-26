@@ -15,8 +15,8 @@
     "graduate": "changeset pre exit"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Mctursh",
+  "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2",
   "devDependencies": {
     "@changesets/cli": "^2.28.1",

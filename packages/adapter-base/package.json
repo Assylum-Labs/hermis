@@ -26,8 +26,8 @@
     "@wallet-standard/base": "^1.1.0"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Mctursh",
+  "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2",
   "devDependencies": {
     "@agateh/solana-headless-format-config": "workspace:*",
