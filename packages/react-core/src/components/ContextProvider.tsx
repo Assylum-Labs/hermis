@@ -41,18 +41,25 @@ export const ContextProvider: FC<ContextProviderProps> = ({
   children,
   adapters,
   rpcEndpoint,
-  network = WalletAdapterNetwork.Mainnet,
+  network: explicitNetwork,
   autoConnect = false,
   storageKey = 'walletName',
   storageFactory,
   onError,
 }) => {
+  // Import the utility function from adapter-base
+  const { getInferredNetworkFromEndpoint } = require('@agateh/solana-headless-adapter-base');
+  
+  // Infer network if not explicitly provided
+  const network = explicitNetwork || getInferredNetworkFromEndpoint(rpcEndpoint);
+
+
   const connectionConfig = useMemo(() => ({
     commitment: 'confirmed',
   }) as ConnectionConfig, []);
 
   return (
-    <ConnectionProvider endpoint={rpcEndpoint} config={connectionConfig}>
+    <ConnectionProvider network={network} endpoint={rpcEndpoint} config={connectionConfig}>
       <BaseWalletProvider
         wallets={adapters}
         autoConnect={autoConnect}

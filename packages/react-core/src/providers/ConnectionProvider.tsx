@@ -1,5 +1,5 @@
 import { FC, ReactNode, useMemo } from 'react';
-import { Connection, ConnectionConfig } from '@agateh/solana-headless-core';
+import { Connection, ConnectionConfig, WalletAdapterNetwork } from '@agateh/solana-headless-core';
 import { ConnectionContext } from '../hooks/useConnection.js';
 
 /**
@@ -12,6 +12,8 @@ export interface ConnectionProviderProps {
   endpoint: string;
   /** Optional connection configuration */
   config?: ConnectionConfig;
+  /**Optional Network value */
+  network: WalletAdapterNetwork
 }
 
 /**
@@ -26,6 +28,7 @@ export const ConnectionProvider: FC<ConnectionProviderProps> = ({
   children,
   endpoint,
   config = { commitment: 'confirmed' },
+  network
 }) => {
   const connection = useMemo(() => 
     new Connection(endpoint, config), 
@@ -33,7 +36,7 @@ export const ConnectionProvider: FC<ConnectionProviderProps> = ({
   );
   
   return (
-    <ConnectionContext.Provider value={{ connection }}>
+    <ConnectionContext.Provider value={{ connection, network }}>
       {children}
     </ConnectionContext.Provider>
   );

@@ -1,4 +1,4 @@
-import { Connection } from '@agateh/solana-headless-core';
+import { Connection, WalletAdapterNetwork } from '@agateh/solana-headless-core';
 import { createContext, useContext } from 'react';
 
 /**
@@ -6,6 +6,7 @@ import { createContext, useContext } from 'react';
  */
 export interface ConnectionContextState {
     connection: Connection;
+    network?: WalletAdapterNetwork
 }
 
 /**
