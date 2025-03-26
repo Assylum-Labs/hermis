@@ -14,7 +14,7 @@ interface WalletModalProps {
 export const WalletModal: React.FC<WalletModalProps> = ({ isOpen, onClose }) => {
   const { installed, loadable } = useWalletAdapters();
   const { select, connect, connected } = useWallet();
-  const [connecting, setConnecting] = useState(false);
+  const [_connecting, setConnecting] = useState(false);
   
   // Close modal when connection is successful
   useEffect(() => {

@@ -6,5 +6,5 @@
  */
 export declare function createLocalStorageUtility<T>(key: string, defaultValue: T): {
     get(): Promise<T>;
-    set(value: T): Promise<void>;
+    set(value: T | null): Promise<void>;
 };

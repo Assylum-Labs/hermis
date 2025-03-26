@@ -1,4 +1,4 @@
-import React, { FC } from 'react';
+import { FC } from 'react';
 import { useWalletMultiButton } from '@agateh/solana-headless-react';
 
 export const WalletButton: FC = () => {
