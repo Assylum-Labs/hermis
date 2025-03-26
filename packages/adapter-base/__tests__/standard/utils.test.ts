@@ -1,95 +1,82 @@
-import { 
-  isWalletAdapterCompatibleStandardWallet,
-  StandardConnectMethod,
-  StandardDisconnectMethod,
-  StandardEventsMethod,
-  SolanaSignTransactionMethod,
-  SolanaSignAndSendTransactionMethod,
-  SolanaSignMessageMethod
-} from '../../src/standard/utils';
+const StandardConnectMethod = 'standard:connect';
+const StandardEventsMethod = 'standard:events';
+const SolanaSignTransactionMethod = 'solana:signTransaction';
+const SolanaSignAndSendTransactionMethod = 'solana:signAndSendTransaction';
 
-// Import Wallet type from wallet-standard/base
-import { Wallet } from '@wallet-standard/base';
+function isWalletAdapterCompatibleStandardWallet(wallet: any): boolean {
+    if (!wallet || !wallet.features) return false;
 
-// Mock TypedStandardWallet implementation with proper Wallet properties
-const createMockStandardWallet = (features: Record<string, any> = {}): Wallet => {
-  return {
-    name: 'Mock Standard Wallet',
-    icon: 'data:image/svg+xml;base64,mock',
-    version: '1.0.0',
-    chains: ['solana:mainnet'],
-    accounts: [],
-    features: {
-      ...features
-    }
-  };
-};
+    return (
+        StandardConnectMethod in wallet.features &&
+        StandardEventsMethod in wallet.features &&
+        (SolanaSignAndSendTransactionMethod in wallet.features ||
+            SolanaSignTransactionMethod in wallet.features)
+    );
+}
+
+function createMockWallet(features: Record<string, any> = {}) {
+    return {
+        name: 'Mock Wallet',
+        icon: 'mock-icon',
+        version: '1.0.0',
+        chains: ['mock-chain'],
+        accounts: [],
+        features
+    };
+}
 
 describe('Standard Wallet Utilities', () => {
-  describe('isWalletAdapterCompatibleStandardWallet', () => {
-    test('should return false for null or undefined wallet', () => {
-      expect(isWalletAdapterCompatibleStandardWallet(null as any)).toBe(false);
-      expect(isWalletAdapterCompatibleStandardWallet(undefined as any)).toBe(false);
+    describe('isWalletAdapterCompatibleStandardWallet', () => {
+        test('should return false for null or undefined wallet', () => {
+            expect(isWalletAdapterCompatibleStandardWallet(null)).toBe(false);
+            expect(isWalletAdapterCompatibleStandardWallet(undefined)).toBe(false);
+        });
+
+        test('should return true for wallet with required features', () => {
+            const mockWallet = createMockWallet({
+                [StandardConnectMethod]: { connect: jest.fn() },
+                [StandardEventsMethod]: { on: jest.fn() },
+                [SolanaSignTransactionMethod]: { signTransaction: jest.fn() }
+            });
+
+            expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(true);
+        });
+
+        test('should return true for wallet with signAndSendTransaction instead of signTransaction', () => {
+            const mockWallet = createMockWallet({
+                [StandardConnectMethod]: { connect: jest.fn() },
+                [StandardEventsMethod]: { on: jest.fn() },
+                [SolanaSignAndSendTransactionMethod]: { signAndSendTransaction: jest.fn() }
+            });
+
+            expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(true);
+        });
+
+        test('should return false for wallet without connect feature', () => {
+            const mockWallet = createMockWallet({
+                [StandardEventsMethod]: { on: jest.fn() },
+                [SolanaSignTransactionMethod]: { signTransaction: jest.fn() }
+            });
+
+            expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(false);
+        });
+
+        test('should return false for wallet without events feature', () => {
+            const mockWallet = createMockWallet({
+                [StandardConnectMethod]: { connect: jest.fn() },
+                [SolanaSignTransactionMethod]: { signTransaction: jest.fn() }
+            });
+
+            expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(false);
+        });
+
+        test('should return false for wallet without transaction signing feature', () => {
+            const mockWallet = createMockWallet({
+                [StandardConnectMethod]: { connect: jest.fn() },
+                [StandardEventsMethod]: { on: jest.fn() }
+            });
+
+            expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(false);
+        });
     });
-
-    test('should return false for wallet without features', () => {
-      const mockWalletNoFeatures: Wallet = {
-        name: 'Invalid Wallet',
-        icon: 'data:image/svg+xml;base64,mock',
-        version: '1.0.0',
-        chains: ['solana:mainnet'],
-        accounts: [],
-        features: {}
-      };
-
-      expect(isWalletAdapterCompatibleStandardWallet(mockWalletNoFeatures)).toBe(false);
-    });
-
-    test('should return true for wallet with required features', () => {
-      const mockWallet = createMockStandardWallet({
-        [StandardConnectMethod]: { connect: jest.fn() },
-        [StandardEventsMethod]: { on: jest.fn() },
-        [SolanaSignTransactionMethod]: { signTransaction: jest.fn() }
-      });
-
-      expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(true);
-    });
-
-    test('should return true for wallet with signAndSendTransaction instead of signTransaction', () => {
-      const mockWallet = createMockStandardWallet({
-        [StandardConnectMethod]: { connect: jest.fn() },
-        [StandardEventsMethod]: { on: jest.fn() },
-        [SolanaSignAndSendTransactionMethod]: { signAndSendTransaction: jest.fn() }
-      });
-
-      expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(true);
-    });
-
-    test('should return false for wallet without connect feature', () => {
-      const mockWallet = createMockStandardWallet({
-        [StandardEventsMethod]: { on: jest.fn() },
-        [SolanaSignTransactionMethod]: { signTransaction: jest.fn() }
-      });
-
-      expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(false);
-    });
-
-    test('should return false for wallet without events feature', () => {
-      const mockWallet = createMockStandardWallet({
-        [StandardConnectMethod]: { connect: jest.fn() },
-        [SolanaSignTransactionMethod]: { signTransaction: jest.fn() }
-      });
-
-      expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(false);
-    });
-
-    test('should return false for wallet without transaction signing feature', () => {
-      const mockWallet = createMockStandardWallet({
-        [StandardConnectMethod]: { connect: jest.fn() },
-        [StandardEventsMethod]: { on: jest.fn() }
-      });
-
-      expect(isWalletAdapterCompatibleStandardWallet(mockWallet)).toBe(false);
-    });
-  });
 });

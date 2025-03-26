@@ -1,6 +1,11 @@
-// jest.setup.ts
-
 import type { MockedFunction } from 'jest-mock';
+
+// Add global Jest type definitions
+// declare global {
+//   const jest: {
+//     spyOn: <T>(object: T, methodName: keyof T) => jest.SpyInstance;
+//   };
+// }
 
 beforeAll(() => {
   // Spy on console methods and mock their implementation
