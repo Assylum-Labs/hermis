@@ -1,9 +1,15 @@
-const fs = require('fs');
-const path = require('path');
-const glob = require('glob');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
+import { glob } from 'glob';
+
+const require = createRequire(import.meta.url);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Find all TypeScript files in the packages
-const files = glob.sync([
+const files = await glob([
   'packages/*/src/**/*.ts',
   'packages/*/src/**/*.tsx'
 ]);
@@ -44,3 +50,5 @@ process.on('SIGTERM', () => {
   restoreFiles();
   process.exit();
 });
+
+console.log('Import paths fixed temporarily. Run your build now.');
