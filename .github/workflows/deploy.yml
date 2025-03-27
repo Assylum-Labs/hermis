@@ -41,7 +41,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        pnpm install
+        pnpm install -r
+        pnpm install --no-frozen-lockfile
 
     - name: Build React App for GitHub Pages
       run: |
