@@ -4,6 +4,7 @@ import CopyWebpackPlugin from 'copy-webpack-plugin';
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
+import webpack from 'webpack';  // Add this import
 
 // This is needed to get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
