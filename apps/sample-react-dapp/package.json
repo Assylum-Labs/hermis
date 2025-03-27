@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy:pages": "node fix-imports.mjs",
-    "build:pages": "cd apps/sample-react-dapp && webpack --config webpack.github-pages.config.mjs",
+    "build:pages": "webpack --config ./apps/sample-react-dapp/webpack.github-pages.config.mjs --config-name=github-pages",
     "postdeploy:pages": "node -e \"fs.writeFileSync('fix-imports.cleanup', '')\" --input-type=module",
     "predeploy": "npm run build:pages"
   },
