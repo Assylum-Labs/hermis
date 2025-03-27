@@ -21,6 +21,11 @@ export default {
   },
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx'],
+    alias: {
+      '@agateh/solana-headless-react': path.resolve(__dirname, '../../packages/react-core/src'),
+      '@agateh/solana-headless-core': path.resolve(__dirname, '../../packages/core/src'),
+      '@agateh/solana-headless-adapter-base': path.resolve(__dirname, '../../packages/adapter-base/src')
+    },
     fallback: {
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify'),
