@@ -8,7 +8,6 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build:pages": "node fix-imports.js && cd apps/sample-react-dapp && webpack --config webpack.github-pages.config.mjs && cd ../.. && node -e \"require('fs').writeFileSync('fix-imports.cleanup', '')\"",
     "predeploy:pages": "node fix-imports.mjs",
     "deploy:pages": "cd apps/sample-react-dapp && webpack --config webpack.github-pages.config.mjs",
     "postdeploy:pages": "node -e \"fs.writeFileSync('fix-imports.cleanup', '')\" --input-type=module",
