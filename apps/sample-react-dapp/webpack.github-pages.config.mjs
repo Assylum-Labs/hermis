@@ -1,11 +1,14 @@
 import path from 'path';
 import HtmlWebpackPlugin from 'html-webpack-plugin';
 import CopyWebpackPlugin from 'copy-webpack-plugin';
+import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 import { fileURLToPath } from 'url';
+import { createRequire } from 'module';
 
 // This is needed to get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const require = createRequire(import.meta.url);
 
 export default {
   mode: 'production',
@@ -19,12 +22,13 @@ export default {
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx'],
     fallback: {
-      crypto: await import('crypto-browserify'),
-      stream: await import('stream-browserify'),
-      buffer: await import('buffer/')
+      crypto: require.resolve('crypto-browserify'),
+      stream: require.resolve('stream-browserify'),
+      buffer: require.resolve('buffer/index.js')
     }
   },
   plugins: [
+    new NodePolyfillPlugin(),
     new HtmlWebpackPlugin({
       template: './index.html',
       filename: 'index.html',
