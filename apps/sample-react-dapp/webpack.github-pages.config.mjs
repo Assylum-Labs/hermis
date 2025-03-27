@@ -20,7 +20,7 @@ export default {
     publicPath: '/solana-headless-sdk/'
   },
   resolve: {
-    extensions: ['.js', '.ts', '.jsx', '.tsx'],
+    extensions: ['.js', '.ts', '.tsx', '.jsx'],
     alias: {
       '@agateh/solana-headless-react': path.resolve(__dirname, '../../packages/react-core/src'),
       '@agateh/solana-headless-core': path.resolve(__dirname, '../../packages/core/src'),
@@ -32,23 +32,16 @@ export default {
       buffer: require.resolve('buffer/index.js')
     }
   },
-  plugins: [
-    new NodePolyfillPlugin(),
-    new HtmlWebpackPlugin({
-      template: './index.html',
-      filename: 'index.html',
-    }),
-    new CopyWebpackPlugin({
-      patterns: [
-        { from: './src/index.css', to: 'styles.css' },
-      ],
-    }),
-  ],
   module: {
     rules: [
       {
         test: /\.(ts|tsx)$/,
-        exclude: /node_modules/,
+        include: [
+          path.resolve(__dirname, 'src'),
+          path.resolve(__dirname, '../../packages/react-core/src'),
+          path.resolve(__dirname, '../../packages/core/src'),
+          path.resolve(__dirname, '../../packages/adapter-base/src')
+        ],
         use: {
           loader: 'swc-loader',
           options: {
@@ -72,5 +65,17 @@ export default {
       }
     ]
   },
+  plugins: [
+    new NodePolyfillPlugin(),
+    new HtmlWebpackPlugin({
+      template: './index.html',
+      filename: 'index.html',
+    }),
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: './src/index.css', to: 'styles.css' },
+      ],
+    }),
+  ],
   devtool: 'source-map'
 };
