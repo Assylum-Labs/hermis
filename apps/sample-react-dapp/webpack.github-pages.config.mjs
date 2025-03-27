@@ -1,32 +1,37 @@
-const path = require('path');
-const HtmlWebpackPlugin = require('html-webpack-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
+import path from 'path';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
+import CopyWebpackPlugin from 'copy-webpack-plugin';
+import { fileURLToPath } from 'url';
 
-module.exports = {
+// This is needed to get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+export default {
   mode: 'production',
-  entry: './src/main.tsx',  // Changed from wallet.js to main.tsx
+  entry: './src/main.tsx',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
     clean: true,
-    publicPath: '/solana-headless-sdk/'  // Ensure this matches your GitHub Pages setup
+    publicPath: '/solana-headless-sdk/'
   },
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx'],
     fallback: {
-      crypto: require.resolve('crypto-browserify'),
-      stream: require.resolve('stream-browserify'),
-      buffer: require.resolve('buffer/'),
+      crypto: await import('crypto-browserify'),
+      stream: await import('stream-browserify'),
+      buffer: await import('buffer/')
     }
   },
   plugins: [
     new HtmlWebpackPlugin({
-      template: './index.html',  // Changed from public/index.html
+      template: './index.html',
       filename: 'index.html',
     }),
     new CopyWebpackPlugin({
       patterns: [
-        { from: './src/index.css', to: 'styles.css' },  // Adjusted path
+        { from: './src/index.css', to: 'styles.css' },
       ],
     }),
   ],
@@ -36,7 +41,7 @@ module.exports = {
         test: /\.(ts|tsx)$/,
         exclude: /node_modules/,
         use: {
-          loader: 'swc-loader',  // Use SWC loader for TypeScript
+          loader: 'swc-loader',
           options: {
             jsc: {
               parser: {
@@ -58,6 +63,5 @@ module.exports = {
       }
     ]
   },
-  // Add source map support for easier debugging
   devtool: 'source-map'
 };
