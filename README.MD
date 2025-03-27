@@ -12,7 +12,7 @@ Try our playground:
 
 [**View the Demo →**](https://agateh.github.io/solana-headless-sdk/)
 
-This vanilla JavaScript demo showcases the core functionality of our adapter-base package without any framework dependencies, demonstrating how you can integrate Solana wallets with complete UI freedom.
+This demo showcases the core functionality of our adapter-base package with the React framework, demonstrating how you can integrate Solana wallets with complete UI freedom.
 
 ## 🌟 **Community Edition Features**
 
