@@ -10,38 +10,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
-class JsExtensionResolverPlugin {
-  constructor(options = {}) {
-    this.options = options;
-  }
-
-  apply(resolver) {
-    const target = resolver.ensureHook('resolved');
-    
-    resolver.getHook('raw-module').tapAsync('JsExtensionResolverPlugin', (request, resolveContext, callback) => {
-      if (request.request && request.request.endsWith('.js') && 
-          (request.request.startsWith('./') || request.request.startsWith('../'))) {
-        
-        // Try resolving with .ts extension
-        const tsPath = request.request.replace(/\.js$/, '.ts');
-        const newRequest = Object.assign({}, request, { request: tsPath });
-        
-        resolver.doResolve(target, newRequest, null, resolveContext, (err, result) => {
-          if (err || !result) {
-            // Fall back to original request
-            callback(null, request);
-          } else {
-            // Use the resolved .ts file
-            callback(null, result);
-          }
-        });
-      } else {
-        callback();
-      }
-    });
-  }
-}
-
 export default {
   mode: 'production',
   entry: './src/main.tsx',
@@ -53,9 +21,6 @@ export default {
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx', '.jsx'],
-    extensionAlias: {
-      '.js': ['.ts', '.js'],
-    },
     alias: {
       '@agateh/solana-headless-react': path.resolve(__dirname, '../../packages/react-core/src'),
       '@agateh/solana-headless-core': path.resolve(__dirname, '../../packages/core/src'),
@@ -65,7 +30,44 @@ export default {
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify'),
       buffer: require.resolve('buffer/index.js')
-    }
+    },
+    // Add this plugin to resolve .js extensions to .ts files
+    plugins: [
+      {
+        apply(resolver) {
+          // This is called for every path that is resolved
+          resolver.hooks.resolve.tapAsync('JsToTsResolver', (request, resolveContext, callback) => {
+            // Check if this is a .js file
+            if (request.request && request.request.endsWith('.js')) {
+              // Create a new request with .ts extension
+              const tsRequest = Object.assign({}, request, {
+                request: request.request.replace(/\.js$/, '.ts')
+              });
+              
+              // Try to resolve the .ts file first
+              resolver.doResolve(
+                resolver.hooks.resolve,
+                tsRequest,
+                `Resolving ${request.request} to ${tsRequest.request}`,
+                resolveContext,
+                (err, result) => {
+                  if (err || !result) {
+                    // If .ts resolution fails, continue with original request
+                    callback(null);
+                  } else {
+                    // If .ts resolution succeeds, use that result
+                    callback(null, result);
+                  }
+                }
+              );
+            } else {
+              // Not a .js file, continue normal resolution
+              callback(null);
+            }
+          });
+        }
+      }
+    ]
   },
   module: {
     rules: [
@@ -111,9 +113,6 @@ export default {
         { from: './src/index.css', to: 'styles.css' },
       ],
     }),
-  ],
-  plugins: [
-    new JsExtensionResolverPlugin()
   ],
   devtool: 'source-map'
 };

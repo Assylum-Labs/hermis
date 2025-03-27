@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "build:pages": "webpack --config webpack.github-pages.config.mjs",
+    "build:pages": "node apps/sample-react-dapp/fix-imports.js && cd apps/sample-react-dapp && webpack --config webpack.github-pages.config.mjs && cd ../.. && node -e \"require('fs').writeFileSync('apps/sample-react-dapp/fix-imports.cleanup', '')\"",
     "predeploy": "npm run build:pages"
   },
   "dependencies": {
