@@ -10,6 +10,38 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
 
+class JsExtensionResolverPlugin {
+  constructor(options = {}) {
+    this.options = options;
+  }
+
+  apply(resolver) {
+    const target = resolver.ensureHook('resolved');
+    
+    resolver.getHook('raw-module').tapAsync('JsExtensionResolverPlugin', (request, resolveContext, callback) => {
+      if (request.request && request.request.endsWith('.js') && 
+          (request.request.startsWith('./') || request.request.startsWith('../'))) {
+        
+        // Try resolving with .ts extension
+        const tsPath = request.request.replace(/\.js$/, '.ts');
+        const newRequest = Object.assign({}, request, { request: tsPath });
+        
+        resolver.doResolve(target, newRequest, null, resolveContext, (err, result) => {
+          if (err || !result) {
+            // Fall back to original request
+            callback(null, request);
+          } else {
+            // Use the resolved .ts file
+            callback(null, result);
+          }
+        });
+      } else {
+        callback();
+      }
+    });
+  }
+}
+
 export default {
   mode: 'production',
   entry: './src/main.tsx',
@@ -79,6 +111,9 @@ export default {
         { from: './src/index.css', to: 'styles.css' },
       ],
     }),
+  ],
+  plugins: [
+    new JsExtensionResolverPlugin()
   ],
   devtool: 'source-map'
 };
