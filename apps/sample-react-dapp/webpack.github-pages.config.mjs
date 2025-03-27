@@ -21,6 +21,9 @@ export default {
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx', '.jsx'],
+    extensionAlias: {
+      '.js': ['.ts', '.js'],
+    },
     alias: {
       '@agateh/solana-headless-react': path.resolve(__dirname, '../../packages/react-core/src'),
       '@agateh/solana-headless-core': path.resolve(__dirname, '../../packages/core/src'),
