@@ -21,30 +21,33 @@ export default {
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx', '.jsx'],
-    // New enhanced alias configuration to handle .js extensions
     alias: {
-      // These match specific patterns we're seeing in the errors
-      './providers/WalletProvider.js': path.resolve(__dirname, '../../packages/react-core/src/providers/WalletProvider.ts'),
-      './providers/ConnectionProvider.js': path.resolve(__dirname, '../../packages/react-core/src/providers/ConnectionProvider.ts'),
-      './components/ContextProvider.js': path.resolve(__dirname, '../../packages/react-core/src/components/ContextProvider.ts'),
-      './components/WalletConnectionManager.js': path.resolve(__dirname, '../../packages/react-core/src/components/WalletConnectionManager.ts'),
-      './components/AgatehProvider.js': path.resolve(__dirname, '../../packages/react-core/src/components/AgatehProvider.ts'),
+      // Fix for @solana/web3 truncated imports
+      '@solana/web3': '@solana/web3.js',
       
-      // These are your main package aliases
+      // Fix for the polyfills import
+      './polyfills/index.js': path.resolve(__dirname, '../../packages/core/src/polyfills/index.ts'),
+      
+      // Your package aliases
       '@agateh/solana-headless-react': path.resolve(__dirname, '../../packages/react-core/src'),
       '@agateh/solana-headless-core': path.resolve(__dirname, '../../packages/core/src'),
-      '@agateh/solana-headless-adapter-base': path.resolve(__dirname, '../../packages/adapter-base/src'),
-      
-      // General .js to .ts mappings for imported files
-      // This is a simple but effective approach - map any .js in these directories to .ts
-      '../../packages/core/src/': path.resolve(__dirname, '../../packages/core/src/'),
-      '../../packages/react-core/src/': path.resolve(__dirname, '../../packages/react-core/src/'),
-      '../../packages/adapter-base/src/': path.resolve(__dirname, '../../packages/adapter-base/src/')
+      '@agateh/solana-headless-adapter-base': path.resolve(__dirname, '../../packages/adapter-base/src')
     },
     fallback: {
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify'),
-      buffer: require.resolve('buffer/index.js')
+      buffer: require.resolve('buffer/index.js'),
+      // Add these Node.js polyfills that @solana/web3.js might need
+      fs: false,
+      path: require.resolve('path-browserify'),
+      os: require.resolve('os-browserify/browser'),
+      zlib: require.resolve('browserify-zlib'),
+      https: require.resolve('https-browserify'),
+      http: require.resolve('stream-http'),
+      assert: require.resolve('assert/'),
+      constants: require.resolve('constants-browserify'),
+      util: require.resolve('util/'),
+      url: require.resolve('url/')
     }
   },
   module: {
@@ -73,14 +76,35 @@ export default {
                 }
               }
             }
-          },
-          // Add a loader to transform imports
+          }
+        ]
+      },
+      // Add a loader to handle .js extensions in imports
+      {
+        test: /\.(ts|tsx|js|jsx)$/,
+        include: [
+          path.resolve(__dirname, '../../packages/core/src'),
+          path.resolve(__dirname, '../../packages/react-core/src'),
+          path.resolve(__dirname, '../../packages/adapter-base/src')
+        ],
+        use: [
           {
             loader: 'string-replace-loader',
             options: {
-              search: /from ['"]([^'"]+)\.js['"]/g,
-              replace: 'from "$1"',
-              flags: 'g'
+              multiple: [
+                {
+                  search: /from\s+['"]([^'"]+)\.js['"]/g,
+                  replace: 'from "$1"'
+                },
+                {
+                  search: /import\s+(['"])@solana\/web3\1/g,
+                  replace: 'import $1@solana/web3.js$1'
+                },
+                {
+                  search: /from\s+(['"])@solana\/web3\1/g,
+                  replace: 'from $1@solana/web3.js$1'
+                }
+              ]
             }
           }
         ]
@@ -102,6 +126,11 @@ export default {
         { from: './src/index.css', to: 'styles.css' },
       ],
     }),
+    // Provide Buffer for browser
+    new webpack.ProvidePlugin({
+      Buffer: ['buffer', 'Buffer'],
+      process: 'process/browser'
+    })
   ],
   devtool: 'source-map'
 };
