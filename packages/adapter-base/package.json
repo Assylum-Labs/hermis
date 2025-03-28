@@ -1,7 +1,7 @@
 {
   "name": "@hermis/solana-headless-adapter-base",
-  "version": "0.0.0",
-  "description": "The framework agnostic implementation of the Hermis headless wallet adapetr",
+  "version": "1.0.0",
+  "description": "The framework agnostic implementation of the Hermis headless solana wallet adapetr",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

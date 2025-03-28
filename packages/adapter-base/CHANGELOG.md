@@ -1,5 +1,16 @@
 # @hermis/solana-headless-adapter-base
 
+## 1.0.0
+
+### Major Changes
+
+- Rebranded the namespace of the SDK from Agateh to Hermis, this will cause breaking changes across all SDKs, every user is advised to update the name space accordingly, however there isn't any breaking change in the functionality and implementation.
+
+### Patch Changes
+
+- Updated dependencies
+  - @hermis/solana-headless-core@1.0.0
+
 ## 1.1.3
 
 ### Patch Changes

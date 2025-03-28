@@ -1,7 +1,7 @@
 {
-  "name": "solana-headless-sdk",
-  "version": "0.0.0",
-  "description": "",
+  "name": "@hermis/solana-headless-sdk",
+  "version": "1.0.0",
+  "description": "The parent repo for all Hermis SDKs",
   "scripts": {
     "clean": "turbo run clean",
     "build": "turbo run build",
@@ -13,6 +13,9 @@
     "patch": "changeset add --patch",
     "prerelease": "changeset pre enter next",
     "graduate": "changeset pre exit"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [],
   "author": "Mctursh",

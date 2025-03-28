@@ -1,7 +1,7 @@
 {
   "name": "@hermis/solana-headless-core",
-  "version": "0.0.0",
-  "description": "Core wallet logic for the Solana Headless SDK",
+  "version": "1.0.0",
+  "description": "Core wallet logic for the Hermis Solana Headless SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {

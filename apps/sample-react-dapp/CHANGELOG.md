@@ -1,5 +1,14 @@
 # sample-react-dapp
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies
+  - @hermis/solana-headless-adapter-base@1.0.0
+  - @hermis/solana-headless-core@1.0.0
+  - @hermis/solana-headless-react@1.0.0
+
 ## 0.0.4
 
 ### Patch Changes
