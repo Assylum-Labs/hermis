@@ -1,5 +1,17 @@
 # @solana/headless-session
 
+## 1.1.0
+
+### Minor Changes
+
+- Implement the functionalies of the React framework hooks and components, improved mehods from the core and base package, wrote unit tests for the base package, added a LICENSE file and finally updated the README of all package
+
+### Patch Changes
+
+- Updated dependencies
+  - @agateh/solana-headless-adapter-base@1.1.3
+  - @agateh/solana-headless-core@1.2.2
+
 ## 1.0.3
 
 ### Patch Changes

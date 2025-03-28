@@ -1,3 +1,4 @@
 packages:
   - "packages/*"  # All SDK modules
-  - "apps/*" 
+  - "packages/enterprise/*" # Enterprise modules
+  - "apps/*"

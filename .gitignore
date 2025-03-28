@@ -12,3 +12,5 @@ node_modules/
 
 
 .turbo
+
+packages/enterprise

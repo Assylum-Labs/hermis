@@ -1,5 +1,11 @@
 # @solana/headless-core
 
+## 1.2.2
+
+### Patch Changes
+
+- Implement the functionalies of the React framework hooks and components, improved mehods from the core and base package, wrote unit tests for the base package, added a LICENSE file and finally updated the README of all package
+
 ## 1.2.1
 
 ### Patch Changes

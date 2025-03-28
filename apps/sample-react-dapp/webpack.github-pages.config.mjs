@@ -4,9 +4,8 @@ import CopyWebpackPlugin from 'copy-webpack-plugin';
 import NodePolyfillPlugin from 'node-polyfill-webpack-plugin';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
-import webpack from 'webpack';  // Add this import
+import webpack from 'webpack';  
 
-// This is needed to get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const require = createRequire(import.meta.url);
@@ -23,13 +22,10 @@ export default {
   resolve: {
     extensions: ['.js', '.ts', '.tsx', '.jsx'],
     alias: {
-      // Fix for @solana/web3 truncated imports
       '@solana/web3': '@solana/web3.js',
       
-      // Fix for the polyfills import
       './polyfills/index.js': path.resolve(__dirname, '../../packages/core/src/polyfills/index.ts'),
       
-      // Your package aliases
       '@agateh/solana-headless-react': path.resolve(__dirname, '../../packages/react-core/src'),
       '@agateh/solana-headless-core': path.resolve(__dirname, '../../packages/core/src'),
       '@agateh/solana-headless-adapter-base': path.resolve(__dirname, '../../packages/adapter-base/src')
@@ -38,7 +34,6 @@ export default {
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify'),
       buffer: require.resolve('buffer/index.js'),
-      // Add these Node.js polyfills that @solana/web3.js might need
       fs: false,
       path: require.resolve('path-browserify'),
       os: require.resolve('os-browserify/browser'),
@@ -80,7 +75,6 @@ export default {
           }
         ]
       },
-      // Add a loader to handle .js extensions in imports
       {
         test: /\.(ts|tsx|js|jsx)$/,
         include: [
@@ -127,7 +121,6 @@ export default {
         { from: './src/index.css', to: 'styles.css' },
       ],
     }),
-    // Provide Buffer for browser
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
       process: 'process/browser'
