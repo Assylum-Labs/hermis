@@ -1,4 +1,4 @@
-import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter, WalletAdapterEvents, TransactionSignature, signTransaction, Transaction, signAllTransactions, signMessage } from '@agateh/solana-headless-core';
+import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter, WalletAdapterEvents, TransactionSignature, signTransaction, Transaction, signAllTransactions, signMessage } from '@hermis/solana-headless-core';
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
 

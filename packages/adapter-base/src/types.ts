@@ -1,5 +1,5 @@
 // src/types.ts
-import { Adapter, WalletName, WalletReadyState } from '@agateh/solana-headless-core';
+import { Adapter, WalletName, WalletReadyState } from '@hermis/solana-headless-core';
 
 /**
  * Interface for wallet provider information

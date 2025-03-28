@@ -1,4 +1,4 @@
-import { Adapter, WalletName, WalletReadyState, PublicKey } from '@agateh/solana-headless-core';
+import { Adapter, WalletName, WalletReadyState, PublicKey } from '@hermis/solana-headless-core';
 import { WalletProvider } from '../types.js';
 /**
  * Initialize wallet adapters

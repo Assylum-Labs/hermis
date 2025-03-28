@@ -1,4 +1,4 @@
-import { Adapter } from '@agateh/solana-headless-core';
+import { Adapter } from '@hermis/solana-headless-core';
 import { Wallet as StandardWallet } from '@wallet-standard/base';
 import { StandardConnectMethod, StandardDisconnectMethod, StandardEventsMethod, SolanaSignAndSendTransactionMethod, SolanaSignTransactionMethod, SolanaSignMessageMethod, SolanaSignInMethod, TypedStandardWallet } from './types.js';
 /**

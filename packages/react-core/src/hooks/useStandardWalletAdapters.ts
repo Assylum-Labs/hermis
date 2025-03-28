@@ -1,11 +1,11 @@
-import { Adapter } from '@agateh/solana-headless-core';
-import { getStandardWalletAdapters as getBaseStandardWalletAdapters } from '@agateh/solana-headless-adapter-base';
+import { Adapter } from '@hermis/solana-headless-core';
+import { getStandardWalletAdapters as getBaseStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
 import { useEffect, useMemo, useState } from 'react';
 
 /**
  * Hook for getting standard wallet adapters
  * 
- * This hook integrates with @agateh/solana-headless-adapter-base's
+ * This hook integrates with @hermis/solana-headless-adapter-base's
  * getStandardWalletAdapters function to discover and initialize
  * wallet adapters including standard wallets.
  * 

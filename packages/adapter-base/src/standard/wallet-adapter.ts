@@ -16,7 +16,7 @@ import {
     WalletAdapter,
     WalletError,
     EventEmitter
-} from '@agateh/solana-headless-core';
+} from '@hermis/solana-headless-core';
 
 import { 
     isWalletAdapterCompatibleStandardWallet,

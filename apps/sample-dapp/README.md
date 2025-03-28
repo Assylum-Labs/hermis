@@ -1,6 +1,6 @@
 # Solana Headless Wallet Demo
 
-This is a sample application demonstrating the use of the `@agateh/solana-headless-adapter-base` package for integrating Solana wallets into a web application without any predefined UI components.
+This is a sample application demonstrating the use of the `@hermis/solana-headless-adapter-base` package for integrating Solana wallets into a web application without any predefined UI components.
 
 ## Features
 

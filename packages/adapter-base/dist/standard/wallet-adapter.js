@@ -1,4 +1,4 @@
-import { WalletReadyState, PublicKey, Transaction, VersionedTransaction, WalletError, EventEmitter } from '@agateh/solana-headless-core';
+import { WalletReadyState, PublicKey, Transaction, VersionedTransaction, WalletError, EventEmitter } from '@hermis/solana-headless-core';
 import { isWalletAdapterCompatibleStandardWallet, StandardConnectMethod, StandardDisconnectMethod, StandardEventsMethod, SolanaSignAndSendTransactionMethod, SolanaSignTransactionMethod, SolanaSignMessageMethod, SolanaSignInMethod } from './utils.js';
 /**
  * An adapter that wraps a standard wallet to make it compatible with the Solana wallet adapter interface

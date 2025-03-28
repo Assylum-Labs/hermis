@@ -1,4 +1,4 @@
-import { Connection, WalletAdapterNetwork } from '@agateh/solana-headless-core';
+import { Connection, WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { createContext, useContext } from 'react';
 
 /**

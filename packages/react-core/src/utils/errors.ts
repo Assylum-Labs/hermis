@@ -1,5 +1,5 @@
 // src/utils/errors.ts
-import { WalletError } from '@agateh/solana-headless-core';
+import { WalletError } from '@hermis/solana-headless-core';
 
 /**
  * Error thrown when no wallet is selected

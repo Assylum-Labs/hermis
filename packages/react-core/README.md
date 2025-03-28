@@ -1,4 +1,4 @@
-# @agateh/solana-headless-react
+# @hermis/solana-headless-react
 
 <p align="center">
   <img src="https://iq.wiki/_next/image?url=https%3A%2F%2Fipfs.everipedia.org%2Fipfs%2FQmTaB5ygg5qNMDKmnfPgottNRZTe7PXzMpe3Tg7Bdw57HN&w=1080&q=95" width="100" alt="Solana Logo">
@@ -11,7 +11,7 @@
 
 ## 🌟 Overview
 
-`@agateh/solana-headless-react` provides a complete set of React hooks and components for integrating Solana wallet functionality into React applications. Built on top of the core `@agateh/solana-headless-core` package, it allows developers to implement wallet connection, transaction signing, and blockchain interactions with full UI flexibility.
+`@hermis/solana-headless-react` provides a complete set of React hooks and components for integrating Solana wallet functionality into React applications. Built on top of the core `@hermis/solana-headless-core` package, it allows developers to implement wallet connection, transaction signing, and blockchain interactions with full UI flexibility.
 
 ## ✨ Features
 
@@ -26,13 +26,13 @@
 
 ```bash
 # Using npm
-npm install @agateh/solana-headless-react @agateh/solana-headless-core
+npm install @hermis/solana-headless-react @hermis/solana-headless-core
 
 # Using yarn
-yarn add @agateh/solana-headless-react @agateh/solana-headless-core
+yarn add @hermis/solana-headless-react @hermis/solana-headless-core
 
 # Using pnpm
-pnpm add @agateh/solana-headless-react @agateh/solana-headless-core
+pnpm add @hermis/solana-headless-react @hermis/solana-headless-core
 ```
 
 You'll also need to install the wallet adapters you want to support:
@@ -44,15 +44,15 @@ npm install @solana/wallet-adapter-phantom @solana/wallet-adapter-solflare
 
 ## 🚀 Quick Start
 
-### Basic Setup with AgatehProvider
+### Basic Setup with HermisProvider
 
 ```tsx
 // App.tsx
 import React from 'react';
-import { AgatehProvider } from '@agateh/solana-headless-react';
+import { HermisProvider } from '@hermis/solana-headless-react';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
-import { WalletAdapterNetwork } from '@agateh/solana-headless-core';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import Home from './Home';
 
 function App() {
@@ -63,14 +63,14 @@ function App() {
   ];
 
   return (
-    <AgatehProvider
+    <HermisProvider
       rpcEndpoint="https://api.devnet.solana.com"
       network={WalletAdapterNetwork.Devnet}
       autoConnect={true}
       additionalAdapters={wallets}
     >
       <Home />
-    </AgatehProvider>
+    </HermisProvider>
   );
 }
 
@@ -82,7 +82,7 @@ export default App;
 ```tsx
 // Home.tsx
 import React from 'react';
-import { useWallet, useSolanaBalance } from '@agateh/solana-headless-react';
+import { useWallet, useSolanaBalance } from '@hermis/solana-headless-react';
 
 function Home() {
   const { 
@@ -142,10 +142,10 @@ For Next.js applications, you'll need to handle the client-side rendering aspect
 // app/providers.tsx
 'use client';
 
-import { AgatehProvider } from '@agateh/solana-headless-react';
+import { HermisProvider } from '@hermis/solana-headless-react';
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
-import { WalletAdapterNetwork } from '@agateh/solana-headless-core';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { ReactNode } from 'react';
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -156,14 +156,14 @@ export function Providers({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <AgatehProvider
+    <HermisProvider
       rpcEndpoint="https://api.devnet.solana.com"
       network={WalletAdapterNetwork.Devnet}
       autoConnect={true}
       additionalAdapters={wallets}
     >
       {children}
-    </AgatehProvider>
+    </HermisProvider>
   );
 }
 ```
@@ -195,7 +195,7 @@ export default function RootLayout({
 // app/wallet-component.tsx
 'use client';
 
-import { useWallet, useSolanaBalance } from '@agateh/solana-headless-react';
+import { useWallet, useSolanaBalance } from '@hermis/solana-headless-react';
 
 export default function WalletComponent() {
   const { 
@@ -243,12 +243,12 @@ export default function Home() {
 
 ## 🔌 Core Components
 
-### `AgatehProvider`
+### `HermisProvider`
 
 The main provider component that sets up all Solana wallet functionality. It combines both the connection provider and wallet provider.
 
 ```tsx
-<AgatehProvider
+<HermisProvider
   rpcEndpoint="https://api.devnet.solana.com"
   network={WalletAdapterNetwork.Devnet}
   autoConnect={true}
@@ -257,7 +257,7 @@ The main provider component that sets up all Solana wallet functionality. It com
   onError={(error) => console.error(error)}
 >
   {children}
-</AgatehProvider>
+</HermisProvider>
 ```
 
 Props:
@@ -579,8 +579,8 @@ const [value, setValue, loading] = useLocalStorage('my-key', 'default-value');
 ### Sending Transactions
 
 ```tsx
-import { useWallet, useConnection } from '@agateh/solana-headless-react';
-import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@agateh/solana-headless-core';
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@hermis/solana-headless-core';
 
 function SendTransaction() {
   const { publicKey, sendTransaction } = useWallet();
@@ -628,20 +628,20 @@ function SendTransaction() {
 You can customize how wallet selection is persisted across sessions:
 
 ```tsx
-import { AgatehProvider, createIndexedDBStorageFactory } from '@agateh/solana-headless-react';
+import { HermisProvider, createIndexedDBStorageFactory } from '@hermis/solana-headless-react';
 
 // Create IndexedDB storage factory
 const indexedDBStorage = createIndexedDBStorageFactory('solana-wallets', 'wallet-store');
 
 function App() {
   return (
-    <AgatehProvider
+    <HermisProvider
       rpcEndpoint="https://api.mainnet-beta.solana.com"
       storageFactory={indexedDBStorage}
       // ...other props
     >
       {children}
-    </AgatehProvider>
+    </HermisProvider>
   );
 }
 ```
@@ -651,7 +651,7 @@ function App() {
 Handle wallet connection errors gracefully:
 
 ```tsx
-<AgatehProvider
+<HermisProvider
   rpcEndpoint="https://api.devnet.solana.com"
   onError={(error, adapter) => {
     console.error(`Error with ${adapter?.name || 'wallet'}:`, error);
@@ -660,7 +660,7 @@ Handle wallet connection errors gracefully:
   }}
 >
   {children}
-</AgatehProvider>
+</HermisProvider>
 ```
 
 ## 📋 Tips & Best Practices

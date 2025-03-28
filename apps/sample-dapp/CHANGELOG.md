@@ -5,23 +5,23 @@
 ### Patch Changes
 
 - Updated dependencies
-  - @agateh/solana-headless-adapter-base@1.1.3
-  - @agateh/solana-headless-core@1.2.2
+  - @hermis/solana-headless-adapter-base@1.1.3
+  - @hermis/solana-headless-core@1.2.2
 
 ## 1.0.4
 
 ### Patch Changes
 
 - Updated dependencies
-  - @agateh/solana-headless-core@1.2.1
-  - @agateh/solana-headless-adapter-base@1.1.2
+  - @hermis/solana-headless-core@1.2.1
+  - @hermis/solana-headless-adapter-base@1.1.2
 
 ## 1.0.3
 
 ### Patch Changes
 
 - Updated dependencies
-  - @agateh/solana-headless-adapter-base@1.1.1
+  - @hermis/solana-headless-adapter-base@1.1.1
 
 ## 1.0.2
 
@@ -29,22 +29,22 @@
 
 - Updated dependencies [964194b]
 - Updated dependencies
-  - @agateh/solana-headless-core@1.2.0
-  - @agateh/solana-headless-adapter-base@1.1.0
+  - @hermis/solana-headless-core@1.2.0
+  - @hermis/solana-headless-adapter-base@1.1.0
 
 ## 1.0.2-next.0
 
 ### Patch Changes
 
 - Updated dependencies
-  - @agateh/solana-headless-core@1.1.1-next.0
+  - @hermis/solana-headless-core@1.1.1-next.0
 
 ## 1.0.1
 
 ### Patch Changes
 
 - Updated dependencies [ac26b9b]
-  - @agateh/solana-headless-core@1.1.0
+  - @hermis/solana-headless-core@1.1.0
 
 ## 2.0.0
 

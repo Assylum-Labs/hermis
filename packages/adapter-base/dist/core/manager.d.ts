@@ -1,4 +1,4 @@
-import { Adapter, WalletName, EventEmitter, WalletAdapterEvents, Transaction } from '@agateh/solana-headless-core';
+import { Adapter, WalletName, EventEmitter, WalletAdapterEvents, Transaction } from '@hermis/solana-headless-core';
 /**
  * Create a simple wallet connection manager
  * @param adapters Array of adapters to manage

@@ -1,13 +1,13 @@
 {
   "name": "solana-headless-sdk",
-  "version": "1.0.2",
+  "version": "0.0.0",
   "description": "",
   "scripts": {
     "clean": "turbo run clean",
     "build": "turbo run build",
     "build:dapp": "turbo run build:pages --filter=sample-dapp",
     "version-packages": "changeset version",
-    "release": "turbo run build --filter=@agateh/* && changeset publish",
+    "release": "turbo run build --filter=@hermis/* && changeset publish",
     "minor": "changeset add --minor",
     "major": "changeset add --major",
     "patch": "changeset add --patch",

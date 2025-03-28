@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, Dispatch, SetStateAction } from 'react';
-import { createLocalStorageUtility } from '@agateh/solana-headless-adapter-base';
+import { createLocalStorageUtility } from '@hermis/solana-headless-adapter-base';
 
 /**
  * Interface for storage provider

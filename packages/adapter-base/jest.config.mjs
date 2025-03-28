@@ -6,8 +6,8 @@ export default {
       ".ts"
     ],
     moduleNameMapper: { 
-      "^@agateh/solana-headless-core/(.*)$": "<rootDir>/../core/src/$1",
-      "^@agateh/solana-headless-core$": "<rootDir>/../core/src/index.ts",
+      "^@hermis/solana-headless-core/(.*)$": "<rootDir>/../core/src/$1",
+      "^@hermis/solana-headless-core$": "<rootDir>/../core/src/index.ts",
       "@solana/web3\\.js$": '<rootDir>/__mocks__/@solana/web3.js',
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },

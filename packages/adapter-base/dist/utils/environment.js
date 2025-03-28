@@ -1,4 +1,4 @@
-// import { WalletAdapterNetwork, Adapter, WalletReadyState } from '@agateh/solana-headless-core';
+// import { WalletAdapterNetwork, Adapter, WalletReadyState } from '@hermis/solana-headless-core';
 // import { Environment, EnvironmentConfig } from '../types.js';
 // /**
 //  * Get the current user agent
@@ -84,7 +84,7 @@
 //     return WalletAdapterNetwork.Mainnet;
 //   }
 // }
-import { WalletAdapterNetwork, WalletReadyState } from '@agateh/solana-headless-core';
+import { WalletAdapterNetwork, WalletReadyState } from '@hermis/solana-headless-core';
 import { Environment } from '../types.js';
 import { SolanaMobileWalletAdapterWalletName } from '../standard/constants.js';
 /**

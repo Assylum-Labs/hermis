@@ -1,4 +1,4 @@
-import { WalletAdapterNetwork, Adapter } from '@agateh/solana-headless-core';
+import { WalletAdapterNetwork, Adapter } from '@hermis/solana-headless-core';
 import { Environment, EnvironmentConfig } from '../types.js';
 export declare function getUserAgent(): string | null;
 /**

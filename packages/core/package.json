@@ -1,6 +1,6 @@
 {
-  "name": "@agateh/solana-headless-core",
-  "version": "1.2.2",
+  "name": "@hermis/solana-headless-core",
+  "version": "0.0.0",
   "description": "Core wallet logic for the Solana Headless SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,7 @@
     "buffer": "^6.0.3"
   },
   "devDependencies": {
-    "@agateh/solana-headless-format-config": "workspace:*",
+    "@hermis/solana-headless-format-config": "workspace:*",
     "@types/node": "^22.13.8"
   },
   "jest": {

@@ -1,4 +1,4 @@
-import { WalletReadyState } from '@agateh/solana-headless-core';
+import { WalletReadyState } from '@hermis/solana-headless-core';
 import { SolanaMobileWalletAdapterWalletName } from '../standard/constants.js';
 // Store for all initialized adapters
 let _adapters = [];

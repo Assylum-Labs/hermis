@@ -1,5 +1,5 @@
 import React, { FC, ReactNode, useMemo } from 'react';
-import { Adapter, ConnectionConfig, WalletAdapterNetwork } from '@agateh/solana-headless-core';
+import { Adapter, ConnectionConfig, WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { WalletProvider as BaseWalletProvider } from '../providers/WalletProvider.js';
 import { ConnectionProvider } from '../providers/ConnectionProvider.js';
 import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
@@ -34,7 +34,7 @@ export interface ContextProviderProps {
  * 
  * It supports custom storage mechanisms via the storageFactory prop.
  * 
- * @param props AgatehWalletProviderProps
+ * @param props HermisWalletProviderProps
  * @returns Provider component
  */
 export const ContextProvider: FC<ContextProviderProps> = ({
@@ -48,7 +48,7 @@ export const ContextProvider: FC<ContextProviderProps> = ({
   onError,
 }) => {
   // Import the utility function from adapter-base
-  const { getInferredNetworkFromEndpoint } = require('@agateh/solana-headless-adapter-base');
+  const { getInferredNetworkFromEndpoint } = require('@hermis/solana-headless-adapter-base');
   
   // Infer network if not explicitly provided
   const network = explicitNetwork || getInferredNetworkFromEndpoint(rpcEndpoint);

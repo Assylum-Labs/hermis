@@ -11,14 +11,14 @@
     "build:pages": "webpack --config webpack.github-pages.config.js"
   },
   "dependencies": {
-    "@agateh/solana-headless-adapter-base": "workspace:*",
-    "@agateh/solana-headless-core": "workspace:*",
+    "@hermis/solana-headless-adapter-base": "workspace:*",
+    "@hermis/solana-headless-core": "workspace:*",
     "@solana/wallet-adapter-phantom": "^0.9.24",
     "@solana/wallet-adapter-solflare": "^0.6.28",
     "@solana/wallet-adapter-trust": "^0.1.13"
   },
   "devDependencies": {
-    "@agateh/solana-headless-format-config": "workspace:*",
+    "@hermis/solana-headless-format-config": "workspace:*",
     "@babel/core": "^7.24.4",
     "@babel/preset-env": "^7.24.4",
     "@types/node": "^22.13.8",

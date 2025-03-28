@@ -3,7 +3,7 @@ import {
   useWallet, 
   useWalletAdapters, 
   WalletConnectionManager 
-} from '@agateh/solana-headless-react';
+} from '@hermis/solana-headless-react';
 import './WalletModal.css';
 
 interface WalletModalProps {

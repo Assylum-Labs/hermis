@@ -1,5 +1,5 @@
 // // src/standard/utils.ts
-// import { Adapter } from '@agateh/solana-headless-core';
+// import { Adapter } from '@hermis/solana-headless-core';
 // import { Wallet as StandardWallet } from '@wallet-standard/base';
 // import { 
 //   StandardConnectMethod,

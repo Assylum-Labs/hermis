@@ -1,5 +1,5 @@
 import { FC, ReactNode, useState, useEffect, useMemo } from 'react';
-import { Adapter, WalletAdapterNetwork } from '@agateh/solana-headless-core';
+import { Adapter, WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { ContextProvider } from './ContextProvider.js';
 import { useStandardWalletAdapters } from '../hooks/useStandardWalletAdapters.js';
 import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
@@ -7,7 +7,7 @@ import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
 /**
  * Props for the ContextProvider component
  */
-export interface AgatehWalletProviderProps {
+export interface HermisWalletProviderProps {
   /** Children components */
   children: ReactNode;
   /** RPC endpoint for Solana connection */
@@ -36,7 +36,7 @@ export interface AgatehWalletProviderProps {
  * @param props ContextProviderProps
  * @returns Provider component
  */
-export const AgatehProvider: FC<AgatehWalletProviderProps> = ({
+export const HermisProvider: FC<HermisWalletProviderProps> = ({
   children,
   rpcEndpoint = 'https://api.mainnet-beta.solana.com',
   network = WalletAdapterNetwork.Mainnet,

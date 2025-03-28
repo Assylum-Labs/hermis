@@ -18,7 +18,7 @@
 
 // export * from './components/ContextProvider.js';
 // export * from './components/WalletConnectionManager.jsx';
-// export * from './components/AgatehProvider.js';
+// export * from './components/HermisProvider.js';
 
 // export * from './utils/errors.js';
 
@@ -26,7 +26,7 @@
 //   WalletAdapterNetwork, 
 //   WalletReadyState,
 //   WalletError 
-// } from '@agateh/solana-headless-core';
+// } from '@hermis/solana-headless-core';
 
 // export {
 //   getIsMobile,
@@ -34,7 +34,7 @@
 //   sortWalletAdapters,
 //   getAdaptersByReadyState,
 //   SolanaMobileWalletAdapterWalletName
-// } from '@agateh/solana-headless-adapter-base';
+// } from '@hermis/solana-headless-adapter-base';
 
 export * from './providers/WalletProvider.js';
 export * from './providers/ConnectionProvider.js';
@@ -56,7 +56,7 @@ export * from './hooks/useWalletAdapter.js';
 
 export * from './components/ContextProvider.js';
 export * from './components/WalletConnectionManager.js';
-export * from './components/AgatehProvider.js';
+export * from './components/HermisProvider.js';
 
 export * from './utils/errors.js';
 
@@ -64,7 +64,7 @@ export {
   WalletAdapterNetwork, 
   WalletReadyState,
   WalletError 
-} from '@agateh/solana-headless-core';
+} from '@hermis/solana-headless-core';
 
 export {
   getIsMobile,
@@ -72,4 +72,4 @@ export {
   sortWalletAdapters,
   getAdaptersByReadyState,
   SolanaMobileWalletAdapterWalletName
-} from '@agateh/solana-headless-adapter-base';
+} from '@hermis/solana-headless-adapter-base';

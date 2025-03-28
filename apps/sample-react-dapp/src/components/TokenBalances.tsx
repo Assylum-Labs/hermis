@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSolanaTokenAccounts } from '@agateh/solana-headless-react';
+import { useSolanaTokenAccounts } from '@hermis/solana-headless-react';
 import './TokenBalances.css';
 
 export const TokenBalances: React.FC = () => {

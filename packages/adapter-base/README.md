@@ -1,4 +1,4 @@
-# @agateh/solana-headless-adapter-base
+# @hermis/solana-headless-adapter-base
 
 <p align="center">
   <img src="https://iq.wiki/_next/image?url=https%3A%2F%2Fipfs.everipedia.org%2Fipfs%2FQmTaB5ygg5qNMDKmnfPgottNRZTe7PXzMpe3Tg7Bdw57HN&w=1080&q=95" width="100" alt="Solana Logo">
@@ -11,7 +11,7 @@
 
 ## 🌟 Overview
 
-`@agateh/solana-headless-adapter-base` provides the foundation for wallet adapter implementations in the Solana Headless SDK ecosystem. This package is completely framework-agnostic, allowing you to integrate Solana wallets with any UI framework or vanilla JavaScript.
+`@hermis/solana-headless-adapter-base` provides the foundation for wallet adapter implementations in the Solana Headless SDK ecosystem. This package is completely framework-agnostic, allowing you to integrate Solana wallets with any UI framework or vanilla JavaScript.
 
 ## ✨ Features
 
@@ -25,20 +25,20 @@
 
 ```bash
 # Using pnpm (recommended)
-pnpm add @agateh/solana-headless-adapter-base
+pnpm add @hermis/solana-headless-adapter-base
 
 # Using npm
-npm install @agateh/solana-headless-adapter-base
+npm install @hermis/solana-headless-adapter-base
 
 # Using yarn
-yarn add @agateh/solana-headless-adapter-base
+yarn add @hermis/solana-headless-adapter-base
 ```
 
 ## 🧪 Live Demo
 
 Experience our framework-agnostic implementation in action:
 
-[**Try the Base Adapter Demo →**](https://agateh.github.io/solana-headless-sdk/)
+[**Try the Base Adapter Demo →**](https://hermis.github.io/solana-headless-sdk/)
 
 This demo showcases how to use the base adapter with vanilla JavaScript, allowing you to connect to Solana wallets, manage wallet state, and interact with the Solana blockchain without any framework dependencies.
 
@@ -49,12 +49,12 @@ import {
   WalletAdapterManager, 
   getStandardWalletAdapters,
   sortWalletAdapters
-} from '@agateh/solana-headless-adapter-base';
+} from '@hermis/solana-headless-adapter-base';
 
 import {
   WalletAdapterNetwork,
   createConnection
-} from '@agateh/solana-headless-core';
+} from '@hermis/solana-headless-core';
 
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
@@ -133,13 +133,13 @@ git clone https://github.com/yourusername/solana-headless-sdk.git
 pnpm install
 
 # Build the adapter-base package
-pnpm --filter "@agateh/solana-headless-adapter-base" build
+pnpm --filter "@hermis/solana-headless-adapter-base" build
 ```
 
 ## 📚 Related Packages
 
-- [@agateh/solana-headless-core](../core/README.md): Core wallet functionality
-- [@agateh/solana-headless-react](../react-core/README.md): React adapter implementation
+- [@hermis/solana-headless-core](../core/README.md): Core wallet functionality
+- [@hermis/solana-headless-react](../react-core/README.md): React adapter implementation
 
 ## 📜 License
 

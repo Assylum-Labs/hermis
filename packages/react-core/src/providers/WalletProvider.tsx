@@ -16,11 +16,11 @@ import {
   SignerWalletAdapter,
   SignInMessageSignerWalletAdapter,
   SendOptions
-} from '@agateh/solana-headless-core';
+} from '@hermis/solana-headless-core';
 import {
   getIsMobile,
   SolanaMobileWalletAdapterWalletName
-} from '@agateh/solana-headless-adapter-base';
+} from '@hermis/solana-headless-adapter-base';
 import { useStandardWalletAdapters } from '../hooks/useStandardWalletAdapters.js';
 import { useConnection } from '../hooks/useConnection.js';
 import { useLocalStorage, StorageProviderFactory } from '../hooks/useLocalStorage.js';

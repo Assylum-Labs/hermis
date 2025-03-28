@@ -1,5 +1,5 @@
 {
-  "extends": "@agateh/solana-headless-format-config/tsconfig.base.json",
+  "extends": "@hermis/solana-headless-format-config/tsconfig.base.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
     "moduleResolution": "NodeNext", // or "Node16"

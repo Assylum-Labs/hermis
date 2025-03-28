@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PublicKey, LAMPORTS_PER_SOL } from '@agateh/solana-headless-core';
+import { PublicKey, LAMPORTS_PER_SOL } from '@hermis/solana-headless-core';
 import { useConnection } from './useConnection.js';
 import { useWallet } from './useWallet.js';
 

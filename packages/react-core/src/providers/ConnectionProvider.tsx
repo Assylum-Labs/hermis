@@ -1,5 +1,5 @@
 import { FC, ReactNode, useMemo } from 'react';
-import { Connection, ConnectionConfig, WalletAdapterNetwork } from '@agateh/solana-headless-core';
+import { Connection, ConnectionConfig, WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { ConnectionContext } from '../hooks/useConnection.js';
 
 /**

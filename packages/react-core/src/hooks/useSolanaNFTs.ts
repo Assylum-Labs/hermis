@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { PublicKey } from '@agateh/solana-headless-core';
+import { PublicKey } from '@hermis/solana-headless-core';
 import { useConnection } from './useConnection.js';
 import { useWallet } from './useWallet.js';
 

@@ -4,14 +4,14 @@ import {
   sortWalletAdapters,
   getAdaptersByReadyState,
   getIsMobile
-} from '@agateh/solana-headless-adapter-base';
+} from '@hermis/solana-headless-adapter-base';
 
 import {
   WalletReadyState,
   WalletAdapterNetwork,
   createConnection,
   signMessage
-} from '@agateh/solana-headless-core';
+} from '@hermis/solana-headless-core';
 
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';

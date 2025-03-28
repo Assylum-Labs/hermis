@@ -1,4 +1,4 @@
-import { WalletReadyState, WalletName, Connection, PublicKey, SendOptions, Transaction, VersionedTransaction, TransactionSignature, TransactionVersion, WalletAdapterEvents, MessageSignerWalletAdapter, SignerWalletAdapter, SignInMessageSignerWalletAdapter, WalletAdapter, EventEmitter } from '@agateh/solana-headless-core';
+import { WalletReadyState, WalletName, Connection, PublicKey, SendOptions, Transaction, VersionedTransaction, TransactionSignature, TransactionVersion, WalletAdapterEvents, MessageSignerWalletAdapter, SignerWalletAdapter, SignInMessageSignerWalletAdapter, WalletAdapter, EventEmitter } from '@hermis/solana-headless-core';
 import { TypedStandardWallet } from './types.js';
 interface IStandardWalletAdapter extends WalletAdapter, SignerWalletAdapter, MessageSignerWalletAdapter, SignInMessageSignerWalletAdapter {
 }

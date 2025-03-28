@@ -1,4 +1,4 @@
-import { WalletReadyState } from '@agateh/solana-headless-core';
+import { WalletReadyState } from '@hermis/solana-headless-core';
 import {
     StandardConnectMethod,
     StandardDisconnectMethod,
@@ -9,7 +9,7 @@ import {
 
 import { Wallet } from '@wallet-standard/base';
 
-jest.mock('@agateh/solana-headless-core', () => {
+jest.mock('@hermis/solana-headless-core', () => {
 
     class Transaction {
         feePayer: any = null;

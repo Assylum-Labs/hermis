@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { useWallet, useConnection, useSolanaTransaction } from '@agateh/solana-headless-react';
+import { useWallet, useConnection, useSolanaTransaction } from '@hermis/solana-headless-react';
 import { 
   Transaction, 
   SystemProgram, 
   PublicKey, 
   LAMPORTS_PER_SOL
-} from '@agateh/solana-headless-core';
+} from '@hermis/solana-headless-core';
 import './TransactionCard.css';
 
 interface TransactionCardProps {

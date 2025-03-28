@@ -6,12 +6,12 @@ import {
   useWalletAdapters, 
   useSolanaBalance,
   getIsMobile
-} from '@agateh/solana-headless-react'
+} from '@hermis/solana-headless-react'
 import { 
   WalletReadyState, 
   PublicKey, 
   WalletName 
-} from '@agateh/solana-headless-core'
+} from '@hermis/solana-headless-core'
 
 // Import the custom components we created
 import { WalletModal } from './components/WalletModal'
@@ -367,7 +367,7 @@ function App() {
     <div className="container">
       <header>
         <h1>Solana Headless Wallet Demo</h1>
-        <p className="subtitle">React implementation using @agateh/solana-headless-react</p>
+        <p className="subtitle">React implementation using @hermis/solana-headless-react</p>
       </header>
 
       <div className={`wallet-container ${isMobile ? 'mobile-view' : ''}`}>

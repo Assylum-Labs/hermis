@@ -3,7 +3,7 @@ import {
     VersionedTransactionResponse,
     SignatureStatus,
     TransactionSignature
-} from '@agateh/solana-headless-core';
+} from '@hermis/solana-headless-core';
 import { useConnection } from './useConnection.js';
 
 /**

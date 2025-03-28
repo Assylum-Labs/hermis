@@ -37,7 +37,7 @@ jest.mock('@solana/spl-token', () => ({
     TOKEN_PROGRAM_ID: 'TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',
 }));
 
-jest.mock('@agateh/solana-headless-core', () => ({
+jest.mock('@hermis/solana-headless-core', () => ({
     WalletReadyState: {
         Installed: 'Installed',
         Loadable: 'Loadable',
@@ -51,7 +51,7 @@ jest.mock('@agateh/solana-headless-core', () => ({
     }
 }));
 
-import { WalletReadyState, WalletAdapterNetwork } from '@agateh/solana-headless-core';
+import { WalletReadyState, WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { Environment } from '../../src/types';
 import { SolanaMobileWalletAdapterWalletName } from '../../src/standard/constants';
 

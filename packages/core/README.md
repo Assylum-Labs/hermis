@@ -1,4 +1,4 @@
-# @agateh/solana-headless-core
+# @hermis/solana-headless-core
 
 <p align="center">
   <img src="https://iq.wiki/_next/image?url=https%3A%2F%2Fipfs.everipedia.org%2Fipfs%2FQmTaB5ygg5qNMDKmnfPgottNRZTe7PXzMpe3Tg7Bdw57HN&w=1080&q=95" width="100" alt="Solana Logo">
@@ -11,7 +11,7 @@
 
 ## 🌟 Overview
 
-`@agateh/solana-headless-core` provides the fundamental building blocks for wallet management, transaction signing, and Solana network interactions. As part of the Solana Headless SDK, this package focuses on the core functionality without imposing any UI constraints.
+`@hermis/solana-headless-core` provides the fundamental building blocks for wallet management, transaction signing, and Solana network interactions. As part of the Solana Headless SDK, this package focuses on the core functionality without imposing any UI constraints.
 
 ## ✨ Features
 
@@ -25,13 +25,13 @@
 
 ```bash
 # Using pnpm (recommended)
-pnpm add @agateh/solana-headless-core
+pnpm add @hermis/solana-headless-core
 
 # Using npm
-npm install @agateh/solana-headless-core
+npm install @hermis/solana-headless-core
 
 # Using yarn
-yarn add @agateh/solana-headless-core
+yarn add @hermis/solana-headless-core
 ```
 
 ## 🚀 Quick Start
@@ -41,7 +41,7 @@ import {
   createConnection, 
   createWallet, 
   WalletAdapterNetwork 
-} from "@agateh/solana-headless-core";
+} from "@hermis/solana-headless-core";
 
 // Create a new wallet
 const wallet = createWallet();
@@ -51,11 +51,11 @@ console.log("New wallet created with public key:", wallet.publicKey.toBase58());
 const connection = createConnection(WalletAdapterNetwork.Devnet);
 
 // Create a wallet manager
-import { WalletManager } from "@agateh/solana-headless-core";
+import { WalletManager } from "@hermis/solana-headless-core";
 const manager = new WalletManager(WalletAdapterNetwork.Devnet);
 
 // Connect to a wallet adapter
-const phantomAdapter = /* ... get an adapter from the @agateh/solana-headless-adapter-base */;
+const phantomAdapter = /* ... get an adapter from the @hermis/solana-headless-adapter-base */;
 await manager.connect(phantomAdapter);
 
 // Get the wallet's balance
@@ -69,7 +69,7 @@ console.log(`Wallet balance: ${balance} SOL`);
 
 ```typescript
 // Create a connection to a Solana network
-import { createConnection, WalletAdapterNetwork } from "@agateh/solana-headless-core";
+import { createConnection, WalletAdapterNetwork } from "@hermis/solana-headless-core";
 
 // Connect to mainnet
 const mainnetConnection = createConnection(WalletAdapterNetwork.Mainnet);
@@ -107,7 +107,7 @@ import {
   createWallet, 
   importWallet, 
   exportWallet 
-} from "@agateh/solana-headless-core";
+} from "@hermis/solana-headless-core";
 
 // Create a new wallet
 const newWallet = createWallet();
@@ -123,7 +123,7 @@ const exportedSecretKey = exportWallet(newWallet);
 ### Wallet Manager
 
 ```typescript
-import { WalletManager, WalletAdapterNetwork } from "@agateh/solana-headless-core";
+import { WalletManager, WalletAdapterNetwork } from "@hermis/solana-headless-core";
 
 // Create a wallet manager for devnet
 const manager = new WalletManager(WalletAdapterNetwork.Devnet);
@@ -145,7 +145,7 @@ import {
   signTransaction, 
   sendTransaction, 
   signMessage 
-} from "@agateh/solana-headless-core";
+} from "@hermis/solana-headless-core";
 import { Transaction } from "@solana/web3.js";
 
 // Sign a transaction with a wallet
@@ -161,8 +161,8 @@ const signedMessage = await signMessage(message, adapter);
 
 ## 🔗 Related Packages
 
-- [@agateh/solana-headless-adapter-base](../adapter-base/README.md): Base adapter implementations
-- [@agateh/solana-headless-react](../react-core/README.md): React integration for Solana Headless SDK
+- [@hermis/solana-headless-adapter-base](../adapter-base/README.md): Base adapter implementations
+- [@hermis/solana-headless-react](../react-core/README.md): React integration for Solana Headless SDK
 
 ## 📜 License
 

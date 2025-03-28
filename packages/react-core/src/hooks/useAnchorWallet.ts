@@ -1,4 +1,4 @@
-import { PublicKey, Transaction, VersionedTransaction } from '@agateh/solana-headless-core';
+import { PublicKey, Transaction, VersionedTransaction } from '@hermis/solana-headless-core';
 import { useMemo } from 'react';
 import { useWallet } from './useWallet.js';
 

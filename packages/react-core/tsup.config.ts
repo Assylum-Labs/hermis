@@ -6,6 +6,6 @@ export default {
   format: ['cjs', 'esm'],
   dts: true,
   clean: true,
-  external: ['react', '@agateh/solana-headless-core'],
+  external: ['react', '@hermis/solana-headless-core'],
   tsconfig: './tsconfig.build.json'
 } satisfies Options

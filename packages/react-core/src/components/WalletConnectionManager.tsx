@@ -1,6 +1,6 @@
 import React, { FC, ReactNode, useCallback } from 'react';
 import { useWallet } from '../hooks/useWallet.js';
-import { WalletName } from '@agateh/solana-headless-core';
+import { WalletName } from '@hermis/solana-headless-core';
 
 /**
  * Information about the wallet connection state and actions

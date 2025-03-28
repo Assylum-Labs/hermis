@@ -1,5 +1,5 @@
 import React from 'react';
-import { useSolanaNFTs } from '@agateh/solana-headless-react';
+import { useSolanaNFTs } from '@hermis/solana-headless-react';
 import './NFTGallery.css';
 
 export const NFTGallery: React.FC = () => {

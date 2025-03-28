@@ -47,10 +47,10 @@ importers:
 
   apps/sample-dapp:
     dependencies:
-      '@agateh/solana-headless-adapter-base':
+      '@hermis/solana-headless-adapter-base':
         specifier: workspace:*
         version: link:../../packages/adapter-base
-      '@agateh/solana-headless-core':
+      '@hermis/solana-headless-core':
         specifier: workspace:*
         version: link:../../packages/core
       '@solana/wallet-adapter-phantom':
@@ -63,7 +63,7 @@ importers:
         specifier: ^0.1.13
         version: 0.1.14(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
     devDependencies:
-      '@agateh/solana-headless-format-config':
+      '@hermis/solana-headless-format-config':
         specifier: workspace:*
         version: link:../../packages/format-config
       '@babel/core':
@@ -108,13 +108,13 @@ importers:
 
   apps/sample-react-dapp:
     dependencies:
-      '@agateh/solana-headless-adapter-base':
+      '@hermis/solana-headless-adapter-base':
         specifier: workspace:*
         version: link:../../packages/adapter-base
-      '@agateh/solana-headless-core':
+      '@hermis/solana-headless-core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@agateh/solana-headless-react':
+      '@hermis/solana-headless-react':
         specifier: workspace:*
         version: link:../../packages/react-core
       '@solana/wallet-adapter-phantom':
@@ -238,7 +238,7 @@ importers:
 
   packages/adapter-base:
     dependencies:
-      '@agateh/solana-headless-core':
+      '@hermis/solana-headless-core':
         specifier: workspace:*
         version: link:../core
       '@solana-mobile/wallet-adapter-mobile':
@@ -251,7 +251,7 @@ importers:
         specifier: ^6.0.0
         version: 6.0.0
     devDependencies:
-      '@agateh/solana-headless-format-config':
+      '@hermis/solana-headless-format-config':
         specifier: workspace:*
         version: link:../format-config
       '@types/node':
@@ -276,7 +276,7 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
     devDependencies:
-      '@agateh/solana-headless-format-config':
+      '@hermis/solana-headless-format-config':
         specifier: workspace:*
         version: link:../format-config
       '@types/node':
@@ -285,7 +285,7 @@ importers:
 
   packages/enterprise/core:
     devDependencies:
-      '@agateh/solana-headless-format-config':
+      '@hermis/solana-headless-format-config':
         specifier: workspace:*
         version: link:../../format-config
       '@types/node':
@@ -299,17 +299,17 @@ importers:
 
   packages/react-core:
     dependencies:
-      '@agateh/solana-headless-adapter-base':
+      '@hermis/solana-headless-adapter-base':
         specifier: workspace:*
         version: link:../adapter-base
-      '@agateh/solana-headless-core':
+      '@hermis/solana-headless-core':
         specifier: workspace:*
         version: link:../core
       react:
         specifier: ^19.0.0
         version: 19.0.0
     devDependencies:
-      '@agateh/solana-headless-format-config':
+      '@hermis/solana-headless-format-config':
         specifier: workspace:*
         version: link:../format-config
       '@types/node':

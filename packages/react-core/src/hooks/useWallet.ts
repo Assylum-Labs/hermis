@@ -7,7 +7,7 @@ import {
     WalletAdapterProps,
     WalletName,
     WalletReadyState
-} from '@agateh/solana-headless-core';
+} from '@hermis/solana-headless-core';
 import { createContext, useContext } from 'react';
 
 /**

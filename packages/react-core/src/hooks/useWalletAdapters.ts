@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { Adapter, WalletReadyState } from '@agateh/solana-headless-core';
-import { sortWalletAdapters, getAdaptersByReadyState } from '@agateh/solana-headless-adapter-base';
+import { Adapter, WalletReadyState } from '@hermis/solana-headless-core';
+import { sortWalletAdapters, getAdaptersByReadyState } from '@hermis/solana-headless-adapter-base';
 import { useWallet } from './useWallet.js';
 
 /**

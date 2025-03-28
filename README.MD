@@ -10,7 +10,7 @@ This SDK provides **complete flexibility** for dApp developers, allowing full cu
 
 Try our playground:
 
-[**View the Demo →**](https://agateh.github.io/solana-headless-sdk/)
+[**View the Demo →**](https://hermis.github.io/solana-headless-sdk/)
 
 This demo showcases the core functionality of our adapter-base package with the React framework, demonstrating how you can integrate Solana wallets with complete UI freedom.
 
@@ -35,15 +35,15 @@ This demo showcases the core functionality of our adapter-base package with the 
 ### Community Edition
 | Package | Description | Documentation |
 |---------|-------------|---------------|
-| [@agateh/solana-headless-core](./packages/core/README.md) | Core wallet functionality and Solana interactions | [README](./packages/core/README.md) |
-| [@agateh/solana-headless-adapter-base](./packages/adapter-base/README.md) | Base adapter implementations | [README](./packages/adapter-base/README.md) |
-| [@agateh/solana-headless-react](./packages/react-core/README.md) | React hooks and components | [README](./packages/react-core/README.md) |
-| [@agateh/solana-headless-vue](./packages/vue-core/README.md) | Vue composables and components | Coming soon |
+| [@hermis/solana-headless-core](./packages/core/README.md) | Core wallet functionality and Solana interactions | [README](./packages/core/README.md) |
+| [@hermis/solana-headless-adapter-base](./packages/adapter-base/README.md) | Base adapter implementations | [README](./packages/adapter-base/README.md) |
+| [@hermis/solana-headless-react](./packages/react-core/README.md) | React hooks and components | [README](./packages/react-core/README.md) |
+| [@hermis/solana-headless-vue](./packages/vue-core/README.md) | Vue composables and components | Coming soon |
 
 ### Enterprise Edition
 | Package | Description | Access |
 |---------|-------------|--------|
-| [@agateh/solana-headless-enterprise](./packages/enterprise/README.md) | Enterprise authentication & wallet features | Contact for access |
+| [@hermis/solana-headless-enterprise](./packages/enterprise/README.md) | Enterprise authentication & wallet features | Contact for access |
 
 ## 🛠️ **Development**
 
@@ -51,7 +51,7 @@ This repository is a **pnpm monorepo** managed with [Turborepo](https://turbo.bu
 
 ```bash
 # Clone the repository
-git clone https://github.com/agateh/solana-headless-sdk.git
+git clone https://github.com/hermis/solana-headless-sdk.git
 
 # Install dependencies
 pnpm install
@@ -71,9 +71,9 @@ This "open core" model provides a robust open-source foundation while offering a
 ## 📮 **Stay Updated**
 
 For updates and discussions:
-- Twitter: [@Agateh_](https://x.com/Agateh_)
+- Twitter: [@Hermis_](https://x.com/Hermis_)
 
 ## 💼 **Enterprise Inquiries**
 
 For information about Enterprise Edition licensing, features, and support:
-- Contact: [agateh.labs@gmail.com](mailto:agateh.labs@gmail.com)
+- Contact: [hermis.labs@gmail.com](mailto:hermis.labs@gmail.com)

@@ -6,8 +6,8 @@ class MockWalletError extends Error {
     }
 }
 
-jest.mock('@agateh/solana-headless-core', () => {
-    const actual = jest.requireActual('@agateh/solana-headless-core');
+jest.mock('@hermis/solana-headless-core', () => {
+    const actual = jest.requireActual('@hermis/solana-headless-core');
     return {
         ...actual,
         WalletError: class WalletError extends Error {
@@ -25,7 +25,7 @@ import {
     WalletReadyState,
     PublicKey,
     WalletError
-} from '@agateh/solana-headless-core';
+} from '@hermis/solana-headless-core';
 import {
     initAdapters,
     selectAdapter,
@@ -36,7 +36,7 @@ import {
     addWalletAdapterEventListeners
 } from '../../src/core/adapters';
 
-jest.mock('@agateh/solana-headless-core', () => {
+jest.mock('@hermis/solana-headless-core', () => {
     return {
         WalletReadyState: {
             Installed: 'Installed',

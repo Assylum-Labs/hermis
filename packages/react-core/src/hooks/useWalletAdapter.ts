@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Adapter, WalletName } from '@agateh/solana-headless-core';
+import { Adapter, WalletName } from '@hermis/solana-headless-core';
 import { useWallet } from './useWallet.js';
 
 /**

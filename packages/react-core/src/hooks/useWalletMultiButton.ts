@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useWallet } from './useWallet.js';
-import { WalletName } from '@agateh/solana-headless-core';
+import { WalletName } from '@hermis/solana-headless-core';
 
 /**
  * Interface for wallet multi-button state

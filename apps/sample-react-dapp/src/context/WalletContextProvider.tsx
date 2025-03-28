@@ -1,4 +1,4 @@
-import { AgatehProvider } from "@agateh/solana-headless-react"
+import { HermisProvider } from "@hermis/solana-headless-react"
 import { FC, ReactNode } from "react"
 import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
@@ -17,14 +17,14 @@ const WalletContextProvider: FC<WalletContextProviderProps> = ({
     ]
 
     return (
-        <AgatehProvider
+        <HermisProvider
             rpcEndpoint="https://api.devnet.solana.com"
             autoConnect={true}
             storageKey="solana-wallet-name"
             additionalAdapters={wallets}
         >
             {children}
-        </AgatehProvider>
+        </HermisProvider>
     )
 }
 

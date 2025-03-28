@@ -26,9 +26,9 @@ export default {
       
       './polyfills/index.js': path.resolve(__dirname, '../../packages/core/src/polyfills/index.ts'),
       
-      '@agateh/solana-headless-react': path.resolve(__dirname, '../../packages/react-core/src'),
-      '@agateh/solana-headless-core': path.resolve(__dirname, '../../packages/core/src'),
-      '@agateh/solana-headless-adapter-base': path.resolve(__dirname, '../../packages/adapter-base/src')
+      '@hermis/solana-headless-react': path.resolve(__dirname, '../../packages/react-core/src'),
+      '@hermis/solana-headless-core': path.resolve(__dirname, '../../packages/core/src'),
+      '@hermis/solana-headless-adapter-base': path.resolve(__dirname, '../../packages/adapter-base/src')
     },
     fallback: {
       crypto: require.resolve('crypto-browserify'),
