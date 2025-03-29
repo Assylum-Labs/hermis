@@ -1,21 +1,54 @@
-// src/types/index.ts
+
+type SendOptions = {
+  skipPreflight?: boolean;
+  preflightCommitment?: Commitment;
+  maxRetries?: number;
+  minContextSlot?: number;
+}
+
+type SignatureStatus = {
+  slot: number;
+  confirmations: number | null;
+  err: TransactionError | null;
+  confirmationStatus?: TransactionConfirmationStatus;
+}
+
+type SupportedTransactionVersions = ReadonlySet<TransactionVersion> | null | undefined
+type TransactionSignature = string
+type VersionedTransactionResponse = {
+  slot: number;
+  transaction: {
+      message: VersionedMessage;
+      signatures: string[];
+  };
+  meta: ConfirmedTransactionMeta | null;
+  blockTime?: number | null;
+  version?: TransactionVersion;
+}
+
+type WalletAdapter<Name extends string = string> = WalletAdapterProps<Name> & EventEmitter<WalletAdapterEvents, any>
+type SignInMessageSignerWalletAdapter<Name extends string = string> = WalletAdapterProps<Name> & EventEmitter<WalletAdapterEvents, any> & SignInMessageSignerWalletAdapterProps<Name>
 
 // Only re-export specific types that you actually need
 import { 
     PublicKey, 
     Connection, 
     Transaction, 
-    TransactionSignature, 
+    // TransactionSignature, 
     Keypair,
     Commitment,
     ConnectionConfig,
     VersionedTransaction,
-    SendOptions,
+    // SendOptions,
     TransactionVersion,
     LAMPORTS_PER_SOL,
-    VersionedTransactionResponse,
-    SignatureStatus,
+    // VersionedTransactionResponse,
+    // SignatureStatus,
     SystemProgram,
+    TransactionError,
+    TransactionConfirmationStatus,
+    VersionedMessage,
+    ConfirmedTransactionMeta,
 } from '@solana/web3.js';
 
 import {
@@ -33,15 +66,17 @@ import {
     BaseWalletAdapter,
     EventEmitter,
 
-    MessageSignerWalletAdapter,
+    // MessageSignerWalletAdapter,
+    BaseMessageSignerWalletAdapter as MessageSignerWalletAdapter,
     MessageSignerWalletAdapterProps,
-    SignerWalletAdapterProps,
+    BaseSignInMessageSignerWalletAdapter as SignerWalletAdapterProps,
     SignInMessageSignerWalletAdapterProps,
     WalletAdapterProps,
-    SignerWalletAdapter, 
-    SignInMessageSignerWalletAdapter, 
-    SupportedTransactionVersions, 
-    WalletAdapter,
+    BaseSignerWalletAdapter as SignerWalletAdapter, 
+    // SignInMessageSignerWalletAdapter, 
+    // SupportedTransactionVersions, 
+    // WalletAdapter,
+    // WalletAdapter as nativeAdapter,
 } from '@solana/wallet-adapter-base';
 
 // Export only the specific types you need

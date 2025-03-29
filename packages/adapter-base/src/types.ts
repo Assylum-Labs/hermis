@@ -1,5 +1,6 @@
 // src/types.ts
 import { Adapter, WalletName, WalletReadyState } from '@hermis/solana-headless-core';
+import { SolanaMobileWalletAdapter } from '@solana-mobile/wallet-adapter-mobile';
 
 /**
  * Interface for wallet provider information
@@ -24,6 +25,6 @@ export enum Environment {
  * Configuration for environment detection
  */
 export interface EnvironmentConfig {
-  adapters: Adapter[];
+  adapters: Adapter[] | SolanaMobileWalletAdapter[];
   userAgentString: string | null;
 }

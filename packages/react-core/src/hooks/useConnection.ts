@@ -20,5 +20,9 @@ export const ConnectionContext = createContext<ConnectionContextState>({} as Con
  * @returns ConnectionContextState
  */
 export function useConnection(): ConnectionContextState {
-    return useContext(ConnectionContext);
+    const connectionContext = useContext(ConnectionContext);
+    if (connectionContext === undefined) {
+        throw new Error("useConnection must be used within an ConnectionProvider");
+    }
+    return connectionContext;
 }

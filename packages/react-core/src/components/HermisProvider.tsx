@@ -36,7 +36,7 @@ export interface HermisWalletProviderProps {
  * @param props ContextProviderProps
  * @returns Provider component
  */
-export const HermisProvider: FC<HermisWalletProviderProps> = ({
+export const HermisProvider = ({
   children,
   rpcEndpoint = 'https://api.mainnet-beta.solana.com',
   network = WalletAdapterNetwork.Mainnet,
@@ -45,7 +45,7 @@ export const HermisProvider: FC<HermisWalletProviderProps> = ({
   storageFactory,
   additionalAdapters = [],
   onError,
-}) => {
+}: HermisWalletProviderProps) => {
   const [adapters, setAdapters] = useState<Adapter[]>([]);
 
   const memoizedAdapters = useMemo(() =>

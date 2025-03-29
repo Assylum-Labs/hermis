@@ -1,11 +1,11 @@
 {
   "name": "@hermis/solana-headless-core",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "Core wallet logic for the Hermis Solana Headless SDK",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsup --config tsup.config.ts",
     "test": "jest",
     "test:watch": "jest --watch",
     "prepublishOnly": "pnpm run build",
@@ -14,6 +14,7 @@
   "type": "module",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
@@ -29,9 +30,14 @@
     "buffer": "^6.0.3"
   },
   "devDependencies": {
-    "@hermis/solana-headless-format-config": "workspace:*",
-    "@types/node": "^22.13.8"
+    "@hermis/solana-headless-format-config": "^1.0.3",
+    "@types/node": "^22.13.8",
+    "tsup": "^8.0.0"
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",

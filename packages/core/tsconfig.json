@@ -2,8 +2,14 @@
   "extends": "@hermis/solana-headless-format-config/tsconfig.base.json",
   "compilerOptions": {
     "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
-    "moduleResolution": "NodeNext", // or "Node16"
-    "module": "NodeNext", // or "Node16"
+    // "moduleResolution": "NodeNext", // or "Node16"
+    "moduleResolution": "bundler", // or "Node16"
+    // "module": "NodeNext", // or "Node16",
+    "module": "Preserve", // or "Node16",
+    "paths": {
+      "@solana-mobile/wallet-adapter-mobile": ["./node_modules/@solana-mobile/wallet-adapter-mobile/lib/types"]
+  },
+  "skipLibCheck": true,
     "outDir": "./dist",
     "rootDir": "./src",
     "types": ["node", "jest"],

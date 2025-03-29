@@ -1,5 +1,32 @@
 # @solana/headless-session
 
+## 1.0.3
+
+### Patch Changes
+
+- Refactor the Dynamic imports in the adapter-base package to use dependecy injection to avoid circular dependency
+- Updated dependencies
+  - @hermis/solana-headless-adapter-base@1.0.3
+  - @hermis/solana-headless-core@1.0.3
+
+## 1.0.2
+
+### Patch Changes
+
+- Updated the base tsconfig to allow cration of \*.d.ts files
+- Updated dependencies
+  - @hermis/solana-headless-adapter-base@1.0.2
+  - @hermis/solana-headless-core@1.0.2
+
+## 1.0.1
+
+### Patch Changes
+
+- Patch to update the packages version numbers from workspace:\* to the actual version numbers
+- Updated dependencies
+  - @hermis/solana-headless-adapter-base@1.0.1
+  - @hermis/solana-headless-core@1.0.1
+
 ## 1.0.0
 
 ### Major Changes

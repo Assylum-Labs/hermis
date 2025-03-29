@@ -1,99 +1,3 @@
-// // src/standard/utils.ts
-// import { Adapter } from '@hermis/solana-headless-core';
-// import { Wallet as StandardWallet } from '@wallet-standard/base';
-// import { 
-//   StandardConnectMethod,
-//   StandardDisconnectMethod,
-//   StandardEventsMethod,
-//   SolanaSignAndSendTransactionMethod,
-//   SolanaSignTransactionMethod,
-//   SolanaSignMessageMethod,
-//   SolanaSignInMethod,
-//   TypedStandardWallet
-// } from './types.js';
-
-// /**
-//  * Check if a wallet implements the Wallet Standard interface and has required features
-//  * @param wallet The wallet to check
-//  * @returns True if the wallet is wallet standard compatible
-//  */
-// export function isWalletAdapterCompatibleStandardWallet(
-//   wallet: StandardWallet
-// ): wallet is TypedStandardWallet {
-//   if (!wallet || !wallet.features) return false;
-
-//   return (
-//     // Must have standard:connect feature
-//     StandardConnectMethod in wallet.features &&
-//     // Must have standard:events feature
-//     StandardEventsMethod in wallet.features &&
-//     // Must have either solana:signAndSendTransaction OR solana:signTransaction feature
-//     (SolanaSignAndSendTransactionMethod in wallet.features || 
-//      SolanaSignTransactionMethod in wallet.features)
-//   );
-// }
-
-// /**
-//  * Get wallet adapters for all available standard wallets
-//  * @param existingAdapters Existing (non-standard) adapters to include in result
-//  * @returns Array of all adapters including standard wallet adapters
-//  */
-// export function getStandardWalletAdapters(existingAdapters: Adapter[] = []): Adapter[] {
-//   // Skip if not in browser environment
-//   if (typeof window === 'undefined' || !window.navigator) {
-//     return existingAdapters;
-//   }
-  
-//   try {
-//     // Check if wallet standard is available in window.navigator
-//     // The wallets property is injected by wallet standard
-//     const walletStandard = (window.navigator as any).wallets;
-//     if (!walletStandard) {
-//       return existingAdapters;
-//     }
-    
-//     // Get all registered wallets
-//     const standardWallets = walletStandard.get();
-    
-//     // Import here to avoid circular dependency
-//     const { StandardWalletAdapter } = require('./wallet-adapter');
-    
-//     // Filter for compatible wallets and create adapters
-//     const standardAdapters = standardWallets
-//       .filter(isWalletAdapterCompatibleStandardWallet)
-//       .map((wallet: TypedStandardWallet) => {
-//         try {
-//           return new StandardWalletAdapter(wallet);
-//         } catch (error) {
-//           console.error('Error creating adapter for wallet:', wallet.name, error);
-//           return null;
-//         }
-//       })
-//       .filter(Boolean) as Adapter[];
-    
-//     // Return combined adapters, filtering out any duplicates
-//     // (where standard adapter has same name as an existing adapter)
-//     const existingNames = new Set(existingAdapters.map(a => a.name));
-//     const uniqueStandardAdapters = standardAdapters.filter(a => !existingNames.has(a.name));
-    
-//     return [...existingAdapters, ...uniqueStandardAdapters];
-//   } catch (error) {
-//     console.error('Error getting standard wallets:', error);
-//     return existingAdapters;
-//   }
-// }
-
-// // Re-export constants
-// export {
-//   StandardConnectMethod,
-//   StandardDisconnectMethod,
-//   StandardEventsMethod,
-//   SolanaSignAndSendTransactionMethod,
-//   SolanaSignTransactionMethod,
-//   SolanaSignMessageMethod,
-//   SolanaSignInMethod
-// };
-
 import { Adapter, WalletAdapterNetwork, WalletReadyState } from '@hermis/solana-headless-core';
 import { Wallet as StandardWallet } from '@wallet-standard/base';
 import { 
@@ -108,6 +12,12 @@ import {
 } from './types.js';
 import { getEnvironment, getUriForAppIdentity, getUserAgent, getInferredNetworkFromEndpoint } from '../utils/environment.js';
 import { SolanaMobileWalletAdapterWalletName } from './constants.js';
+
+import { 
+  SolanaMobileWalletAdapter,
+  createDefaultAuthorizationResultCache,
+  createDefaultWalletNotFoundHandler
+} from '@solana-mobile/wallet-adapter-mobile'
 
 /**
  * Check if a wallet implements the Wallet Standard interface and has required features
@@ -135,7 +45,7 @@ export function isWalletAdapterCompatibleStandardWallet(
  * @param endpoint Optional RPC endpoint
  * @returns Mobile wallet adapter or null if not available
  */
-export async function createMobileWalletAdapter(endpoint?: string): Promise<Adapter | null> {
+export async function createMobileWalletAdapter(endpoint?: string): Promise<Adapter | SolanaMobileWalletAdapter | null> {
     // Skip if not in browser environment
     if (typeof window === 'undefined' || !window.navigator) {
       console.log('not in a browser');
@@ -167,11 +77,11 @@ export async function createMobileWalletAdapter(endpoint?: string): Promise<Adap
       console.log('Mobile wallet');
       const network = getInferredNetworkFromEndpoint(endpoint);
 
-      const { 
-        SolanaMobileWalletAdapter,
-        createDefaultAuthorizationResultCache,
-        createDefaultWalletNotFoundHandler
-    } = await import( '@solana-mobile/wallet-adapter-mobile')
+    //   const { 
+    //     SolanaMobileWalletAdapter,
+    //     createDefaultAuthorizationResultCache,
+    //     createDefaultWalletNotFoundHandler
+    // } = await import( '@solana-mobile/wallet-adapter-mobile')
       
       const adapter = new SolanaMobileWalletAdapter({
         addressSelector: {
@@ -201,7 +111,7 @@ export async function createMobileWalletAdapter(endpoint?: string): Promise<Adap
  * @param endpoint Optional endpoint for mobile wallet adapter
  * @returns Array of all adapters including standard wallet adapters
  */
-export async function getStandardWalletAdapters(existingAdapters: Adapter[] = [], endpoint?: string): Promise<Adapter[]> {
+export async function getStandardWalletAdapters(existingAdapters: Adapter[] | SolanaMobileWalletAdapter[] = [], endpoint?: string): Promise<(Adapter | SolanaMobileWalletAdapter)[]> {
   // Skip if not in browser environment
   if (typeof window === 'undefined' || !window.navigator) {
     return existingAdapters;
@@ -247,15 +157,12 @@ export async function getStandardWalletAdapters(existingAdapters: Adapter[] = []
     // Get all registered wallets
     const standardWallets = walletStandard.get();
     
-    // Import here to avoid circular dependency
-    const { StandardWalletAdapter } = require('./wallet-adapter');
-    
     // Filter for compatible wallets and create adapters
     const standardAdapters = standardWallets
       .filter(isWalletAdapterCompatibleStandardWallet)
       .map((wallet: TypedStandardWallet) => {
         try {
-          return new StandardWalletAdapter(wallet);
+          return createStandardWalletAdapter(wallet);
         } catch (error) {
           console.error('Error creating adapter for wallet:', wallet.name, error);
           return null;
@@ -275,8 +182,13 @@ export async function getStandardWalletAdapters(existingAdapters: Adapter[] = []
   }
 }
 
+export function isMobileWalletAdapter(adapter: any): adapter is SolanaMobileWalletAdapter {
+  return adapter && 'findWallets' in adapter;
+}
+
 // Import these from types.js to avoid circular dependencies
 import { Environment } from '../types.js';
+import { createStandardWalletAdapter } from './adapter-factory.js';
 
 // Re-export constants
 export {

@@ -1,12 +1,13 @@
 {
   "name": "@hermis/solana-headless-adapter-base",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "The framework agnostic implementation of the Hermis headless solana wallet adapetr",
   "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest",
-    "build": "tsc",
+    "build": "tsup --config tsup.config.ts",
     "prepublishOnly": "pnpm run build",
     "clean": "rm -rf dist"
   },
@@ -16,22 +17,28 @@
   "type": "module",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
   },
   "dependencies": {
-    "@hermis/solana-headless-core": "workspace:*",
+    "@hermis/solana-headless-core": "^1.0.3",
     "@solana-mobile/wallet-adapter-mobile": "2.0.0",
     "@wallet-standard/base": "^1.1.0",
     "bs58": "^6.0.0"
   },
+  "files": [
+    "dist",
+    "src"
+  ],
   "keywords": [],
   "author": "Mctursh",
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2",
   "devDependencies": {
-    "@hermis/solana-headless-format-config": "workspace:*",
-    "@types/node": "^22.13.8"
+    "@hermis/solana-headless-format-config": "^1.0.3",
+    "@types/node": "^22.13.8",
+    "tsup": "^8.0.0"
   }
 }
