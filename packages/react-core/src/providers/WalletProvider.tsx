@@ -365,13 +365,10 @@ export function WalletProvider({
 
     return () => {
       console.log('adapterState',adapterState);
-      console.log('latestAdapterRef.current',latestAdapterRef.current);
-      console.log('wallet?.adapter',wallet?.adapter);
       
-      // if(adapterState.connected ||
-      //   wallet?.adapter.connected ||
-      //   latestAdapterRef.current?.connected
-      // )
+      if(adapterState.connecting){
+        setWalletName(null)
+      }
     }
   }, [handleAutoConnectRequest, adapterState.adapter]);
 
