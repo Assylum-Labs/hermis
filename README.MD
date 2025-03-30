@@ -71,7 +71,7 @@ This "open core" model provides a robust open-source foundation while offering a
 ## 📮 **Stay Updated**
 
 For updates and discussions:
-- Twitter: [@Agateh_](https://x.com/Agateh_)
+- Twitter: [@Hermis_xyz](https://x.com/Hermis_xyz)
 
 ## 💼 **Enterprise Inquiries**
 
