@@ -312,10 +312,11 @@ export function WalletProvider({
         publicKey: null
       }));
 
-      changeWallet(null)
     }
     
     function handleError(error: WalletError) {
+      currentAdapter?.emit('disconnect')
+      changeWallet(null)
       handleErrorRef.current(error, currentAdapter!);
     }
     
