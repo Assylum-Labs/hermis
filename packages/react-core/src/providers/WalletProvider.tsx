@@ -147,7 +147,7 @@ export function WalletProvider({
   useEffect(() => {
     const adapter = findAdapter(walletName);
     
-    if(!autoConnect || !adapter?.connected) return
+    if(!autoConnect) return
 
     latestAdapterRef.current = adapter;
     
@@ -371,29 +371,38 @@ export function WalletProvider({
     setAdapterState(prev => ({ ...prev, connecting: true }));
     
     try {
-      return new Promise<WalletAdapter>(async(resolve) => {
-        await currentAdapter.connect();
-        
-        const isConnected = currentAdapter.connected;
-        const publicKey = currentAdapter.publicKey;
-        
-        setAdapterState(prev => ({ 
-          ...prev, 
-          adapter: currentAdapter,
-          connected: isConnected, 
-          connecting: false,
-          publicKey: publicKey 
-        }));
+      return new Promise<WalletAdapter>(async(resolve, reject) => {
+        try {
+          
+          await currentAdapter.connect();
+          
+          const isConnected = currentAdapter.connected;
+          const publicKey = currentAdapter.publicKey;
+          
+          setAdapterState(prev => ({ 
+            ...prev, 
+            adapter: currentAdapter,
+            connected: isConnected, 
+            connecting: false,
+            publicKey: publicKey 
+          }));
+  
+          latestAdapterRef.current = currentAdapter
+  
+          // console.log('Publickey', publicKey);
+          // console.log('isConnected', isConnected);
+          // console.log('adapterState', adapterState);
+          // console.log('adapter REf', latestAdapterRef.current);
+          
+          
+          setTimeout(() => resolve(currentAdapter), 50);
+        } catch (error) {
+          reject()
+          alert('COnnection interupped or failed')
+          await handleDisconnect()
+          throw error
 
-        latestAdapterRef.current = currentAdapter
-
-        // console.log('Publickey', publicKey);
-        // console.log('isConnected', isConnected);
-        // console.log('adapterState', adapterState);
-        // console.log('adapter REf', latestAdapterRef.current);
-        
-        
-        setTimeout(() => resolve(currentAdapter), 50);
+        }
       })
     } catch (error) {
       handleErrorRef.current(error as WalletError, currentAdapter);
