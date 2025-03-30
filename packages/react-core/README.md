@@ -9,6 +9,12 @@
   Modern React integration for the Solana blockchain - flexible, lightweight wallet management without UI constraints
 </p>
 
+## 🧪 **Live Demo**
+
+Try our playground:
+
+[**View the Demo →**](https://hermis-xyz.github.io/solana-headless-sdk/)
+
 ## 🌟 Overview
 
 `@hermis/solana-headless-react` provides a complete set of React hooks and components for integrating Solana wallet functionality into React applications. Built on top of the core `@hermis/solana-headless-core` package, it allows developers to implement wallet connection, transaction signing, and blockchain interactions with full UI flexibility.
@@ -38,8 +44,8 @@ pnpm add @hermis/solana-headless-react @hermis/solana-headless-core
 You'll also need to install the wallet adapters you want to support:
 
 ```bash
-# Install Phantom and Solflare adapters
-npm install @solana/wallet-adapter-phantom @solana/wallet-adapter-solflare
+# Install wallet adapters
+npm install @solana/wallet-adapter-wallets
 ```
 
 ## 🚀 Quick Start
@@ -50,9 +56,13 @@ npm install @solana/wallet-adapter-phantom @solana/wallet-adapter-solflare
 // App.tsx
 import React from 'react';
 import { HermisProvider } from '@hermis/solana-headless-react';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
-import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
 import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  TrustWalletAdapter,
+  CoinbaseWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
 import Home from './Home';
 
 function App() {
@@ -60,6 +70,8 @@ function App() {
   const wallets = [
     new PhantomWalletAdapter(),
     new SolflareWalletAdapter(),
+    new TrustWalletAdapter(),
+    new CoinbaseWalletAdapter(),
   ];
 
   return (
