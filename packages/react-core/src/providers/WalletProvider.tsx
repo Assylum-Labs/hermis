@@ -311,6 +311,8 @@ export function WalletProvider({
         disconnecting: false,
         publicKey: null
       }));
+
+      changeWallet(null)
     }
     
     function handleError(error: WalletError) {
@@ -395,6 +397,7 @@ export function WalletProvider({
     } catch (error) {
       handleErrorRef.current(error as WalletError, currentAdapter);
       setAdapterState(prev => ({ ...prev, connecting: false }));
+      await handleDisconnect()
       throw error;
     }
   }, [adapterState.adapter]);
@@ -414,6 +417,7 @@ export function WalletProvider({
     
     try {
       await currentAdapter.disconnect();
+      changeWallet(null)
       setWalletName(null)
     } catch (error) {
       handleErrorRef.current(error as WalletError, currentAdapter);
