@@ -364,8 +364,8 @@ export function WalletProvider({
     }
 
     return () => {
-      console.log('adapterState',adapterState);
-      
+      // Patch fix, This needs to be address 
+      // in the @solana-mobile/wallet-adapter-mobile package
       if(adapterState.connecting){
         setWalletName(null)
       }
