@@ -362,6 +362,17 @@ export function WalletProvider({
     if (adapterState.adapter) {
       handleAutoConnectRequest();
     }
+
+    return () => {
+      console.log('adapterState',adapterState);
+      console.log('latestAdapterRef.current',latestAdapterRef.current);
+      console.log('wallet?.adapter',wallet?.adapter);
+      
+      // if(adapterState.connected ||
+      //   wallet?.adapter.connected ||
+      //   latestAdapterRef.current?.connected
+      // )
+    }
   }, [handleAutoConnectRequest, adapterState.adapter]);
 
   const handleConnect = useCallback(async () => {
