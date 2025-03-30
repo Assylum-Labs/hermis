@@ -1,6 +1,6 @@
 {
   "name": "@hermis/solana-headless-adapter-base",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "The framework agnostic implementation of the Hermis headless solana wallet adapetr",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -23,7 +23,7 @@
     }
   },
   "dependencies": {
-    "@hermis/solana-headless-core": "^1.0.3",
+    "@hermis/solana-headless-core": "^1.0.5",
     "@solana-mobile/wallet-adapter-mobile": "2.0.0",
     "@wallet-standard/base": "^1.1.0",
     "bs58": "^6.0.0"
@@ -37,7 +37,7 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2",
   "devDependencies": {
-    "@hermis/solana-headless-format-config": "^1.0.3",
+    "@hermis/solana-headless-format-config": "^1.0.5",
     "@types/node": "^22.13.8",
     "tsup": "^8.0.0"
   }

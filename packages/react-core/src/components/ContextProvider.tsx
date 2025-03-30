@@ -3,6 +3,7 @@ import { Adapter, ConnectionConfig, WalletAdapterNetwork } from '@hermis/solana-
 import { WalletProvider as BaseWalletProvider } from '../providers/WalletProvider.js';
 import { ConnectionProvider } from '../providers/ConnectionProvider.js';
 import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
+import { getInferredNetworkFromEndpoint } from '@hermis/solana-headless-adapter-base';
 
 /**
  * Props for the combined wallet and connection provider
@@ -47,8 +48,6 @@ export const ContextProvider: FC<ContextProviderProps> = ({
   storageFactory,
   onError,
 }) => {
-  // Import the utility function from adapter-base
-  const { getInferredNetworkFromEndpoint } = require('@hermis/solana-headless-adapter-base');
   
   // Infer network if not explicitly provided
   const network = explicitNetwork || getInferredNetworkFromEndpoint(rpcEndpoint);

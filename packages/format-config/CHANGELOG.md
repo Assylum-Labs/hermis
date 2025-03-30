@@ -1,5 +1,17 @@
 # @solana/headless-format-config
 
+## 1.0.5
+
+### Patch Changes
+
+- Refactor the connect handler on the contextProvider to return the conected adapter instance, for reactitivy since react setState doesnt have the updated state immediatly in the handler
+
+## 1.0.4
+
+### Patch Changes
+
+- change the dynamic imports in the ContextProvider.tsx to static import
+
 ## 1.0.3
 
 ### Patch Changes

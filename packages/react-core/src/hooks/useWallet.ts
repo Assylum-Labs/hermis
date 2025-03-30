@@ -4,6 +4,7 @@ import {
     PublicKey,
     SignerWalletAdapterProps,
     SignInMessageSignerWalletAdapterProps,
+    WalletAdapter,
     WalletAdapterProps,
     WalletName,
     WalletReadyState
@@ -32,7 +33,7 @@ export interface WalletContextState {
     disconnecting: boolean;
 
     select(walletName: WalletName | null): Promise<void>;
-    connect(): Promise<boolean>;
+    connect(): Promise<WalletAdapter>;
     disconnect(): Promise<void>;
 
     sendTransaction: WalletAdapterProps['sendTransaction'];

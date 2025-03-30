@@ -1,13 +1,13 @@
 import { useMemo } from 'react';
 import { useWallet } from './useWallet.js';
-import { WalletName } from '@hermis/solana-headless-core';
+import { WalletAdapter, WalletName } from '@hermis/solana-headless-core';
 
 /**
  * Interface for wallet multi-button state
  */
 export interface WalletMultiButtonState {
     buttonState: 'connecting' | 'connected' | 'disconnecting' | 'has-wallet' | 'no-wallet';
-    onConnect: () => Promise<boolean>;
+    onConnect: () => Promise<WalletAdapter>;
     onDisconnect: () => Promise<void>;
     onSelectWallet: () => void;
     walletIcon?: string;

@@ -203,8 +203,9 @@ function App() {
     try {
       console.log("Connected Before", connected);
       await select(clickedWalletName as WalletName);
-      await connect();
+      const selectedAdapter = await connect();
       console.log("Connected After", connected);
+      console.log("PublicKey", selectedAdapter.publicKey);
     } catch (error) {
       console.error('Connection error:', error);
       addLogEntry(`Connection error: ${(error as Error).message || 'Unknown error'}`, 'error');
@@ -222,7 +223,8 @@ function App() {
     try {
       await select(clickedWalletName as WalletName);
       // await connect();
-      const isConnected = await connect();
+      const selectedAdapter = await connect();
+      const isConnected = selectedAdapter.connected
     
     console.log("Connection result:", isConnected);
     

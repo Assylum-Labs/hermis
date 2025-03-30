@@ -15,7 +15,8 @@ import {
   MessageSignerWalletAdapter,
   SignerWalletAdapter,
   SignInMessageSignerWalletAdapter,
-  SendOptions
+  SendOptions,
+  WalletAdapter
 } from '@hermis/solana-headless-core';
 import {
   getIsMobile,
@@ -171,7 +172,7 @@ export function WalletProvider({
       ) {
         currentAdapter.disconnect();
       }
-
+      latestAdapterRef.current = currentAdapter
       setWalletName(nextWalletName);
     },
     [adapterState.adapter, setWalletName, walletName]
@@ -194,6 +195,8 @@ export function WalletProvider({
         }));
         
         changeWallet(newValue);
+        // console.log("selected wallet", wallet);
+        
         
         setTimeout(resolve, 50);
       });
@@ -365,20 +368,30 @@ export function WalletProvider({
     setAdapterState(prev => ({ ...prev, connecting: true }));
     
     try {
-      await currentAdapter.connect();
-      
-      const isConnected = currentAdapter.connected;
-      const publicKey = currentAdapter.publicKey;
-      
-      setAdapterState(prev => ({ 
-        ...prev, 
-        adapter: currentAdapter,
-        connected: isConnected, 
-        connecting: false,
-        publicKey: publicKey 
-      }));
-      
-      return isConnected;
+      return new Promise<WalletAdapter>(async(resolve) => {
+        await currentAdapter.connect();
+        
+        const isConnected = currentAdapter.connected;
+        const publicKey = currentAdapter.publicKey;
+        
+        setAdapterState(prev => ({ 
+          ...prev, 
+          adapter: currentAdapter,
+          connected: isConnected, 
+          connecting: false,
+          publicKey: publicKey 
+        }));
+
+        latestAdapterRef.current = currentAdapter
+
+        // console.log('Publickey', publicKey);
+        // console.log('isConnected', isConnected);
+        // console.log('adapterState', adapterState);
+        // console.log('adapter REf', latestAdapterRef.current);
+        
+        
+        setTimeout(() => resolve(currentAdapter), 50);
+      })
     } catch (error) {
       handleErrorRef.current(error as WalletError, currentAdapter);
       setAdapterState(prev => ({ ...prev, connecting: false }));
@@ -501,7 +514,7 @@ export function WalletProvider({
         autoConnect: !!autoConnect,
         wallets,
         wallet,
-        publicKey: latestAdapterRef.current?.publicKey || adapterState.publicKey,
+        publicKey: wallet?.adapter.publicKey || latestAdapterRef.current?.publicKey || adapterState.adapter?.publicKey || adapterState.publicKey || null,
         connecting: latestAdapterRef.current?.connecting || adapterState.connecting,
         connected: latestAdapterRef.current?.connected || adapterState.connected,
         disconnecting: adapterState.disconnecting,

@@ -1,6 +1,6 @@
 import React, { FC, ReactNode, useCallback } from 'react';
 import { useWallet } from '../hooks/useWallet.js';
-import { WalletName } from '@hermis/solana-headless-core';
+import { WalletAdapter, WalletName } from '@hermis/solana-headless-core';
 
 /**
  * Information about the wallet connection state and actions
@@ -17,7 +17,7 @@ export interface WalletConnectionInfo {
     /** Icon URL of the selected wallet, or null if none selected */
     walletIcon: string | null;
     /** Function to connect to the selected wallet */
-    connect: () => Promise<boolean>;
+    connect: () => Promise<WalletAdapter>;
     /** Function to disconnect from the wallet */
     disconnect: () => Promise<void>;
     /** Function to select a wallet by name */
