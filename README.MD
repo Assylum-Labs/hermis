@@ -10,7 +10,7 @@ This SDK provides **complete flexibility** for dApp developers, allowing full cu
 
 Try our playground:
 
-[**View the Demo →**](https://agateh.github.io/solana-headless-sdk/)
+[**View the Demo →**](https://hermis-xyz.github.io/solana-headless-sdk/)
 
 This demo showcases the core functionality of our adapter-base package with the React framework, demonstrating how you can integrate Solana wallets with complete UI freedom.
 
@@ -24,7 +24,7 @@ This demo showcases the core functionality of our adapter-base package with the 
 
 ## 🔐 **Enterprise Edition Features**
 
-- **Enhanced Authentication** – OAuth, email, biometrics, and session management
+- **Enhanced Authentication** – OAuth, email, and session management
 - **Gasless Transactions** – Optional transaction relaying for a seamless UX
 - **MPC Wallet Management** – 2-of-2 non-custodial wallet implementation
 - **Advanced Recovery Options** – Multiple secure methods for wallet recovery
