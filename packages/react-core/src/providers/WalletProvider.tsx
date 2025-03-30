@@ -147,7 +147,7 @@ export function WalletProvider({
   useEffect(() => {
     const adapter = findAdapter(walletName);
     
-    if(!autoConnect) return
+    if(!autoConnect || !adapter?.connected) return
 
     latestAdapterRef.current = adapter;
     
