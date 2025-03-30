@@ -209,6 +209,7 @@ function App() {
     } catch (error) {
       console.error('Connection error:', error);
       addLogEntry(`Connection error: ${(error as Error).message || 'Unknown error'}`, 'error');
+      await disconnect();
     }
   };
 
