@@ -1,5 +1,13 @@
 # @hermis/solana-headless-adapter-base
 
+## 1.0.7
+
+### Patch Changes
+
+- Update Vite from ^6.2.3 to ^6.2.4 to fix vulnerability and also added Keypair as an export of the Headless-core package
+- Updated dependencies
+  - @hermis/solana-headless-core@1.0.7
+
 ## 1.0.6
 
 ### Patch Changes

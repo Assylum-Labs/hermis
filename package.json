@@ -1,6 +1,6 @@
 {
   "name": "@hermis/solana-headless-sdk",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "The parent repo for all Hermis SDKs",
   "scripts": {
     "clean": "turbo run clean",
