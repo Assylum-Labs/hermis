@@ -1,5 +1,14 @@
 # @solana/headless-session
 
+## 1.0.6
+
+### Patch Changes
+
+- Handled a silent error on the mobile adapter with a patch, A full fix will require a PR to the @solana-mobile/wallet-adapter-mobile library
+- Updated dependencies
+  - @hermis/solana-headless-adapter-base@1.0.6
+  - @hermis/solana-headless-core@1.0.6
+
 ## 1.0.5
 
 ### Patch Changes

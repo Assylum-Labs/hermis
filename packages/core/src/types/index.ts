@@ -90,7 +90,7 @@ export type {
     // Connection,
     // Transaction,
     // TransactionSignature,
-    Keypair,
+    // Keypair,
     Commitment,
     ConnectionConfig,
     TransactionVersion,
@@ -106,6 +106,7 @@ export type {
 
 export {
     PublicKey,
+    Keypair,
     Connection,
     Transaction,
     TransactionSignature,
