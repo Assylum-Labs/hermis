@@ -2,7 +2,11 @@
     "extends": "@hermis/solana-headless-format-config/tsconfig.base.json",
     "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src"
+    "rootDir": "src",
+    "skipLibCheck": true,
+    "paths": {
+      "@solana-mobile/wallet-adapter-mobile": ["./node_modules/@solana-mobile/wallet-adapter-mobile/lib/types/index.d.ts"]
+    }
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist"]
