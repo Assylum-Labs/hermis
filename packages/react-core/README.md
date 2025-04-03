@@ -80,6 +80,7 @@ function App() {
       network={WalletAdapterNetwork.Devnet}
       autoConnect={true}
       additionalAdapters={wallets}
+      onError={errorHandler}
     >
       <Home />
     </HermisProvider>

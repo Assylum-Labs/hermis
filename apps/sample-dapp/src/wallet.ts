@@ -710,6 +710,8 @@ import {
   // Subscribe to auth state changes
   function subscribeToAuthChanges() {
     auth.onAuthStateChange((state: any) => {
+      console.log("state received", state);
+      
       updateUI(state);
       
       // Also update our custom storage for debugging
