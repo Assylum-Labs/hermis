@@ -600,6 +600,8 @@
 // });
 
 
+
+
 /** DEMACATION */
 
 import { 
@@ -687,36 +689,47 @@ import {
   
   // Handle OAuth redirect
   async function handleOAuthRedirect() {
-    // const urlParams = new URLSearchParams(window.location.search);
-    // const hasAuthParams = urlParams.has('jwt') || urlParams.has('error') || urlParams.has('state');
-    
-    // if (hasAuthParams) {
-      
-    // }
     // Show loading indicator
     document.getElementById('loading-indicator')!.style.display = 'block';
     try {
+      
       const result = await auth.handleOAuthRedirect();
       
       if (result.error) {
         console.error('OAuth redirect handling failed:', result.error);
+      } else {
+        console.log('OAuth redirect handling succeeded');
       }
+    } catch (error: any) {
+      console.error('Error handling OAuth redirect:', error);
     } finally {
       // Hide loading indicator
       document.getElementById('loading-indicator')!.style.display = 'none';
     }
   }
+
+  let authUnsubscribe: any = null;
   
   // Subscribe to auth state changes
   function subscribeToAuthChanges() {
-    auth.onAuthStateChange((state: any) => {
-      console.log("state received", state);
-      
+    
+    // Clean up previous subscription if exists
+    if (authUnsubscribe) {
+      authUnsubscribe();
+      authUnsubscribe = null; // Clear the reference after unsubscribing
+    }
+    
+    // Create a consistent callback function that won't be recreated each time
+    const authStateHandler = (state: any) => {
       updateUI(state);
       
-      // Also update our custom storage for debugging
-      authStorageUtil.set(state);
-    });
+      // Only update storage if the state has meaningful content
+      if (state && (state.isAuthenticated !== undefined)) {
+        authStorageUtil.set(state);
+      }
+    };
+    
+    authUnsubscribe = auth.onAuthStateChange(authStateHandler);
   }
   
   // Update UI based on auth state
