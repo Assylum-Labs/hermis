@@ -3,12 +3,13 @@
   "version": "1.0.8",
   "description": "",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsc --watch",
-    "start": "webpack serve",
-    "build": "webpack",
-    "build:pages": "webpack --config webpack.github-pages.config.js"
+    "start": "webpack serve --config webpack.config.cjs",
+    "build": "webpack --config webpack.config.cjs",
+    "build:pages": "webpack --config webpack.github-pages.config.cjs"
   },
   "dependencies": {
     "@hermis/solana-headless-adapter-base": "^1.0.8",
@@ -16,12 +17,14 @@
     "@hermis/solana-headless-enterprise-core": "workspace:*",
     "@solana/wallet-adapter-phantom": "^0.9.24",
     "@solana/wallet-adapter-solflare": "^0.6.28",
-    "@solana/wallet-adapter-trust": "^0.1.13"
+    "@solana/wallet-adapter-trust": "^0.1.13",
+    "axios": "^1.6.2"
   },
   "devDependencies": {
     "@babel/core": "^7.24.4",
     "@babel/preset-env": "^7.24.4",
     "@hermis/solana-headless-format-config": "^1.0.2",
+    "@types/axios": "^0.14.0",
     "@types/node": "^22.13.8",
     "babel-loader": "^9.1.3",
     "buffer": "^6.0.3",

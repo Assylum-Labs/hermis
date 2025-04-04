@@ -48,11 +48,11 @@ importers:
   apps/sample-dapp:
     dependencies:
       '@hermis/solana-headless-adapter-base':
-        specifier: ^1.0.2
-        version: 1.0.4(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
+        specifier: ^1.0.8
+        version: 1.0.8(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
       '@hermis/solana-headless-core':
-        specifier: ^1.0.2
-        version: 1.0.4(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
+        specifier: ^1.0.8
+        version: 1.0.8(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
       '@hermis/solana-headless-enterprise-core':
         specifier: workspace:*
         version: link:../../packages/enterprise/core
@@ -65,6 +65,9 @@ importers:
       '@solana/wallet-adapter-trust':
         specifier: ^0.1.13
         version: 0.1.14(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      axios:
+        specifier: ^1.6.2
+        version: 1.8.4
     devDependencies:
       '@babel/core':
         specifier: ^7.24.4
@@ -75,6 +78,9 @@ importers:
       '@hermis/solana-headless-format-config':
         specifier: ^1.0.2
         version: 1.0.4
+      '@types/axios':
+        specifier: ^0.14.0
+        version: 0.14.4
       '@types/node':
         specifier: ^22.13.8
         version: 22.13.14
@@ -251,8 +257,8 @@ importers:
   packages/adapter-base:
     dependencies:
       '@hermis/solana-headless-core':
-        specifier: ^1.0.7
-        version: 1.0.7(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
+        specifier: ^1.0.8
+        version: 1.0.8(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
       '@solana-mobile/wallet-adapter-mobile':
         specifier: 2.0.0
         version: 2.0.0(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@19.0.12)(bufferutil@4.0.9)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
@@ -306,10 +312,16 @@ importers:
       '@hermis/solana-headless-core':
         specifier: workspace:*
         version: link:../../core
+      axios:
+        specifier: ^1.6.2
+        version: 1.8.4
     devDependencies:
       '@hermis/solana-headless-format-config':
         specifier: ^1.0.2
         version: 1.0.4
+      '@types/axios':
+        specifier: ^0.14.0
+        version: 0.14.4
       '@types/node':
         specifier: ^22.13.8
         version: 22.13.14
@@ -322,11 +334,11 @@ importers:
   packages/react-core:
     dependencies:
       '@hermis/solana-headless-adapter-base':
-        specifier: ^1.0.7
-        version: 1.0.7(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(react@19.0.0)(typescript@5.8.2)(utf-8-validate@5.0.10)
+        specifier: ^1.0.8
+        version: 1.0.8(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(react@19.0.0)(typescript@5.8.2)(utf-8-validate@5.0.10)
       '@hermis/solana-headless-core':
-        specifier: ^1.0.7
-        version: 1.0.7(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
+        specifier: ^1.0.8
+        version: 1.0.8(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
       react:
         specifier: ^19.0.0
         version: 19.0.0
@@ -1284,17 +1296,11 @@ packages:
     resolution: {integrity: sha512-JubJ5B2pJ4k4yGxaNLdbjrnk9d/iDz6/q8wOilpIowd6PJPgaxCuHBnBszq7Ce2TyMrywm5r4PnKm6V3iiZF+g==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
-  '@hermis/solana-headless-adapter-base@1.0.4':
-    resolution: {integrity: sha512-Wi/6wsMhYjGKqHCkR9SBDl542/Yyn5o+mvuTuaSdnXqv4pwmhAqwO17sjSgvhOXfFic5+gaTrgnUIGHnjRTfVw==}
+  '@hermis/solana-headless-adapter-base@1.0.8':
+    resolution: {integrity: sha512-QcnwURtdcvgIP2+tsyfowgahkPjWMGrGvwDb9oA+nzyM63V1Wy7HZDcl40ybMzeUg2sDsjutC/97F9Wz8rOoNw==}
 
-  '@hermis/solana-headless-adapter-base@1.0.7':
-    resolution: {integrity: sha512-HHSQvWfGV6exOkaddjlqhlnporSj2oN4Ot3ZcBvX71iYZWijRhnWJnVA50yD+mpqdYYtohRS+uRIVOgTC7h62A==}
-
-  '@hermis/solana-headless-core@1.0.4':
-    resolution: {integrity: sha512-lTBJYw7IhjcF9Dt+2IHUcnMvGJAHoez/vj8/p9tturTm94zBZreYkNr6D0+0wkwKxAJSZd+/OD78YpKnmbLa0Q==}
-
-  '@hermis/solana-headless-core@1.0.7':
-    resolution: {integrity: sha512-Jafqf6/OUESua2XHHZh3+DAYC2efY7QrqAtmngy48g5mkZDgqIFbpGlxiwPAlXwwqj3T7QClF5cLoVrFif+dHA==}
+  '@hermis/solana-headless-core@1.0.8':
+    resolution: {integrity: sha512-VeQ970MBVDakR74969pm6A6XSNxxmEPkl0b+JLErbUehkecKJ98iRXc/Hp0ypA4Q65EdiHe6x5zhq0CrfcH+Ug==}
 
   '@hermis/solana-headless-format-config@1.0.4':
     resolution: {integrity: sha512-tCTDqG5jFf+q73KREMBLgA0Kni9qQ/xgetW1E3/0yjDTzlBybzr86bemsK68ZmXS+GI9uEFKToiZjF3BOlFYwQ==}
@@ -1920,6 +1926,10 @@ packages:
     resolution: {integrity: sha512-XCuKFP5PS55gnMVu3dty8KPatLqUoy/ZYzDzAGCQ8JNFCkLXzmI7vNHCR+XpbZaMWQK/vQubr7PkYq8g470J/A==}
     engines: {node: '>= 10'}
 
+  '@types/axios@0.14.4':
+    resolution: {integrity: sha512-9JgOaunvQdsQ/qW2OPmE5+hCeUB52lQSolecrFrthct55QekhmXEwT203s20RL+UHtCQc15y3VXpby9E7Kkh/g==}
+    deprecated: This is a stub types definition. axios provides its own type definitions, so you do not need this installed.
+
   '@types/babel__core@7.20.5':
     resolution: {integrity: sha512-qoQprZvz5wQFJwMDqeseRXWv3rqMvhgpbXFfVyWhbx9X47POIA6i/+dXefEmZKoAgOaTdaIgNSMqMIU61yRyzA==}
 
@@ -2363,6 +2373,9 @@ packages:
   available-typed-arrays@1.0.7:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
+
+  axios@1.8.4:
+    resolution: {integrity: sha512-eBSYY4Y68NNlHbHBMdeDmKNtDgXWhQsJcGqzO3iLUM0GraQFSS9cVgPX5I9b3lbdFKyYoAEGAZF1DwhTaljNAw==}
 
   babel-jest@29.7.0:
     resolution: {integrity: sha512-BrvGY3xZSwEcCzKvKsCi2GgHqDqsYkOP4/by5xCgIwGXQxIEh+8ew3gmrE1y7XRR6LHZIj6yLYnUi/mm2KXKBg==}
@@ -4744,6 +4757,9 @@ packages:
     resolution: {integrity: sha512-llQsMLSUDUPT44jdrU/O37qlnifitDP+ZwrmmZcoSKyLKvtZxpyV0n2/bD/N4tBAAZ/gJEdZU7KMraoK1+XYAg==}
     engines: {node: '>= 0.10'}
 
+  proxy-from-env@1.1.0:
+    resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
+
   psl@1.15.0:
     resolution: {integrity: sha512-JZd3gMVBAVQkSs6HdNZo9Sdo0LNcQeMNP3CozBJb3JYC/QUYZTnKxP+f8oWRX4rHP5EurWxqAHTSwUCjlNKa1w==}
 
@@ -7020,25 +7036,9 @@ snapshots:
       '@eslint/core': 0.12.0
       levn: 0.4.1
 
-  '@hermis/solana-headless-adapter-base@1.0.4(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)':
+  '@hermis/solana-headless-adapter-base@1.0.8(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(react@19.0.0)(typescript@5.8.2)(utf-8-validate@5.0.10)':
     dependencies:
-      '@hermis/solana-headless-core': 1.0.4(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
-      '@solana-mobile/wallet-adapter-mobile': 2.0.0(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
-      '@wallet-standard/base': 1.1.0
-      bs58: 6.0.0
-    transitivePeerDependencies:
-      - '@solana/web3.js'
-      - bufferutil
-      - encoding
-      - fastestsmallesttextencoderdecoder
-      - react
-      - react-native
-      - typescript
-      - utf-8-validate
-
-  '@hermis/solana-headless-adapter-base@1.0.7(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(react@19.0.0)(typescript@5.8.2)(utf-8-validate@5.0.10)':
-    dependencies:
-      '@hermis/solana-headless-core': 1.0.7(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
+      '@hermis/solana-headless-core': 1.0.8(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
       '@solana-mobile/wallet-adapter-mobile': 2.0.0(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(react-native@0.78.1(@babel/core@7.26.10)(@babel/preset-env@7.26.9(@babel/core@7.26.10))(@types/react@19.0.12)(bufferutil@4.0.9)(react@19.0.0)(utf-8-validate@5.0.10))(react@19.0.0)
       '@wallet-standard/base': 1.1.0
       bs58: 6.0.0
@@ -7052,21 +7052,23 @@ snapshots:
       - typescript
       - utf-8-validate
 
-  '@hermis/solana-headless-core@1.0.4(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)':
+  '@hermis/solana-headless-adapter-base@1.0.8(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)':
     dependencies:
-      '@noble/ed25519': 2.2.3
-      '@solana/spl-token': 0.4.13(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.2)(utf-8-validate@5.0.10)
-      '@solana/wallet-adapter-base': 0.9.24(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
-      '@solana/web3.js': 1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
-      buffer: 6.0.3
+      '@hermis/solana-headless-core': 1.0.8(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)
+      '@solana-mobile/wallet-adapter-mobile': 2.0.0(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      '@wallet-standard/base': 1.1.0
+      bs58: 6.0.0
     transitivePeerDependencies:
+      - '@solana/web3.js'
       - bufferutil
       - encoding
       - fastestsmallesttextencoderdecoder
+      - react
+      - react-native
       - typescript
       - utf-8-validate
 
-  '@hermis/solana-headless-core@1.0.7(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)':
+  '@hermis/solana-headless-core@1.0.8(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)':
     dependencies:
       '@noble/ed25519': 2.2.3
       '@solana/spl-token': 0.4.13(@solana/web3.js@1.98.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(bufferutil@4.0.9)(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.8.2)(utf-8-validate@5.0.10)
@@ -7953,6 +7955,12 @@ snapshots:
 
   '@tootallnate/once@2.0.0': {}
 
+  '@types/axios@0.14.4':
+    dependencies:
+      axios: 1.8.4
+    transitivePeerDependencies:
+      - debug
+
   '@types/babel__core@7.20.5':
     dependencies:
       '@babel/parser': 7.27.0
@@ -8318,12 +8326,12 @@ snapshots:
   '@webpack-cli/configtest@2.1.1(webpack-cli@5.1.4)(webpack@5.98.0)':
     dependencies:
       webpack: 5.98.0(@swc/core@1.11.13(@swc/helpers@0.5.15))(esbuild@0.25.1)(webpack-cli@5.1.4)
-      webpack-cli: 5.1.4(webpack@5.98.0)
+      webpack-cli: 5.1.4(webpack-dev-server@5.2.1)(webpack@5.98.0)
 
   '@webpack-cli/info@2.0.2(webpack-cli@5.1.4)(webpack@5.98.0)':
     dependencies:
       webpack: 5.98.0(@swc/core@1.11.13(@swc/helpers@0.5.15))(esbuild@0.25.1)(webpack-cli@5.1.4)
-      webpack-cli: 5.1.4(webpack@5.98.0)
+      webpack-cli: 5.1.4(webpack-dev-server@5.2.1)(webpack@5.98.0)
 
   '@webpack-cli/serve@2.0.5(webpack-cli@5.1.4)(webpack-dev-server@5.2.1)(webpack@5.98.0)':
     dependencies:
@@ -8479,6 +8487,14 @@ snapshots:
   available-typed-arrays@1.0.7:
     dependencies:
       possible-typed-array-names: 1.1.0
+
+  axios@1.8.4:
+    dependencies:
+      follow-redirects: 1.15.9
+      form-data: 4.0.2
+      proxy-from-env: 1.1.0
+    transitivePeerDependencies:
+      - debug
 
   babel-jest@29.7.0(@babel/core@7.26.10):
     dependencies:
@@ -11368,6 +11384,8 @@ snapshots:
       forwarded: 0.2.0
       ipaddr.js: 1.9.1
 
+  proxy-from-env@1.1.0: {}
+
   psl@1.15.0:
     dependencies:
       punycode: 2.3.1
@@ -12478,7 +12496,7 @@ snapshots:
       watchpack: 2.4.2
       webpack-sources: 3.2.3
     optionalDependencies:
-      webpack-cli: 5.1.4(webpack@5.98.0)
+      webpack-cli: 5.1.4(webpack-dev-server@5.2.1)(webpack@5.98.0)
     transitivePeerDependencies:
       - '@swc/core'
       - esbuild
