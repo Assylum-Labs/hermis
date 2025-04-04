@@ -28,3 +28,11 @@ export interface EnvironmentConfig {
   adapters: Adapter[] | SolanaMobileWalletAdapter[];
   userAgentString: string | null;
 }
+
+export interface WalletConnectionManager {
+  getAdapter: () => Adapter | null;
+  selectWallet: (walletName: WalletName | null) => Adapter | null;
+  connect: () => Promise<Adapter | null>;
+  disconnect: () => Promise<void>;
+  autoConnect: () => Promise<Adapter | null>;
+}

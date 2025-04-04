@@ -1,6 +1,7 @@
 import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter, WalletAdapterEvents, TransactionSignature, signTransaction, Transaction, signAllTransactions, signMessage } from '@hermis/solana-headless-core';
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
+import { WalletConnectionManager } from '../types.js';
 
 /**
  * Create a simple wallet connection manager
@@ -8,7 +9,7 @@ import { addWalletAdapterEventListeners } from './adapters.js';
  * @param localStorageKey Key to store the selected wallet name
  * @returns Wallet connection manager object
  */
-export function createWalletConnectionManager(adapters: Adapter[], localStorageKey = 'walletName') {
+export function createWalletConnectionManager(adapters: Adapter[], localStorageKey = 'walletName'): WalletConnectionManager {
     const storageUtil = createLocalStorageUtility<string | null>(localStorageKey, null);
     let currentAdapter: Adapter | null = null;
 

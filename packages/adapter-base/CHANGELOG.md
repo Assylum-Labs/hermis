@@ -1,5 +1,13 @@
 # @hermis/solana-headless-adapter-base
 
+## 1.0.8
+
+### Patch Changes
+
+- Upgraded image-size package from 1.2.0 tto 1.2.2 to fix Dependabot vulnerability detection
+- Updated dependencies
+  - @hermis/solana-headless-core@1.0.8
+
 ## 1.0.7
 
 ### Patch Changes

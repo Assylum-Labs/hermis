@@ -1,6 +1,5 @@
 import { Adapter, WalletName, WalletReadyState, WalletAdapterNetwork, PublicKey, EventEmitter, WalletAdapterEvents, Transaction, WalletAdapter, MessageSignerWalletAdapter, SignerWalletAdapter, SignInMessageSignerWalletAdapter, VersionedTransaction, Connection, SendOptions, TransactionSignature, TransactionVersion } from '@hermis/solana-headless-core';
 import { SolanaMobileWalletAdapter } from '@solana-mobile/wallet-adapter-mobile';
-import * as _solana_wallet_adapter_base from '@solana/wallet-adapter-base';
 import { Wallet, WalletIcon } from '@wallet-standard/base';
 
 /**
@@ -26,6 +25,13 @@ declare enum Environment {
 interface EnvironmentConfig {
     adapters: Adapter[] | SolanaMobileWalletAdapter[];
     userAgentString: string | null;
+}
+interface WalletConnectionManager {
+    getAdapter: () => Adapter | null;
+    selectWallet: (walletName: WalletName | null) => Adapter | null;
+    connect: () => Promise<Adapter | null>;
+    disconnect: () => Promise<void>;
+    autoConnect: () => Promise<Adapter | null>;
 }
 
 declare const SolanaMobileWalletAdapterWalletName = "Mobile Wallet Adapter";
@@ -144,28 +150,7 @@ declare function addWalletAdapterEventListeners(adapter: Adapter, handlers: {
  * @param localStorageKey Key to store the selected wallet name
  * @returns Wallet connection manager object
  */
-declare function createWalletConnectionManager(adapters: Adapter[], localStorageKey?: string): {
-    /**
-     * Get the current adapter
-     */
-    getAdapter: () => Adapter | null;
-    /**
-     * Select an adapter by wallet name
-     */
-    selectWallet: (walletName: WalletName | null) => _solana_wallet_adapter_base.WalletAdapter | null;
-    /**
-     * Connect to the selected wallet
-     */
-    connect: () => Promise<Adapter>;
-    /**
-     * Disconnect from the current wallet
-     */
-    disconnect: () => Promise<void>;
-    /**
-     * Auto-connect to the stored wallet
-     */
-    autoConnect: () => Promise<_solana_wallet_adapter_base.WalletAdapter | null>;
-};
+declare function createWalletConnectionManager(adapters: Adapter[], localStorageKey?: string): WalletConnectionManager;
 /**
  * Class to manage wallet adapters with event emission
  */
@@ -451,4 +436,4 @@ declare function createMobileWalletAdapter(endpoint?: string): Promise<Adapter |
 declare function getStandardWalletAdapters(existingAdapters?: Adapter[] | SolanaMobileWalletAdapter[], endpoint?: string): Promise<(Adapter | SolanaMobileWalletAdapter)[]>;
 declare function isMobileWalletAdapter(adapter: any): adapter is SolanaMobileWalletAdapter;
 
-export { Environment, type EnvironmentConfig, SolanaMobileWalletAdapterWalletName, SolanaSignAndSendTransactionMethod, SolanaSignInMethod, SolanaSignMessageMethod, SolanaSignTransactionMethod, StandardConnectMethod, StandardDisconnectMethod, StandardEventsMethod, StandardWalletAdapter, WalletAdapterManager, type WalletProvider, addWalletAdapterEventListeners, createLocalStorageUtility, createMobileWalletAdapter, createWalletConnectionManager, getAdaptersByReadyState, getEnvironment, getInferredNetworkFromEndpoint, getIsMobile, getSelectedAdapter, getStandardWalletAdapters, getUriForAppIdentity, getUserAgent, getWalletAdapters, initAdapters, isAndroid, isIOS, isIosAndRedirectable, isMobileDevice, isMobileWalletAdapter, isWalletAdapterCompatibleStandardWallet, selectAdapter, sortWalletAdapters };
+export { Environment, type EnvironmentConfig, SolanaMobileWalletAdapterWalletName, SolanaSignAndSendTransactionMethod, SolanaSignInMethod, SolanaSignMessageMethod, SolanaSignTransactionMethod, StandardConnectMethod, StandardDisconnectMethod, StandardEventsMethod, StandardWalletAdapter, WalletAdapterManager, type WalletConnectionManager, type WalletProvider, addWalletAdapterEventListeners, createLocalStorageUtility, createMobileWalletAdapter, createWalletConnectionManager, getAdaptersByReadyState, getEnvironment, getInferredNetworkFromEndpoint, getIsMobile, getSelectedAdapter, getStandardWalletAdapters, getUriForAppIdentity, getUserAgent, getWalletAdapters, initAdapters, isAndroid, isIOS, isIosAndRedirectable, isMobileDevice, isMobileWalletAdapter, isWalletAdapterCompatibleStandardWallet, selectAdapter, sortWalletAdapters };
