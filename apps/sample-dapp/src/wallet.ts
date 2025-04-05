@@ -693,8 +693,8 @@ import {
     const content = apiKeyStatusElement.querySelector('.status-content') || apiKeyStatusElement;
     
     try {
-      if (sdk.hasApiKey()) {
-        const apiKey = sdk.getHttpClient().getApiKey();
+      if (API_KEY) {
+        const apiKey = API_KEY
         // Only show part of the API key for security
         const maskedKey = apiKey ? 
           `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : 
@@ -795,27 +795,11 @@ import {
     updateApiKeyButton.id = 'update-api-key';
     updateApiKeyButton.className = 'btn btn-secondary';
     updateApiKeyButton.textContent = 'Update API Key';
-    updateApiKeyButton.addEventListener('click', promptForApiKey);
     
     // Add it to the UI
     const signoutContainer = document.getElementById('signout-container');
     if (signoutContainer) {
       signoutContainer.appendChild(updateApiKeyButton);
-    }
-  }
-  
-  // Prompt the user to update their API key
-  function promptForApiKey() {
-    const newApiKey = prompt('Enter your API key:', sdk.getHttpClient().getApiKey() || '');
-    if (newApiKey !== null) {
-      try {
-        sdk.setApiKey(newApiKey);
-        updateApiKeyStatus();
-        alert('API key updated successfully');
-      } catch (error) {
-        console.error('Error updating API key:', error);
-        alert(`Failed to update API key: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      }
     }
   }
   
@@ -841,14 +825,6 @@ import {
     if (errorElement) {
       errorElement.innerHTML = `<p>Error: ${errorMessage}</p>`;
       errorElement.style.display = 'block';
-      
-      if (isApiKeyError) {
-        errorElement.classList.add('api-key-error');
-        // Prompt for a new API key
-        setTimeout(() => {
-          promptForApiKey();
-        }, 1000);
-      }
     }
     
     updateApiKeyStatus();
