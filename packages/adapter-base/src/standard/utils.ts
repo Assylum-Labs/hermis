@@ -117,8 +117,12 @@ export async function getStandardWalletAdapters(existingAdapters: Adapter[] | So
     return existingAdapters;
   }
   
+
+  // Initialize wallet detection system
+  initializeWalletDetection();
+  
   const userAgentString = getUserAgent();
-  const adaptersToUse = [...existingAdapters];
+  let adaptersToUse = [...existingAdapters];
   
   try {
     // Check if we're in a mobile environment
@@ -127,7 +131,6 @@ export async function getStandardWalletAdapters(existingAdapters: Adapter[] | So
       userAgentString
     }) === Environment.MOBILE_WEB;
     
-    
     // Check if mobile wallet adapter is already included
     const hasMobileWalletAdapter = existingAdapters.some(
       adapter => adapter.name === SolanaMobileWalletAdapterWalletName
@@ -135,11 +138,9 @@ export async function getStandardWalletAdapters(existingAdapters: Adapter[] | So
     
     // Add mobile wallet adapter if in mobile environment and not already included
     if (isMobileEnv && !hasMobileWalletAdapter) {
-    // if (true) { // falsify to get it on web 
-        console.log("Created Mobile Adapter");
-        
+      console.log("Created Mobile Adapter");
+      
       const mobileAdapter = await createMobileWalletAdapter(endpoint);
-    //   console.log(mobileAdapter);
       
       if (mobileAdapter) {
         // Add at the beginning for priority
@@ -147,35 +148,11 @@ export async function getStandardWalletAdapters(existingAdapters: Adapter[] | So
       }
     }
     
-    // Check if wallet standard is available in window.navigator
-    // The wallets property is injected by wallet standard
-    const walletStandard = (window.navigator as any).wallets;
-    if (!walletStandard) {
-      return adaptersToUse;
-    }
-    
-    // Get all registered wallets
-    const standardWallets = walletStandard.get();
-    
-    // Filter for compatible wallets and create adapters
-    const standardAdapters = standardWallets
-      .filter(isWalletAdapterCompatibleStandardWallet)
-      .map((wallet: TypedStandardWallet) => {
-        try {
-          return createStandardWalletAdapter(wallet);
-        } catch (error) {
-          console.error('Error creating adapter for wallet:', wallet.name, error);
-          return null;
-        }
-      })
-      .filter(Boolean) as Adapter[];
-    
-    // Return combined adapters, filtering out any duplicates
-    // (where standard adapter has same name as an existing adapter)
-    const existingNames = new Set(adaptersToUse.map(a => a.name));
-    const uniqueStandardAdapters = standardAdapters.filter(a => !existingNames.has(a.name));
-    
-    return [...adaptersToUse, ...uniqueStandardAdapters];
+    // Get detected wallets merged with existing adapters
+    // This will automatically include any detected standard wallets
+    adaptersToUse = getDetectedWalletAdapters(adaptersToUse as Adapter[]);
+
+    return adaptersToUse;
   } catch (error) {
     console.error('Error getting standard wallets:', error);
     return adaptersToUse;
@@ -189,6 +166,7 @@ export function isMobileWalletAdapter(adapter: any): adapter is SolanaMobileWall
 // Import these from types.js to avoid circular dependencies
 import { Environment } from '../types.js';
 import { createStandardWalletAdapter } from './adapter-factory.js';
+import { getDetectedWalletAdapters, initializeWalletDetection } from './wallet-detection.js';
 
 // Re-export constants
 export {

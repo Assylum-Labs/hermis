@@ -95,6 +95,7 @@ function App() {
     select, 
     connect, 
     disconnect,
+    signIn,
     signMessage
   } = useWallet();
   const { connection } = useConnection();
@@ -140,7 +141,7 @@ function App() {
     wallets.forEach(wallet => {
       addLogEntry(`Available adapter: ${wallet.adapter.name} (${getReadyStateLabel(wallet.readyState)})`, 'info');
     });
-  }, [wallets.length, addLogEntry, isMobile]);
+  }, [wallets.length, addLogEntry, isMobile, wallets]);
 
   // Log changes in connection state
   useEffect(() => {
@@ -192,7 +193,6 @@ function App() {
 
   // Connect to wallet
   const handleConnectWallet = async () => {
-    console.log("CLicked wallet", clickedWalletName);
     
     if (!clickedWalletName) {
       addLogEntry('No wallet selected', 'warning');
@@ -201,11 +201,8 @@ function App() {
     
     addLogEntry('Connecting wallet...', 'info');
     try {
-      console.log("Connected Before", connected);
       await select(clickedWalletName as WalletName);
-      const selectedAdapter = await connect();
-      console.log("Connected After", connected);
-      console.log("PublicKey", selectedAdapter.publicKey);
+      await connect();
     } catch (error) {
       console.error('Connection error:', error);
       addLogEntry(`Connection error: ${(error as Error).message || 'Unknown error'}`, 'error');
@@ -219,43 +216,57 @@ function App() {
       addLogEntry('No wallet selected', 'warning');
       return;
     }
-
+    
     addLogEntry('Connecting wallet and preparing to sign message...', 'info');
     try {
       await select(clickedWalletName as WalletName);
-      // await connect();
-      const selectedAdapter = await connect();
-      const isConnected = selectedAdapter.connected
-    
-    console.log("Connection result:", isConnected);
-    
-    if (isConnected) {
-      addLogEntry('Successfully connected to wallet!', 'success');
-    } else {
-      addLogEntry('Connection attempted but wallet reported not connected', 'warning');
-    }
-      await handleSignMessage(isConnected);
+      if(signIn) {
+        const statement = `Test message for wallet authentication at ${new Date().toISOString()}`;
+        const result = await signIn({ statement });
+        const parsedResult = result as unknown as {'0':{signature: Uint8Array}};
+        const signature = parsedResult['0'].signature;
+        if(signature) {
+          let signatureBase64: string;
+          try {
+            signatureBase64 = btoa(String.fromCharCode.apply(null, Array.from(signature)));
+          } catch {
+            signatureBase64 = Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join('');
+          }
+          addLogEntry(`Message signed successfully! Signature: ${signatureBase64}`, 'success');
+        }
+        return;
+      } 
     } catch (error) {
-      console.error('Connect and sign error:', error);
-      addLogEntry(`Sign message error: ${(error as Error).message}`, 'error');
-      await disconnect();
+      addLogEntry('Wallet does not support signIn', 'info');
+      if (error == "Error: Wallet does not support sign in") {
+        const selectedAdapter = await connect();
+        const isConnected = selectedAdapter.connected
+        
+        if (isConnected) {
+          addLogEntry('Successfully connected to wallet!', 'success');
+        } else {
+          addLogEntry('Connection attempted but wallet reported not connected', 'warning');
+        }
+        await handleSignMessage(isConnected);
+      } else {
+        console.error('Connect and sign error:', error);
+        addLogEntry(`Sign message error: ${(error as Error).message}`, 'error');
+        await disconnect();
+      }
     }
   };
 
   // Sign a message
   const handleSignMessage = async (isConnected?: boolean) => {
-    console.log('signMessage', signMessage);
     
     const connectStatus = isConnected || connected
-    console.log('connected', connectStatus);
-    
-    // if (!signMessage) {
+
     if (!connectStatus || !signMessage) {
       addLogEntry('Wallet not connected or does not support signing', 'error');
       return;
     }
 
-    const message = 'Test message for wallet authentication';
+    const message = `Test message for wallet authentication at ${new Date().toISOString()}`;
     addLogEntry(`Signing message: "${message}"`, 'info');
     
     try {
@@ -265,7 +276,7 @@ function App() {
       let signatureBase64: string;
       try {
         signatureBase64 = btoa(String.fromCharCode.apply(null, Array.from(signature)));
-      } catch (error) {
+      } catch {
         signatureBase64 = Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join('');
       }
       

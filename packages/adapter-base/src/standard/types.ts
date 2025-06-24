@@ -60,6 +60,8 @@ export interface SolanaChainIdentifier {
  */
 export interface SolanaSignTransactionParams {
   transaction: Uint8Array;
+  account: StandardWalletAccount;
+  chain?: string;
 }
 
 /**
@@ -81,8 +83,9 @@ export interface SolanaSignTransactionFeature {
  * Transaction parameters for sign and send transaction method
  */
 export interface SolanaSignAndSendTransactionParams {
+  account: StandardWalletAccount;
   transaction: Uint8Array;
-  chain: SolanaChainIdentifier;
+  chain: string;
   options?: Record<string, any>;
 }
 
@@ -97,7 +100,7 @@ export interface SolanaSignAndSendTransactionResult {
  * Sign and send transaction feature interface for Solana standard wallet
  */
 export interface SolanaSignAndSendTransactionFeature {
-  signAndSendTransaction(params: SolanaSignAndSendTransactionParams): Promise<SolanaSignAndSendTransactionResult>;
+  signAndSendTransaction(params: SolanaSignAndSendTransactionParams): Promise<SolanaSignAndSendTransactionResult[]>;
   supportedTransactionVersions?: number[];
 }
 
@@ -105,6 +108,7 @@ export interface SolanaSignAndSendTransactionFeature {
  * Message parameters for sign message method
  */
 export interface SolanaSignMessageParams {
+  account: StandardWalletAccount;
   message: Uint8Array;
 }
 
@@ -113,13 +117,14 @@ export interface SolanaSignMessageParams {
  */
 export interface SolanaSignMessageResult {
   signature: Uint8Array;
+  signedMessage: Uint8Array;
 }
 
 /**
  * Sign message feature interface for Solana standard wallet
  */
 export interface SolanaSignMessageFeature {
-  signMessage(params: SolanaSignMessageParams): Promise<SolanaSignMessageResult>;
+  signMessage(params: SolanaSignMessageParams): Promise<SolanaSignMessageResult[]>;
 }
 
 /**
@@ -192,4 +197,15 @@ export interface TypedStandardWallet extends Wallet{
   icon: WalletIcon;
   website?: string;
   features: StandardWalletFeatures;
+}
+
+
+export function isWalletAdapterCompatibleStandardWallet(
+  wallet: TypedStandardWallet
+): wallet is TypedStandardWallet {
+  return (
+    StandardConnectMethod in wallet.features &&
+    StandardEventsMethod in wallet.features &&
+    (SolanaSignAndSendTransactionMethod in wallet.features || SolanaSignTransactionMethod in wallet.features)
+  );
 }

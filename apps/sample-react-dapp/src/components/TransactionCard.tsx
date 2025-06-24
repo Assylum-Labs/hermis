@@ -28,7 +28,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
     try {
       new PublicKey(address);
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   };

@@ -1,6 +1,7 @@
 import { Adapter, WalletName, WalletReadyState, PublicKey } from '@hermis/solana-headless-core';
 import { WalletProvider } from '../types.js';
 import { SolanaMobileWalletAdapterWalletName } from '../standard/constants.js';
+import { getDetectedWalletAdapters, initializeWalletDetection } from '../standard/wallet-detection.js';
 
 // Store for all initialized adapters
 let _adapters: Adapter[] = [];
@@ -11,8 +12,14 @@ let _selectedAdapter: Adapter | null = null;
  * @param adapters Array of wallet adapters to initialize
  */
 export function initAdapters(adapters: Adapter[]): void {
+  // Initialize wallet detection system
+  initializeWalletDetection();
+  
+  // Merge provided adapters with any detected standard wallets
+  const allAdapters = getDetectedWalletAdapters(adapters);
+  
   // Filter out any unsupported adapters and assign to the store
-  _adapters = adapters.filter(adapter => adapter.readyState !== WalletReadyState.Unsupported);
+  _adapters = allAdapters.filter(adapter => adapter.readyState !== WalletReadyState.Unsupported);
 }
 
 /**

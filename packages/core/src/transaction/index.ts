@@ -227,6 +227,7 @@ export async function signMessage(
       
       // Check if this adapter supports message signing
       if ('signMessage' in wallet && typeof wallet.signMessage === 'function') {
+        
         return await wallet.signMessage(messageBytes);
       } else {
         throw new Error('Wallet adapter does not support message signing');
@@ -259,11 +260,10 @@ export async function signIn(
       if ('signIn' in wallet && typeof wallet.signIn === 'function') {
         // The wallet has native signIn support, use it
         const result = await wallet.signIn(input);
-        
-        // We don't need to modify the account structure, just return the result
-        // with any additional fields we want to include
         return {
           ...result,
+          signature: result.signature,
+          signedMessage: result.signedMessage,
           domain: input.domain || window.location.host,
           nonce: input.nonce || generateNonce(),
           version: input.version || '1'

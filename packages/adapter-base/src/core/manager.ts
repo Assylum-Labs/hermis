@@ -2,6 +2,7 @@ import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter, WalletA
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
 import { WalletConnectionManager } from '../types.js';
+import { getDetectedWalletAdapters, initializeWalletDetection } from '../standard/wallet-detection.js';
 
 /**
  * Create a simple wallet connection manager
@@ -10,12 +11,17 @@ import { WalletConnectionManager } from '../types.js';
  * @returns Wallet connection manager object
  */
 export function createWalletConnectionManager(adapters: Adapter[], localStorageKey = 'walletName'): WalletConnectionManager {
+    // Initialize wallet detection and merge with provided adapters
+    initializeWalletDetection();
+    const allAdapters = getDetectedWalletAdapters(adapters);
+    
+    
     const storageUtil = createLocalStorageUtility<string | null>(localStorageKey, null);
     let currentAdapter: Adapter | null = null;
 
     storageUtil.get().then((storedWalletName) => {
         if (storedWalletName) {
-            currentAdapter = adapters.find(a => a.name === storedWalletName) || null;
+            currentAdapter = allAdapters.find(a => a.name === storedWalletName) || null;
         }
     })
 
@@ -48,7 +54,7 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
                 return null;
             }
 
-            const adapter = adapters.find(a => a.name === walletName) || null;
+            const adapter = allAdapters.find(a => a.name === walletName) || null;
             currentAdapter = adapter;
 
             // Store selected wallet
@@ -112,7 +118,12 @@ export class WalletAdapterManager extends EventEmitter {
 
     constructor(adapters: Adapter[] = [], localStorageKey = 'walletName') {
         super();
-        this.adapters = adapters.filter(adapter => adapter.readyState !== WalletReadyState.Unsupported);
+        
+        // Initialize wallet detection and merge with provided adapters
+        initializeWalletDetection();
+        const allAdapters = getDetectedWalletAdapters(adapters);
+        
+        this.adapters = allAdapters.filter(adapter => adapter.readyState !== WalletReadyState.Unsupported);
         this.storageUtil = createLocalStorageUtility<string | null>(localStorageKey, null);
 
         // Initialize from storage

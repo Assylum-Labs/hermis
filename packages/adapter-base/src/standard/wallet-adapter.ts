@@ -41,6 +41,8 @@ import {
   StandardEventsChangeEvent
 } from './types.js';
 
+import bs58 from 'bs58';
+
 
 type IStandardWalletAdapter =
   Pick<WalletAdapter, 'name' | 'url' | 'icon' | 'publicKey' | 'connecting' | 'on' | 'off' | 'emit'> &
@@ -123,12 +125,27 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
                 return;
               }
 
-              // Find Solana account
-              const solanaAccount = event.accounts.find(
+              // Find Solana account - made more flexible to work with real wallet implementations
+              let solanaAccount = event.accounts.find(
                 (account: StandardWalletAccount) => account && account.features &&
                   Array.isArray(account.features) &&
                   account.features.includes('solana:publicKey')
               );
+
+              // If no account found with the exact feature, try to find any account with a publicKey
+              if (!solanaAccount) {
+                solanaAccount = event.accounts.find(
+                  (account: StandardWalletAccount) => account && account.publicKey && 
+                    account.publicKey instanceof Uint8Array && account.publicKey.length > 0
+                );
+              }
+
+              // If still no account found, try to find any account that looks like a Solana account
+              if (!solanaAccount && event.accounts.length > 0) {
+                solanaAccount = event.accounts.find(
+                  (account: StandardWalletAccount) => account && account.publicKey
+                );
+              }
 
               if (solanaAccount) {
                 // If account exists, get the public key
@@ -156,7 +173,6 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
             } catch (error) {
               console.error('Error handling wallet account change event', error);
               this._eventEmitter.emit('error', new WalletError('Error handling wallet event'));
-              // this._eventEmitter.emit('error', new Error('Error handling wallet event'));
             }
           });
         }
@@ -239,6 +255,7 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
       if (this.connected || this.connecting) return;
       this._connecting = true;
 
+      
       if (!(StandardConnectMethod in this._wallet.features)) {
         throw new Error('Wallet does not support connect feature');
       }
@@ -253,12 +270,30 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
         throw new Error('Invalid connect result from wallet');
       }
 
-      // Find Solana account
-      const solanaAccount = connectResult.accounts.find(
+      // Find Solana account - made more flexible to work with real wallet implementations
+      let solanaAccount = connectResult.accounts.find(
         (account: StandardWalletAccount) => account && account.features &&
           Array.isArray(account.features) &&
           account.features.includes('solana:publicKey')
       );
+
+      // If no account found with the exact feature, try to find any account with a publicKey
+      // This makes the implementation more flexible for real wallet standards
+      if (!solanaAccount) {
+        solanaAccount = connectResult.accounts.find(
+          (account: StandardWalletAccount) => account && account.publicKey && 
+            account.publicKey instanceof Uint8Array && account.publicKey.length > 0
+        );
+      }
+
+      // If still no account found, try to find any account that looks like a Solana account
+      if (!solanaAccount && connectResult.accounts.length > 0) {
+        // Many wallets might just return accounts without specific features
+        // Look for the first account with a valid public key
+        solanaAccount = connectResult.accounts.find(
+          (account: StandardWalletAccount) => account && account.publicKey
+        );
+      }
 
       if (!solanaAccount) {
         throw new Error('No Solana accounts found');
@@ -348,35 +383,33 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
           console.error('Error serializing transaction', error);
           throw new Error('Failed to serialize transaction');
         }
-
+        
         // Call wallet's signAndSendTransaction
         const result = await feature.signAndSendTransaction({
           transaction: transactionBytes,
-          chain: { id: 'solana:' + (connection.rpcEndpoint || 'mainnet-beta') },
+          chain: 'solana:mainnet',
+          account: {
+            address: this.publicKey!.toBase58(),
+            publicKey: this.publicKey!.toBytes(),
+            chains: ['solana:mainnet', 'solana:devnet', 'solana:testnet'],
+            features: ['solana:signTransaction']
+          },
           options
         });
 
-        if (!result || !result.signature) {
+        if (!result || !result.length || !result[0].signature) {
           throw new Error('No signature returned from signAndSendTransaction');
         }
 
-        // Convert signature to base64 string safely in browser and Node.js
-        let signatureBase64: string;
+        let signatureBase58: string;
         try {
-          // Browser-compatible approach
-          if (typeof window !== 'undefined') {
-            signatureBase64 = btoa(String.fromCharCode.apply(null,
-              Array.from(new Uint8Array(result.signature))));
-          } else {
-            // Node.js environment
-            signatureBase64 = Buffer.from(result.signature).toString('base64');
-          }
+          
+          signatureBase58 = bs58.encode(result[0].signature);
         } catch (error) {
-          console.error('Error encoding signature', error);
+          console.error('Error encoding signature to base58', error);
           throw new Error('Failed to encode transaction signature');
         }
-
-        return signatureBase64;
+        return signatureBase58;
       }
       // Otherwise, sign the transaction and send it
       else if (SolanaSignTransactionMethod in this._wallet.features) {
@@ -431,7 +464,13 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
 
       // Send to wallet for signing
       const result = await feature.signTransaction({
-        transaction: transactionBytes
+        transaction: transactionBytes,
+        account: {
+          address: this.publicKey!.toBase58(),
+          publicKey: this.publicKey!.toBytes(),
+          chains: ['solana:mainnet', 'solana:devnet', 'solana:testnet'],
+          features: ['solana:signTransaction']
+        }
       });
 
       if (!result || !result.signedTransaction) {
@@ -487,14 +526,20 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
       }
 
       const result = await feature.signMessage({
-        message
+        message,
+        account: {
+          address: this.publicKey!.toBase58(),
+          publicKey: this.publicKey!.toBytes(),
+          chains: ['solana:mainnet', 'solana:devnet', 'solana:testnet'],
+          features: ['solana:signMessage']
+        }
       });
 
-      if (!result || !result.signature) {
+      if (!result || result.length < 1 || !result[0].signature) {
         throw new Error('No signature returned from signMessage');
       }
 
-      return result.signature;
+      return result[0].signature;
     } catch (error: any) {
       console.error('Error in signMessage', error);
       this._eventEmitter.emit('error', error);

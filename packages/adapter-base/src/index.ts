@@ -6,3 +6,4 @@ export * from './core/adapters.js';
 export * from './core/manager.js';
 export * from './standard/wallet-adapter.js';
 export * from './standard/utils.js';
+export * from './standard/wallet-detection.js';
