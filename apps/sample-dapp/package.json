@@ -14,7 +14,6 @@
   "dependencies": {
     "@hermis/solana-headless-adapter-base": "^1.0.8",
     "@hermis/solana-headless-core": "^1.0.8",
-    "@hermis/solana-headless-enterprise-core": "workspace:*",
     "@solana/wallet-adapter-phantom": "^0.9.24",
     "@solana/wallet-adapter-solflare": "^0.6.28",
     "@solana/wallet-adapter-trust": "^0.1.13",

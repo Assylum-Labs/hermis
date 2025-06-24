@@ -606,395 +606,395 @@
 
 /** DEMACATION */
 
-import { 
-    AuthMethod, 
-    OAuthProvider,
-    AuthState,
-    EnterpriseSDK
-  } from '@hermis/solana-headless-enterprise-core';
-  import { createLocalStorageUtility } from '@hermis/solana-headless-adapter-base';
+// import { 
+//     AuthMethod, 
+//     OAuthProvider,
+//     AuthState,
+//     EnterpriseSDK
+//   } from '@hermis/solana-headless-enterprise-core';
+//   import { createLocalStorageUtility } from '@hermis/solana-headless-adapter-base';
   
-  // DOM Elements
-  let statusElement: HTMLElement;
-  let userInfoElement: HTMLElement;
-  let errorElement: HTMLElement;
-  let authButtonsContainer: HTMLElement;
-  let tokenInfoContainer: HTMLElement;
-  let debugInfoElement: HTMLElement;
-  let apiKeyStatusElement: HTMLElement;
+//   // DOM Elements
+//   let statusElement: HTMLElement;
+//   let userInfoElement: HTMLElement;
+//   let errorElement: HTMLElement;
+//   let authButtonsContainer: HTMLElement;
+//   let tokenInfoContainer: HTMLElement;
+//   let debugInfoElement: HTMLElement;
+//   let apiKeyStatusElement: HTMLElement;
   
-  // API key configuration
-  const API_KEY = 'demo_api_key_for_testing';
-  // const API_KEY = process.env.API_KEY || 'demo_api_key_for_testing';
+//   // API key configuration
+//   const API_KEY = 'demo_api_key_for_testing';
+//   // const API_KEY = process.env.API_KEY || 'demo_api_key_for_testing';
   
-  // Create a custom storage utility using the existing adapter
-  const authStorageUtil = createLocalStorageUtility<AuthState | null>('hermis_enterprise_auth', null);
+//   // Create a custom storage utility using the existing adapter
+//   const authStorageUtil = createLocalStorageUtility<AuthState | null>('hermis_enterprise_auth', null);
   
-  // Initialize the Enterprise SDK with all required configuration
-  const sdk = EnterpriseSDK.init({
-    apiKey: API_KEY,
-    baseUrl: 'http://localhost:4600', // Update with your actual backend URL
-    storageKey: 'hermis_enterprise_auth'
-  });
+//   // Initialize the Enterprise SDK with all required configuration
+//   const sdk = EnterpriseSDK.init({
+//     apiKey: API_KEY,
+//     baseUrl: 'http://localhost:4600', // Update with your actual backend URL
+//     storageKey: 'hermis_enterprise_auth'
+//   });
   
-  // Initialize the application
-  function initApp() {
-    // Get DOM elements
-    statusElement = document.getElementById('auth-status')!;
-    userInfoElement = document.getElementById('user-info')!;
-    errorElement = document.getElementById('error-info')!;
-    authButtonsContainer = document.getElementById('auth-buttons')!;
-    tokenInfoContainer = document.getElementById('token-info')!;
-    debugInfoElement = document.getElementById('debug-info')!;
-    apiKeyStatusElement = document.getElementById('api-key-status') || createApiKeyStatusElement();
+//   // Initialize the application
+//   function initApp() {
+//     // Get DOM elements
+//     statusElement = document.getElementById('auth-status')!;
+//     userInfoElement = document.getElementById('user-info')!;
+//     errorElement = document.getElementById('error-info')!;
+//     authButtonsContainer = document.getElementById('auth-buttons')!;
+//     tokenInfoContainer = document.getElementById('token-info')!;
+//     debugInfoElement = document.getElementById('debug-info')!;
+//     apiKeyStatusElement = document.getElementById('api-key-status') || createApiKeyStatusElement();
     
-    // Set up event listeners for auth buttons
-    setupAuthButtons();
+//     // Set up event listeners for auth buttons
+//     setupAuthButtons();
     
-    // Handle OAuth redirect if applicable
-    handleOAuthRedirect();
+//     // Handle OAuth redirect if applicable
+//     handleOAuthRedirect();
     
-    // Subscribe to auth state changes
-    subscribeToAuthChanges();
+//     // Subscribe to auth state changes
+//     subscribeToAuthChanges();
     
-    // Display API key status
-    updateApiKeyStatus();
-  }
+//     // Display API key status
+//     updateApiKeyStatus();
+//   }
   
-  // Create API key status element if it doesn't exist
-  function createApiKeyStatusElement(): HTMLElement {
-    const container = document.createElement('div');
-    container.id = 'api-key-status';
-    container.className = 'status-container';
+//   // Create API key status element if it doesn't exist
+//   function createApiKeyStatusElement(): HTMLElement {
+//     const container = document.createElement('div');
+//     container.id = 'api-key-status';
+//     container.className = 'status-container';
     
-    const heading = document.createElement('h3');
-    heading.textContent = 'API Key Status';
-    container.appendChild(heading);
+//     const heading = document.createElement('h3');
+//     heading.textContent = 'API Key Status';
+//     container.appendChild(heading);
     
-    const content = document.createElement('div');
-    content.className = 'status-content';
-    container.appendChild(content);
+//     const content = document.createElement('div');
+//     content.className = 'status-content';
+//     container.appendChild(content);
     
-    // Insert after auth-status
-    const authStatus = document.getElementById('auth-status');
-    if (authStatus && authStatus.parentNode) {
-      authStatus.parentNode.insertBefore(container, authStatus.nextSibling);
-    } else {
-      document.body.appendChild(container);
-    }
+//     // Insert after auth-status
+//     const authStatus = document.getElementById('auth-status');
+//     if (authStatus && authStatus.parentNode) {
+//       authStatus.parentNode.insertBefore(container, authStatus.nextSibling);
+//     } else {
+//       document.body.appendChild(container);
+//     }
     
-    return container;
-  }
+//     return container;
+//   }
   
-  // Update API key status display
-  function updateApiKeyStatus() {
-    if (!apiKeyStatusElement) return;
+//   // Update API key status display
+//   function updateApiKeyStatus() {
+//     if (!apiKeyStatusElement) return;
     
-    const content = apiKeyStatusElement.querySelector('.status-content') || apiKeyStatusElement;
+//     const content = apiKeyStatusElement.querySelector('.status-content') || apiKeyStatusElement;
     
-    try {
-      if (API_KEY) {
-        const apiKey = API_KEY
-        // Only show part of the API key for security
-        const maskedKey = apiKey ? 
-          `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : 
-          'Set but unavailable';
+//     try {
+//       if (API_KEY) {
+//         const apiKey = API_KEY
+//         // Only show part of the API key for security
+//         const maskedKey = apiKey ? 
+//           `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}` : 
+//           'Set but unavailable';
         
-        content.innerHTML = `
-          <p>✅ <strong>API Key Configured</strong></p>
-          <p>Key: ${maskedKey}</p>
-        `;
-        apiKeyStatusElement.classList.remove('error');
-        apiKeyStatusElement.classList.add('success');
-      } else {
-        content.innerHTML = `
-          <p>❌ <strong>API Key Missing</strong></p>
-          <p>Warning: SDK functionality is limited without an API key</p>
-        `;
-        apiKeyStatusElement.classList.remove('success');
-        apiKeyStatusElement.classList.add('error');
-      }
-    } catch (error) {
-      console.error('Error updating API key status:', error);
-      content.innerHTML = `
-        <p>❌ <strong>API Key Error</strong></p>
-        <p>Error: ${error instanceof Error ? error.message : 'Unknown error'}</p>
-      `;
-      apiKeyStatusElement.classList.remove('success');
-      apiKeyStatusElement.classList.add('error');
-    }
-  }
+//         content.innerHTML = `
+//           <p>✅ <strong>API Key Configured</strong></p>
+//           <p>Key: ${maskedKey}</p>
+//         `;
+//         apiKeyStatusElement.classList.remove('error');
+//         apiKeyStatusElement.classList.add('success');
+//       } else {
+//         content.innerHTML = `
+//           <p>❌ <strong>API Key Missing</strong></p>
+//           <p>Warning: SDK functionality is limited without an API key</p>
+//         `;
+//         apiKeyStatusElement.classList.remove('success');
+//         apiKeyStatusElement.classList.add('error');
+//       }
+//     } catch (error) {
+//       console.error('Error updating API key status:', error);
+//       content.innerHTML = `
+//         <p>❌ <strong>API Key Error</strong></p>
+//         <p>Error: ${error instanceof Error ? error.message : 'Unknown error'}</p>
+//       `;
+//       apiKeyStatusElement.classList.remove('success');
+//       apiKeyStatusElement.classList.add('error');
+//     }
+//   }
   
-  // Set up event listeners for auth buttons
-  function setupAuthButtons() {
-    // Google sign in
-    document.getElementById('google-signin')?.addEventListener('click', async () => {
-      try {
-        await sdk.signInWithOAuth(OAuthProvider.GOOGLE);
-      } catch (error) {
-        handleApiError(error);
-      }
-    });
+//   // Set up event listeners for auth buttons
+//   function setupAuthButtons() {
+//     // Google sign in
+//     document.getElementById('google-signin')?.addEventListener('click', async () => {
+//       try {
+//         await sdk.signInWithOAuth(OAuthProvider.GOOGLE);
+//       } catch (error) {
+//         handleApiError(error);
+//       }
+//     });
     
-    // GitHub sign in
-    document.getElementById('github-signin')?.addEventListener('click', async () => {
-      try {
-        await sdk.signInWithOAuth(OAuthProvider.GITHUB);
-      } catch (error) {
-        handleApiError(error);
-      }
-    });
+//     // GitHub sign in
+//     document.getElementById('github-signin')?.addEventListener('click', async () => {
+//       try {
+//         await sdk.signInWithOAuth(OAuthProvider.GITHUB);
+//       } catch (error) {
+//         handleApiError(error);
+//       }
+//     });
     
-    // Twitter sign in
-    document.getElementById('twitter-signin')?.addEventListener('click', async () => {
-      try {
-        await sdk.signInWithOAuth(OAuthProvider.TWITTER);
-      } catch (error) {
-        handleApiError(error);
-      }
-    });
+//     // Twitter sign in
+//     document.getElementById('twitter-signin')?.addEventListener('click', async () => {
+//       try {
+//         await sdk.signInWithOAuth(OAuthProvider.TWITTER);
+//       } catch (error) {
+//         handleApiError(error);
+//       }
+//     });
     
-    // Discord sign in
-    document.getElementById('discord-signin')?.addEventListener('click', async () => {
-      try {
-        await sdk.signInWithOAuth(OAuthProvider.DISCORD);
-      } catch (error) {
-        handleApiError(error);
-      }
-    });
+//     // Discord sign in
+//     document.getElementById('discord-signin')?.addEventListener('click', async () => {
+//       try {
+//         await sdk.signInWithOAuth(OAuthProvider.DISCORD);
+//       } catch (error) {
+//         handleApiError(error);
+//       }
+//     });
     
-    // Facebook sign in
-    document.getElementById('facebook-signin')?.addEventListener('click', async () => {
-      try {
-        await sdk.signInWithOAuth(OAuthProvider.FACEBOOK);
-      } catch (error) {
-        handleApiError(error);
-      }
-    });
+//     // Facebook sign in
+//     document.getElementById('facebook-signin')?.addEventListener('click', async () => {
+//       try {
+//         await sdk.signInWithOAuth(OAuthProvider.FACEBOOK);
+//       } catch (error) {
+//         handleApiError(error);
+//       }
+//     });
     
-    // Reddit sign in
-    document.getElementById('reddit-signin')?.addEventListener('click', async () => {
-      try {
-        await sdk.signInWithOAuth(OAuthProvider.REDDIT);
-      } catch (error) {
-        handleApiError(error);
-      }
-    });
+//     // Reddit sign in
+//     document.getElementById('reddit-signin')?.addEventListener('click', async () => {
+//       try {
+//         await sdk.signInWithOAuth(OAuthProvider.REDDIT);
+//       } catch (error) {
+//         handleApiError(error);
+//       }
+//     });
     
-    // Sign out
-    document.getElementById('signout-button')?.addEventListener('click', async () => {
-      try {
-        await sdk.signOut();
-      } catch (error) {
-        handleApiError(error);
-      }
-    });
+//     // Sign out
+//     document.getElementById('signout-button')?.addEventListener('click', async () => {
+//       try {
+//         await sdk.signOut();
+//       } catch (error) {
+//         handleApiError(error);
+//       }
+//     });
     
-    // Add a button to update API key
-    const updateApiKeyButton = document.createElement('button');
-    updateApiKeyButton.id = 'update-api-key';
-    updateApiKeyButton.className = 'btn btn-secondary';
-    updateApiKeyButton.textContent = 'Update API Key';
+//     // Add a button to update API key
+//     const updateApiKeyButton = document.createElement('button');
+//     updateApiKeyButton.id = 'update-api-key';
+//     updateApiKeyButton.className = 'btn btn-secondary';
+//     updateApiKeyButton.textContent = 'Update API Key';
     
-    // Add it to the UI
-    const signoutContainer = document.getElementById('signout-container');
-    if (signoutContainer) {
-      signoutContainer.appendChild(updateApiKeyButton);
-    }
-  }
+//     // Add it to the UI
+//     const signoutContainer = document.getElementById('signout-container');
+//     if (signoutContainer) {
+//       signoutContainer.appendChild(updateApiKeyButton);
+//     }
+//   }
   
-  // Handle API errors, especially for missing or invalid API keys
-  function handleApiError(error: unknown) {
-    console.error('API Error:', error);
+//   // Handle API errors, especially for missing or invalid API keys
+//   function handleApiError(error: unknown) {
+//     console.error('API Error:', error);
     
-    let errorMessage = 'Unknown error occurred';
-    let isApiKeyError = false;
+//     let errorMessage = 'Unknown error occurred';
+//     let isApiKeyError = false;
     
-    if (error instanceof Error) {
-      errorMessage = error.message;
+//     if (error instanceof Error) {
+//       errorMessage = error.message;
       
-      // Check if the error is related to API key
-      if (errorMessage.toLowerCase().includes('api key') || 
-          errorMessage.includes('401') || 
-          errorMessage.toLowerCase().includes('unauthorized')) {
-        isApiKeyError = true;
-      }
-    }
+//       // Check if the error is related to API key
+//       if (errorMessage.toLowerCase().includes('api key') || 
+//           errorMessage.includes('401') || 
+//           errorMessage.toLowerCase().includes('unauthorized')) {
+//         isApiKeyError = true;
+//       }
+//     }
     
-    // Show error to user
-    if (errorElement) {
-      errorElement.innerHTML = `<p>Error: ${errorMessage}</p>`;
-      errorElement.style.display = 'block';
-    }
+//     // Show error to user
+//     if (errorElement) {
+//       errorElement.innerHTML = `<p>Error: ${errorMessage}</p>`;
+//       errorElement.style.display = 'block';
+//     }
     
-    updateApiKeyStatus();
-  }
+//     updateApiKeyStatus();
+//   }
   
-  // Handle OAuth redirect
-  async function handleOAuthRedirect() {
-    // Show loading indicator
-    const loadingIndicator = document.getElementById('loading-indicator');
-    if (loadingIndicator) {
-      loadingIndicator.style.display = 'block';
-    }
+//   // Handle OAuth redirect
+//   async function handleOAuthRedirect() {
+//     // Show loading indicator
+//     const loadingIndicator = document.getElementById('loading-indicator');
+//     if (loadingIndicator) {
+//       loadingIndicator.style.display = 'block';
+//     }
     
-    try {
-      const result = await sdk.handleOAuthRedirect();
+//     try {
+//       const result = await sdk.handleOAuthRedirect();
       
-      if (result.error) {
-        console.error('OAuth redirect handling failed:', result.error);
-        handleApiError(new Error(result.error));
-      } else {
-        console.log('OAuth redirect handling succeeded');
-      }
-    } catch (error: any) {
-      console.error('Error handling OAuth redirect:', error);
-      handleApiError(error);
-    } finally {
-      // Hide loading indicator
-      if (loadingIndicator) {
-        loadingIndicator.style.display = 'none';
-      }
-    }
-  }
+//       if (result.error) {
+//         console.error('OAuth redirect handling failed:', result.error);
+//         handleApiError(new Error(result.error));
+//       } else {
+//         console.log('OAuth redirect handling succeeded');
+//       }
+//     } catch (error: any) {
+//       console.error('Error handling OAuth redirect:', error);
+//       handleApiError(error);
+//     } finally {
+//       // Hide loading indicator
+//       if (loadingIndicator) {
+//         loadingIndicator.style.display = 'none';
+//       }
+//     }
+//   }
 
-  let authUnsubscribe: any = null;
+//   let authUnsubscribe: any = null;
   
-  // Subscribe to auth state changes
-  function subscribeToAuthChanges() {
+//   // Subscribe to auth state changes
+//   function subscribeToAuthChanges() {
     
-    // Clean up previous subscription if exists
-    if (authUnsubscribe) {
-      authUnsubscribe();
-      authUnsubscribe = null; // Clear the reference after unsubscribing
-    }
+//     // Clean up previous subscription if exists
+//     if (authUnsubscribe) {
+//       authUnsubscribe();
+//       authUnsubscribe = null; // Clear the reference after unsubscribing
+//     }
     
-    // Create a consistent callback function that won't be recreated each time
-    const authStateHandler = (state: any) => {
-      updateUI(state);
+//     // Create a consistent callback function that won't be recreated each time
+//     const authStateHandler = (state: any) => {
+//       updateUI(state);
       
-      // Only update storage if the state has meaningful content
-      if (state && (state.isAuthenticated !== undefined)) {
-        authStorageUtil.set(state);
-      }
-    };
+//       // Only update storage if the state has meaningful content
+//       if (state && (state.isAuthenticated !== undefined)) {
+//         authStorageUtil.set(state);
+//       }
+//     };
     
-    try {
-      authUnsubscribe = sdk.onAuthStateChange(authStateHandler);
-    } catch (error) {
-      console.error('Error subscribing to auth changes:', error);
-      handleApiError(error);
-    }
-  }
+//     try {
+//       authUnsubscribe = sdk.onAuthStateChange(authStateHandler);
+//     } catch (error) {
+//       console.error('Error subscribing to auth changes:', error);
+//       handleApiError(error);
+//     }
+//   }
   
-  // Update UI based on auth state
-  function updateUI(state: AuthState) {
-    // Update authentication status
-    if (state.isAuthenticated) {
-      statusElement.innerHTML = `<p>✅ <strong>Authenticated</strong> (via ${state.method})</p>`;
+//   // Update UI based on auth state
+//   function updateUI(state: AuthState) {
+//     // Update authentication status
+//     if (state.isAuthenticated) {
+//       statusElement.innerHTML = `<p>✅ <strong>Authenticated</strong> (via ${state.method})</p>`;
       
-      if (state.user) {
-        const userName = state.user.name || state.user.email || 'User';
-        userInfoElement.innerHTML = `<p>Welcome, ${userName}!</p>
-          <p>Wallet Public Key: ${state.publicKey}</p>`;
-      }
+//       if (state.user) {
+//         const userName = state.user.name || state.user.email || 'User';
+//         userInfoElement.innerHTML = `<p>Welcome, ${userName}!</p>
+//           <p>Wallet Public Key: ${state.publicKey}</p>`;
+//       }
       
-      // Show sign out button
-      const signoutContainer = document.getElementById('signout-container');
-      if (signoutContainer) {
-        signoutContainer.style.display = 'block';
-      }
+//       // Show sign out button
+//       const signoutContainer = document.getElementById('signout-container');
+//       if (signoutContainer) {
+//         signoutContainer.style.display = 'block';
+//       }
       
-      // Hide auth buttons
-      if (authButtonsContainer) {
-        authButtonsContainer.style.display = 'none';
-      }
+//       // Hide auth buttons
+//       if (authButtonsContainer) {
+//         authButtonsContainer.style.display = 'none';
+//       }
       
-      // Show token info
-      if (tokenInfoContainer) {
-        tokenInfoContainer.style.display = 'block';
-        if (state.jwt) {
-          const truncatedJwt = `${state.jwt.substring(0, 20)}...${state.jwt.substring(state.jwt.length - 20)}`;
-          const userInfoJson = JSON.stringify(state.user, null, 2);
+//       // Show token info
+//       if (tokenInfoContainer) {
+//         tokenInfoContainer.style.display = 'block';
+//         if (state.jwt) {
+//           const truncatedJwt = `${state.jwt.substring(0, 20)}...${state.jwt.substring(state.jwt.length - 20)}`;
+//           const userInfoJson = JSON.stringify(state.user, null, 2);
           
-          const jwtDisplay = document.getElementById('jwt-display');
-          if (jwtDisplay) jwtDisplay.textContent = truncatedJwt;
+//           const jwtDisplay = document.getElementById('jwt-display');
+//           if (jwtDisplay) jwtDisplay.textContent = truncatedJwt;
           
-          const userJson = document.getElementById('user-json');
-          if (userJson) userJson.textContent = userInfoJson;
-        }
-      }
-    } else {
-      statusElement.innerHTML = '<p>❌ <strong>Not Authenticated</strong></p>';
-      userInfoElement.innerHTML = '';
+//           const userJson = document.getElementById('user-json');
+//           if (userJson) userJson.textContent = userInfoJson;
+//         }
+//       }
+//     } else {
+//       statusElement.innerHTML = '<p>❌ <strong>Not Authenticated</strong></p>';
+//       userInfoElement.innerHTML = '';
       
-      // Hide sign out button
-      const signoutContainer = document.getElementById('signout-container');
-      if (signoutContainer) {
-        signoutContainer.style.display = 'none';
-      }
+//       // Hide sign out button
+//       const signoutContainer = document.getElementById('signout-container');
+//       if (signoutContainer) {
+//         signoutContainer.style.display = 'none';
+//       }
       
-      // Show auth buttons
-      if (authButtonsContainer) {
-        authButtonsContainer.style.display = 'block';
-      }
+//       // Show auth buttons
+//       if (authButtonsContainer) {
+//         authButtonsContainer.style.display = 'block';
+//       }
       
-      // Hide token info
-      if (tokenInfoContainer) {
-        tokenInfoContainer.style.display = 'none';
-      }
+//       // Hide token info
+//       if (tokenInfoContainer) {
+//         tokenInfoContainer.style.display = 'none';
+//       }
       
-      // Show error if present
-      if (state.error) {
-        errorElement.innerHTML = `<p>Error: ${state.error}</p>`;
-        errorElement.style.display = 'block';
-      } else {
-        errorElement.style.display = 'none';
-      }
-    }
+//       // Show error if present
+//       if (state.error) {
+//         errorElement.innerHTML = `<p>Error: ${state.error}</p>`;
+//         errorElement.style.display = 'block';
+//       } else {
+//         errorElement.style.display = 'none';
+//       }
+//     }
     
-    // Update debug info
-    if (debugInfoElement) {
-      debugInfoElement.textContent = JSON.stringify(state, null, 2);
-    }
+//     // Update debug info
+//     if (debugInfoElement) {
+//       debugInfoElement.textContent = JSON.stringify(state, null, 2);
+//     }
     
-    // Always ensure API key status is up to date
-    updateApiKeyStatus();
-  }
+//     // Always ensure API key status is up to date
+//     updateApiKeyStatus();
+//   }
   
-  // Add some CSS for API key related UI
-  function addApiKeyStyles() {
-    const style = document.createElement('style');
-    style.textContent = `
-      .status-container {
-        margin: 15px 0;
-        padding: 10px;
-        border-radius: 5px;
-      }
-      .status-container.success {
-        background-color: #e6ffe6;
-        border: 1px solid #99ff99;
-      }
-      .status-container.error {
-        background-color: #ffe6e6;
-        border: 1px solid #ff9999;
-      }
-      .api-key-error {
-        background-color: #ffe6e6;
-        border: 2px solid #ff9999;
-        padding: 10px;
-        margin: 10px 0;
-        font-weight: bold;
-      }
-      #update-api-key {
-        margin-left: 10px;
-      }
-    `;
-    document.head.appendChild(style);
-  }
+//   // Add some CSS for API key related UI
+//   function addApiKeyStyles() {
+//     const style = document.createElement('style');
+//     style.textContent = `
+//       .status-container {
+//         margin: 15px 0;
+//         padding: 10px;
+//         border-radius: 5px;
+//       }
+//       .status-container.success {
+//         background-color: #e6ffe6;
+//         border: 1px solid #99ff99;
+//       }
+//       .status-container.error {
+//         background-color: #ffe6e6;
+//         border: 1px solid #ff9999;
+//       }
+//       .api-key-error {
+//         background-color: #ffe6e6;
+//         border: 2px solid #ff9999;
+//         padding: 10px;
+//         margin: 10px 0;
+//         font-weight: bold;
+//       }
+//       #update-api-key {
+//         margin-left: 10px;
+//       }
+//     `;
+//     document.head.appendChild(style);
+//   }
   
-  // Initialize the app when DOM is loaded
-  document.addEventListener('DOMContentLoaded', () => {
-    addApiKeyStyles();
-    initApp();
-  });
+//   // Initialize the app when DOM is loaded
+//   document.addEventListener('DOMContentLoaded', () => {
+//     addApiKeyStyles();
+//     initApp();
+//   });
