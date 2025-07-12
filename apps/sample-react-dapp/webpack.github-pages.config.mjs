@@ -58,18 +58,11 @@ export default {
         ],
         use: [
           {
-            loader: 'swc-loader',
+            loader: 'ts-loader',
             options: {
-              jsc: {
-                parser: {
-                  syntax: 'typescript',
-                  tsx: true
-                },
-                transform: {
-                  react: {
-                    runtime: 'automatic'
-                  }
-                }
+              transpileOnly: true,
+              compilerOptions: {
+                jsx: 'react-jsx'
               }
             }
           }
@@ -113,12 +106,13 @@ export default {
   plugins: [
     new NodePolyfillPlugin(),
     new HtmlWebpackPlugin({
-      template: './index.html',
+      template: './index.webpack.html',
       filename: 'index.html',
     }),
     new CopyWebpackPlugin({
       patterns: [
         { from: './src/index.css', to: 'styles.css' },
+        { from: './public/vite.svg', to: 'vite.svg' },
       ],
     }),
     new webpack.ProvidePlugin({

@@ -1,7 +1,7 @@
 {
   "name": "sample-react-dapp",
   "private": true,
-  "version": "0.0.10",
+  "version": "0.0.11",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
@@ -50,7 +50,7 @@
     "stream-http": "^3.2.0",
     "string-replace-loader": "^3.1.0",
     "style-loader": "^4.0.0",
-    "swc-loader": "^0.2.3",
+    "ts-loader": "^9.5.2",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.24.1",
     "url": "^0.11.0",

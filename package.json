@@ -1,6 +1,6 @@
 {
   "name": "@hermis/solana-headless-sdk",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "The parent repo for all Hermis SDKs",
   "scripts": {
     "clean": "turbo run clean",
@@ -18,7 +18,7 @@
     "access": "public"
   },
   "keywords": [],
-  "author": "Mctursh",
+  "author": "Mctursh (Ayoade Adenuga)",
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2",
   "devDependencies": {

@@ -1,5 +1,16 @@
 # @hermis/solana-headless-adapter-base
 
+## 1.1.0
+
+### Minor Changes
+
+- This updates adds support for auto wallet detection using the wallet standard. It also fix minor bugs on some features on the detected wallet adapter methods, with full backward compactibility.
+
+### Patch Changes
+
+- Updated dependencies
+  - @hermis/solana-headless-core@1.1.0
+
 ## 1.0.8
 
 ### Patch Changes

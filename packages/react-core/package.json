@@ -1,6 +1,6 @@
 {
   "name": "@hermis/solana-headless-react",
-  "version": "1.0.8",
+  "version": "1.1.0",
   "description": "React hooks and components for Hermis Solana Headless SDK",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -32,7 +32,7 @@
   },
   "peerDependencies": {
     "react": ">=16.8.0",
-    "@hermis/solana-headless-core": ">=1.0.8"
+    "@hermis/solana-headless-core": ">=1.1.0"
   },
   "keywords": [
     "solana",
@@ -40,11 +40,11 @@
     "react",
     "hooks"
   ],
-  "author": "Mctursh",
+  "author": "Mctursh (Ayoade Adenuga)",
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2",
   "devDependencies": {
-    "@hermis/solana-headless-format-config": "^1.0.5",
+    "@hermis/solana-headless-format-config": "workspace:*",
     "@types/node": "^22.13.8",
     "@types/react": "^19.0.10",
     "tsup": "^8.0.0"

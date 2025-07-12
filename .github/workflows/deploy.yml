@@ -41,11 +41,15 @@ jobs:
 
     - name: Install dependencies
       run: |
+        cd ../..
         pnpm install --no-frozen-lockfile
-        pnpm install -r
+        cd apps/sample-react-dapp
 
     - name: Build React App for GitHub Pages
       run: |
+        cd ../..
+        pnpm run build --filter=sample-react-dapp
+        cd apps/sample-react-dapp
         pnpm run build:pages
 
     - name: Upload artifact
