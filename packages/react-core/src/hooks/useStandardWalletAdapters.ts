@@ -66,7 +66,16 @@ export function useStandardWalletAdapters(
         const unsubscribe = subscribeToWalletAdapterChanges((updatedAdapters: Adapter[]) => {
             if (mounted) {
                 console.log('[useStandardWalletAdapters] Adapters updated from base library');
-                setAdapters(updatedAdapters);
+                
+                // The subscription only provides standard wallets, we need to merge with existing adapters
+                const mergedAdapters = [...existingAdapters, ...updatedAdapters];
+                
+                // Remove duplicates based on adapter name
+                const uniqueAdapters = mergedAdapters.filter((adapter, index, array) => 
+                    array.findIndex(a => a.name === adapter.name) === index
+                );
+                
+                setAdapters(uniqueAdapters);
             }
         });
 
@@ -74,7 +83,7 @@ export function useStandardWalletAdapters(
             mounted = false;
             unsubscribe();
         };
-    }, []);
+    }, [existingAdapters]); // Add existingAdapters as dependency
 
     return adapters;
 }
