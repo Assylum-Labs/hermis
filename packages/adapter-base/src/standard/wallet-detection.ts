@@ -178,8 +178,18 @@ export function initializeWalletDetection(): () => void {
     });
 
     // Dispatch app ready event
-    const appReadyEvent = new AppReadyEvent(api);
-    window.dispatchEvent(appReadyEvent);
+    try {
+      // Use CustomEvent instead of custom class to avoid constructor issues
+      const appReadyEvent = new CustomEvent("wallet-standard:app-ready", {
+        detail: api,
+        bubbles: false,
+        cancelable: false,
+        composed: false,
+      });
+      window.dispatchEvent(appReadyEvent);
+    } catch (error) {
+      console.warn("Failed to dispatch app ready event:", error);
+    }
   } catch (error) {
     console.error("Failed to initialize wallet detection:", error);
   }
