@@ -25,7 +25,7 @@ export enum Environment {
  * Configuration for environment detection
  */
 export interface EnvironmentConfig {
-  adapters: Adapter[] | SolanaMobileWalletAdapter[];
+  adapters: (Adapter | SolanaMobileWalletAdapter)[];
   userAgentString: string | null;
 }
 

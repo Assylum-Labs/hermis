@@ -144,21 +144,22 @@ export function WalletProvider({
     [adaptersWithStandardAdapters]
   );
 
+  // Handle adapter selection when wallet name or adapters change
   useEffect(() => {
+    if (!walletName || !autoConnect) return;
+
     const adapter = findAdapter(walletName);
     
-    if(!autoConnect) return
-
+    // Update adapter reference and state
     latestAdapterRef.current = adapter;
     
-    setAdapterState({
+    setAdapterState(prev => ({
+      ...prev,
       adapter,
       connected: adapter?.connected || false,
-      connecting: false,
-      disconnecting: false,
       publicKey: adapter?.publicKey || null
-    });
-  }, [walletName, findAdapter]);
+    }));
+  }, [walletName, findAdapter, autoConnect, adaptersWithStandardAdapters]);
 
   const changeWallet = useCallback(
     (nextWalletName: WalletName | null) => {

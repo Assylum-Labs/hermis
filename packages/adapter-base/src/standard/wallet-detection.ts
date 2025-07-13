@@ -26,6 +26,9 @@ const detectedWallets = new Map<string, TypedStandardWallet>();
 
 const registrationListeners = new Set<() => void>();
 
+// Global flag to track if wallet detection has been initialized
+let walletDetectionInitialized = false;
+
 /**
  * Wallet registry to manage dynamically detected wallets
  */
@@ -56,6 +59,7 @@ export class WalletRegistry {
       this.#wallets.set(wallet.name, wallet);
       this.#adapters.set(wallet.name, adapter);
 
+      console.log(`[Wallet Registry] Successfully registered wallet: ${wallet.name}`);
       this.notifyChange();
 
       return adapter;
@@ -72,12 +76,10 @@ export class WalletRegistry {
    * Unregister a wallet
    */
   unregister(wallet: TypedStandardWallet): void {
-    const adapter = this.#adapters.get(wallet.name);
-    if (adapter) {
-
+    if (this.#wallets.has(wallet.name)) {
       this.#wallets.delete(wallet.name);
       this.#adapters.delete(wallet.name);
-
+      console.log(`[Wallet Registry] Unregistered wallet: ${wallet.name}`);
       this.notifyChange();
     }
   }
@@ -90,13 +92,25 @@ export class WalletRegistry {
   }
 
   /**
-   * Subscribe to adapter changes
+   * Get a specific adapter by name
    */
-  onChange(listener: (adapters: StandardWalletAdapter[]) => void): () => void {
-    this.#changeListeners.add(listener);
-    return () => this.#changeListeners.delete(listener);
+  getAdapter(name: string): StandardWalletAdapter | null {
+    return this.#adapters.get(name) || null;
   }
 
+  /**
+   * Add a change listener
+   */
+  addChangeListener(listener: (adapters: StandardWalletAdapter[]) => void): () => void {
+    this.#changeListeners.add(listener);
+    return () => {
+      this.#changeListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Notify all change listeners
+   */
   private notifyChange(): void {
     const adapters = this.getAdapters();
     this.#changeListeners.forEach((listener) => {
@@ -106,6 +120,20 @@ export class WalletRegistry {
         console.error("Error in wallet registry change listener:", error);
       }
     });
+  }
+
+  /**
+   * Check if a wallet is registered
+   */
+  hasWallet(name: string): boolean {
+    return this.#wallets.has(name);
+  }
+
+  /**
+   * Get wallet count
+   */
+  getWalletCount(): number {
+    return this.#wallets.size;
   }
 }
 
@@ -123,7 +151,7 @@ export function getWalletRegistry(): WalletRegistry {
 }
 
 /**
- * Initialize wallet detection system
+ * Initialize wallet detection system with retry mechanism
  * This sets up event listeners for wallet registration
  */
 export function initializeWalletDetection(): () => void {
@@ -132,6 +160,12 @@ export function initializeWalletDetection(): () => void {
     return () => {};
   }
 
+  // Avoid duplicate initialization
+  if (walletDetectionInitialized) {
+    return () => {};
+  }
+
+  walletDetectionInitialized = true;
   const registry = getWalletRegistry();
   const cleanupFunctions: (() => void)[] = [];
 
@@ -192,6 +226,32 @@ export function initializeWalletDetection(): () => void {
     } catch (error) {
       console.warn("Failed to dispatch app ready event:", error);
     }
+
+    // Set up periodic check for delayed wallet registration
+    const periodicCheck = setInterval(() => {
+      try {
+        // Re-dispatch app ready event to catch any wallets that registered late
+        const appReadyEvent = new CustomEvent("wallet-standard:app-ready", {
+          detail: api,
+          bubbles: false,
+          cancelable: false,
+          composed: false,
+        });
+        window.dispatchEvent(appReadyEvent);
+      } catch (error) {
+        console.warn("Failed to dispatch periodic app ready event:", error);
+      }
+    }, 1000); // Check every second for the first 10 seconds
+
+    // Clear periodic check after 10 seconds
+    setTimeout(() => {
+      clearInterval(periodicCheck);
+    }, 10000);
+
+    cleanupFunctions.push(() => {
+      clearInterval(periodicCheck);
+    });
+
   } catch (error) {
     console.error("Failed to initialize wallet detection:", error);
   }
@@ -200,6 +260,7 @@ export function initializeWalletDetection(): () => void {
   const cleanup = () => {
     cleanupFunctions.forEach((fn) => fn());
     registrationListeners.clear();
+    walletDetectionInitialized = false;
   };
 
   registrationListeners.add(cleanup);
@@ -240,6 +301,7 @@ class AppReadyEvent extends Event implements WindowAppReadyEvent {
 
 /**
  * Get detected wallet adapters merged with provided adapters
+ * Now includes change listener support
  */
 export function getDetectedWalletAdapters(
   providedAdapters: Adapter[] = []
@@ -274,6 +336,17 @@ export function getDetectedWalletAdapters(
 export function getDetectedStandardWalletAdapters(): StandardWalletAdapter[] {
   const registry = getWalletRegistry();
   return registry.getAdapters();
+}
+
+/**
+ * Add a listener for wallet registry changes
+ * This allows React components to react to dynamically registered wallets
+ */
+export function addWalletRegistryChangeListener(
+  listener: (adapters: StandardWalletAdapter[]) => void
+): () => void {
+  const registry = getWalletRegistry();
+  return registry.addChangeListener(listener);
 }
 
 /**
@@ -333,4 +406,39 @@ export function initializeLegacyWalletSupport(): void {
       existingWallets.forEach((callback) => push(callback));
     }
   }
+}
+
+/**
+ * Utility function to wait for wallet registration
+ * This can be used when you need to wait for a specific wallet to be detected
+ */
+export function waitForWalletRegistration(
+  walletName: string,
+  timeout: number = 5000
+): Promise<StandardWalletAdapter | null> {
+  return new Promise((resolve) => {
+    const registry = getWalletRegistry();
+    
+    // Check if wallet is already registered
+    const existingAdapter = registry.getAdapter(walletName);
+    if (existingAdapter) {
+      resolve(existingAdapter);
+      return;
+    }
+
+    // Set up timeout
+    const timeoutId = setTimeout(() => {
+      resolve(null);
+    }, timeout);
+
+    // Listen for wallet registration
+    const removeListener = registry.addChangeListener((adapters) => {
+      const adapter = adapters.find(a => a.name === walletName);
+      if (adapter) {
+        clearTimeout(timeoutId);
+        removeListener();
+        resolve(adapter);
+      }
+    });
+  });
 }

@@ -1,5 +1,8 @@
 import { Adapter } from '@hermis/solana-headless-core';
-import { getStandardWalletAdapters as getBaseStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { 
+  getStandardWalletAdapters as getBaseStandardWalletAdapters,
+  subscribeToWalletAdapterChanges 
+} from '@hermis/solana-headless-adapter-base';
 import { useEffect, useMemo, useState } from 'react';
 
 /**
@@ -8,6 +11,8 @@ import { useEffect, useMemo, useState } from 'react';
  * This hook integrates with @hermis/solana-headless-adapter-base's
  * getStandardWalletAdapters function to discover and initialize
  * wallet adapters including standard wallets.
+ * 
+ * The base library handles all initialization and change detection automatically.
  * 
  * @param existingAdapters Existing adapters to include
  * @param endpoint Optional RPC endpoint for mobile wallet adapter
@@ -23,11 +28,13 @@ export function useStandardWalletAdapters(
         existingAdapters.length,
     ]);
 
+    // Initial fetch of adapters
     useEffect(() => {
         let mounted = true;
 
         const fetchAdapters = async () => {
             try {
+                // The base library handles initialization and change detection automatically
                 const standardAdapters = await getBaseStandardWalletAdapters(
                     existingAdapters,
                     endpoint
@@ -51,6 +58,23 @@ export function useStandardWalletAdapters(
             mounted = false;
         };
     }, [memoizedAdapters, endpoint]);
+
+    // Subscribe to dynamic adapter changes
+    useEffect(() => {
+        let mounted = true;
+
+        const unsubscribe = subscribeToWalletAdapterChanges((updatedAdapters: Adapter[]) => {
+            if (mounted) {
+                console.log('[useStandardWalletAdapters] Adapters updated from base library');
+                setAdapters(updatedAdapters);
+            }
+        });
+
+        return () => {
+            mounted = false;
+            unsubscribe();
+        };
+    }, []);
 
     return adapters;
 }

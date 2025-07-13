@@ -27,7 +27,7 @@ import {
   SolanaSignTransactionMethod,
   SolanaSignMessageMethod,
   SolanaSignInMethod
-} from './utils.js';
+} from './types.js';
 import {
   TypedStandardWallet,
   StandardConnectFeature,
