@@ -6,10 +6,11 @@
   "scripts": {
     "dev": "vite --host",
     "build": "tsc -b && vite build",
+    "build:vercel": "tsc -b && vite build",
+    "build:pages": "GITHUB_PAGES=true webpack --config webpack.github-pages.config.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "predeploy:pages": "node fix-imports.mjs",
-    "build:pages": "webpack --config webpack.github-pages.config.mjs",
     "postdeploy:pages": "node -e \"fs.writeFileSync('fix-imports.cleanup', '')\" --input-type=module",
     "predeploy": "npm run build:pages"
   },
@@ -56,7 +57,6 @@
     "url": "^0.11.0",
     "util": "^0.12.5",
     "vite": "^6.2.4",
-    "vite-plugin-node-polyfills": "^0.23.0",
     "webpack": "^5.90.3",
     "webpack-cli": "^5.1.4"
   }

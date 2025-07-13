@@ -143,11 +143,13 @@ export function initializeWalletDetection(): () => void {
     const api = Object.freeze({
       register(wallet: Wallet): () => void {
         const typedWallet = wallet as TypedStandardWallet;
+        console.log(`[Wallet Detection] Registering wallet: ${typedWallet.name}`);
         detectedWallets.set(typedWallet.name, typedWallet);
         registry.register(typedWallet);
 
         // Return unregister function
         return () => {
+          console.log(`[Wallet Detection] Unregistering wallet: ${typedWallet.name}`);
           detectedWallets.delete(typedWallet.name);
           registry.unregister(typedWallet);
         };

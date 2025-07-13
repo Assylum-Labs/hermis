@@ -1,0 +1,16 @@
+{
+  "buildCommand": "cd ../.. && corepack enable && pnpm install --frozen-lockfile && pnpm run build:vercel --filter=sample-react-dapp",
+  "outputDirectory": "dist",
+  "installCommand": "echo 'Skipping install, using buildCommand instead'",
+  "framework": null,
+  "functions": {},
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "env": {
+    "PNPM_VERSION": "10.5.2"
+  }
+} 
