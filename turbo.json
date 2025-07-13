@@ -4,6 +4,10 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "packages/*/dist/**", "apps/*/dist/**"]
     },
+    "build:vercel": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**", "apps/*/dist/**"]
+    },
     "build:pages": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "apps/*/dist/**"]

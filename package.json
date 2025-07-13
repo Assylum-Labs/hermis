@@ -5,6 +5,7 @@
   "scripts": {
     "clean": "turbo run clean",
     "build": "turbo run build",
+    "build:vercel": "turbo run build && turbo run build:vercel --filter=sample-react-dapp",
     "build:dapp": "turbo run build:pages --filter=sample-dapp",
     "version-packages": "changeset version",
     "release": "turbo run build --filter=@hermis/* && changeset publish",
