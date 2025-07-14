@@ -173,17 +173,15 @@ export function initializeWalletDetection(): () => void {
     // Initialize legacy wallet support first
     initializeLegacyWalletSupport();
 
-    // API for wallets to register themselves
+  // API for wallets to register themselves
     const api = Object.freeze({
       register(wallet: Wallet): () => void {
         const typedWallet = wallet as TypedStandardWallet;
-        console.log(`[Wallet Detection] Registering wallet: ${typedWallet.name}`);
         detectedWallets.set(typedWallet.name, typedWallet);
         registry.register(typedWallet);
 
         // Return unregister function
         return () => {
-          console.log(`[Wallet Detection] Unregistering wallet: ${typedWallet.name}`);
           detectedWallets.delete(typedWallet.name);
           registry.unregister(typedWallet);
         };

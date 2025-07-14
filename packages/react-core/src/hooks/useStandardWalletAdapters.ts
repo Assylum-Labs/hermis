@@ -65,7 +65,6 @@ export function useStandardWalletAdapters(
 
         const unsubscribe = subscribeToWalletAdapterChanges((updatedAdapters: Adapter[]) => {
             if (mounted) {
-                console.log('[useStandardWalletAdapters] Adapters updated from base library');
                 
                 // The subscription only provides standard wallets, we need to merge with existing adapters
                 const mergedAdapters = [...existingAdapters, ...updatedAdapters];

@@ -8,8 +8,6 @@ import {
   SolanaSignTransactionMethod,
   SolanaSignMessageMethod,
   SolanaSignInMethod,
-  TypedStandardWallet,
-  isWalletAdapterCompatibleStandardWallet
 } from './types.js';
 import { getEnvironment, getUriForAppIdentity, getUserAgent, getInferredNetworkFromEndpoint } from '../utils/environment.js';
 import { SolanaMobileWalletAdapterWalletName } from './constants.js';
@@ -260,13 +258,11 @@ export async function getStandardWalletAdapters(
 
   // Initialize wallet detection system only once
   if (!isWalletDetectionInitialized) {
-    console.log('[getStandardWalletAdapters] Initializing wallet detection');
     initializeWalletDetection();
     isWalletDetectionInitialized = true;
 
     // Set up wallet registry change listener to update adapters
     addWalletRegistryChangeListener(async () => {
-      console.log('[getStandardWalletAdapters] Wallet registry changed, updating adapters');
       await updateAdapters();
     });
   }
