@@ -7,7 +7,8 @@ export default defineConfig(({ command }) => {
   const isGithubPages = process.env.GITHUB_PAGES === 'true'
   
   return {
-    base: isGithubPages ? '/solana-headless-sdk/' : '/',
+    base: isGithubPages ? '/hermis/' : '/',
+    // base: isGithubPages ? '/solana-headless-sdk/' : '/',
     plugins: [
       react(),
     ],

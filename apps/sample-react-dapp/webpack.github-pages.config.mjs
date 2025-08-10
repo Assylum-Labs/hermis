@@ -17,7 +17,8 @@ export default {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
     clean: true,
-    publicPath: '/solana-headless-sdk/'
+    publicPath: '/hermis/'
+    // publicPath: '/solana-headless-sdk/'
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx', '.jsx'],
