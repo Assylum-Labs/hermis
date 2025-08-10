@@ -18,7 +18,6 @@ export default {
     filename: 'bundle.js',
     clean: true,
     publicPath: '/hermis/'
-    // publicPath: '/solana-headless-sdk/'
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx', '.jsx'],

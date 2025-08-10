@@ -8,7 +8,6 @@ export default defineConfig(({ command }) => {
   
   return {
     base: isGithubPages ? '/hermis/' : '/',
-    // base: isGithubPages ? '/solana-headless-sdk/' : '/',
     plugins: [
       react(),
     ],

@@ -9,7 +9,7 @@ module.exports = {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
     clean: true,
-    publicPath: '/solana-headless-sdk/'
+    publicPath: '/hermis/'
   },
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx'],
