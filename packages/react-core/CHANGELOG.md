@@ -1,5 +1,14 @@
 # @solana/headless-session
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated the Live Demo URL to https://assylum-labs.github.io/hermis/ in the README.md
+- Updated dependencies
+  - @hermis/solana-headless-adapter-base@1.1.2
+  - @hermis/solana-headless-core@1.1.2
+
 ## 1.1.1
 
 ### Patch Changes

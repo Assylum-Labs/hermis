@@ -10,7 +10,7 @@ This SDK provides **complete flexibility** for dApp developers, allowing full cu
 
 Try our playground:
 
-[**View the Demo →**](https://hermis-xyz.github.io/solana-headless-sdk/)
+[**View the Demo →**](https://assylum-labs.github.io/hermis/)
 
 This demo showcases the core functionality of our adapter-base package with the React framework, demonstrating how you can integrate Solana wallets with complete UI freedom.
 
@@ -51,7 +51,7 @@ This repository is a **pnpm monorepo** managed with [Turborepo](https://turbo.bu
 
 ```bash
 # Clone the repository
-git clone https://github.com/agateh/solana-headless-sdk.git
+git clone https://github.com/Assylum-Labs/hermis.git
 
 # Install dependencies
 pnpm install

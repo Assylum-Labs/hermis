@@ -1,5 +1,11 @@
 # @solana/headless-core
 
+## 1.1.2
+
+### Patch Changes
+
+- Updated the Live Demo URL to https://assylum-labs.github.io/hermis/ in the README.md
+
 ## 1.1.1
 
 ### Patch Changes

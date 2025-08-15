@@ -13,7 +13,7 @@
 
 Try our playground:
 
-[**View the Demo →**](https://hermis-xyz.github.io/solana-headless-sdk/)
+[**View the Demo →**](https://assylum-labs.github.io/hermis/)
 
 ## 🌟 Overview
 
