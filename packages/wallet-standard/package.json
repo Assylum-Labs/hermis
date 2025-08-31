@@ -1,7 +1,7 @@
 {
-  "name": "@hermis/solana-headless-adapter-base",
-  "version": "1.1.2",
-  "description": "The framework agnostic implementation of the Hermis headless solana wallet adapetr",
+  "name": "@hermis/wallet-standard-base",
+  "version": "1.0.0",
+  "description": "The framework agnostic wallet standard implementation. This package is completely framework-agnostic, allowing you to integrate Solana wallets with any UI framework or vanilla JavaScript.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -22,23 +22,17 @@
       "require": "./dist/index.cjs"
     }
   },
-  "dependencies": {
-    "@hermis/solana-headless-core": "1.1.2",
-    "@hermis/wallet-standard-base": "workspace:*",
-    "@solana-mobile/wallet-adapter-mobile": "2.0.0",
-    "@wallet-standard/base": "^1.1.0",
-    "bs58": "^6.0.0"
-  },
-  "files": [
-    "dist",
-    "src"
-  ],
-  "keywords": [],
+  "keywords": ["wallet", "standard", "solana", "framework-agnostic"],
   "author": "Mctursh (Ayoade Adenuga)",
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2",
+  "dependencies": {
+    "@hermis/solana-headless-core": "workspace:*",
+    "@solana-mobile/wallet-adapter-mobile": "^2.0.0",
+    "@wallet-standard/base": "^1.1.0"
+  },
   "devDependencies": {
-    "@hermis/solana-headless-format-config": "1.0.5",
+    "@hermis/solana-headless-format-config": "workspace:*",
     "@types/node": "^22.13.8",
     "tsup": "^8.0.0"
   }

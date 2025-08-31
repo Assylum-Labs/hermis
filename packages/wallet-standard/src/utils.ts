@@ -1,5 +1,5 @@
 import { Adapter, WalletAdapterNetwork, WalletReadyState } from '@hermis/solana-headless-core';
-import { Wallet as StandardWallet } from '@wallet-standard/base';
+// import { Wallet as StandardWallet } from '@wallet-standard/base';
 import { 
   StandardConnectMethod,
   StandardDisconnectMethod,
@@ -9,7 +9,7 @@ import {
   SolanaSignMessageMethod,
   SolanaSignInMethod,
 } from './types.js';
-import { getEnvironment, getUriForAppIdentity, getUserAgent, getInferredNetworkFromEndpoint } from '../utils/environment.js';
+import { getEnvironment, getUriForAppIdentity, getUserAgent, getInferredNetworkFromEndpoint } from './environment.js';
 import { SolanaMobileWalletAdapterWalletName } from './constants.js';
 
 import { 
@@ -276,8 +276,8 @@ export function isMobileWalletAdapter(adapter: any): adapter is SolanaMobileWall
 }
 
 // Import these from types.js to avoid circular dependencies
-import { Environment } from '@hermis/wallet-standard-base';
-import { createStandardWalletAdapter } from './adapter-factory.js';
+import { Environment } from './types.js';
+// import { createStandardWalletAdapter } from './adapter-factory.js';
 import { getDetectedWalletAdapters, initializeWalletDetection, addWalletRegistryChangeListener } from './wallet-detection.js';
 
 // Re-export constants

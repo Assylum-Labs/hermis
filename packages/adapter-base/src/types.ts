@@ -16,18 +16,18 @@ export interface WalletProvider {
 /**
  * Environment detection enum
  */
-export enum Environment {
-  DESKTOP_WEB,
-  MOBILE_WEB,
-}
+// export enum Environment {
+//   DESKTOP_WEB,
+//   MOBILE_WEB,
+// }
 
 /**
  * Configuration for environment detection
  */
-export interface EnvironmentConfig {
-  adapters: (Adapter | SolanaMobileWalletAdapter)[];
-  userAgentString: string | null;
-}
+// export interface EnvironmentConfig {
+//   adapters: (Adapter | SolanaMobileWalletAdapter)[];
+//   userAgentString: string | null;
+// }
 
 export interface WalletConnectionManager {
   getAdapter: () => Adapter | null;
