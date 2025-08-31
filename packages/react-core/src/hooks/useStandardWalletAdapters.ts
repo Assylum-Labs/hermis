@@ -2,7 +2,7 @@ import { Adapter } from '@hermis/solana-headless-core';
 import { 
   getStandardWalletAdapters as getBaseStandardWalletAdapters,
   subscribeToWalletAdapterChanges 
-} from '@hermis/solana-headless-adapter-base';
+} from '@hermis/wallet-standard-base';
 import { useEffect, useMemo, useState } from 'react';
 
 /**

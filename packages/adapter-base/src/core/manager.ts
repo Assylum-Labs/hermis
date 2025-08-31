@@ -2,7 +2,7 @@ import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter, WalletA
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
 import { WalletConnectionManager } from '../types.js';
-import { getDetectedWalletAdapters, initializeWalletDetection } from '../standard/wallet-detection.js';
+import { getDetectedWalletAdapters, initializeWalletDetection } from '@hermis/wallet-standard-base';
 
 /**
  * Create a simple wallet connection manager

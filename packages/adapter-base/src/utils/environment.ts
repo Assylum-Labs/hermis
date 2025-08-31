@@ -95,7 +95,7 @@
 
 import { WalletAdapterNetwork, Adapter, WalletReadyState } from '@hermis/solana-headless-core';
 import { Environment, EnvironmentConfig } from '@hermis/wallet-standard-base';
-import { SolanaMobileWalletAdapterWalletName } from '../standard/constants.js';
+import { SolanaMobileWalletAdapterWalletName } from '@hermis/wallet-standard-base';
 
 /**
  * Get the current user agent

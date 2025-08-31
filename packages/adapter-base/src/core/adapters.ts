@@ -1,7 +1,7 @@
 import { Adapter, WalletName, WalletReadyState, PublicKey } from '@hermis/solana-headless-core';
 import { WalletProvider } from '../types.js';
-import { SolanaMobileWalletAdapterWalletName } from '../standard/constants.js';
-import { getDetectedWalletAdapters, initializeWalletDetection } from '../standard/wallet-detection.js';
+import { SolanaMobileWalletAdapterWalletName } from '@hermis/wallet-standard-base';
+import { getDetectedWalletAdapters, initializeWalletDetection } from '@hermis/wallet-standard-base';
 
 // Store for all initialized adapters
 let _adapters: Adapter[] = [];
