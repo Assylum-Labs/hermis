@@ -68,6 +68,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
       console.log("DEBUG SysemProgram.transfer:", SystemProgram.transfer);
       console.log("DEBUG SysemProgram:", SystemProgram);
       console.log("DEBUG Tramsaction", transaction);
+      console.log("DEBUG connection", connection);
       
       
       // Add a transfer instruction
