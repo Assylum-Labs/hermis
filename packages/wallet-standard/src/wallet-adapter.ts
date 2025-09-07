@@ -615,6 +615,9 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
         throw new Error('Failed to serialize transaction for signing');
       }
 
+      console.log("DEBUG transactionBytes", transactionBytes);
+      console.log("DEBUG connectedAccount", this._connectedAccount);
+
       // Send to wallet for signing
       const result = await feature.signTransaction({
         transaction: transactionBytes,
@@ -627,16 +630,27 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
         // }
       });
 
-      if (!result || !result.signedTransaction) {
+      console.log("DEBUG result", result);
+
+      if (!result) {
+      // if (!result || !result.signedTransaction) {
         throw new Error('No signed transaction returned from wallet');
       }
 
       // Deserialize the signed transaction
       try {
+        const signedTransaction = result[0]!.signedTransaction;
+        // console.log("DEBUG signedTransaction", signedTransaction);
+
+                // return (
+                //   transaction instanceof Transaction
+                //         ? VersionedTransaction.deserialize(serializedTransaction)
+                //         : Transaction.from(serializedTransaction)
+                // ) as T;
         if (transaction instanceof Transaction) {
-          return Transaction.from(result.signedTransaction) as T;
+          return Transaction.from(signedTransaction) as T;
         } else {
-          return VersionedTransaction.deserialize(result.signedTransaction) as T;
+          return VersionedTransaction.deserialize(signedTransaction) as T;
         }
       } catch (error) {
         console.error('Error deserializing signed transaction', error);

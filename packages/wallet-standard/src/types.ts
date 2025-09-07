@@ -91,7 +91,7 @@ export interface SolanaSignTransactionResult {
  * Sign transaction feature interface for Solana standard wallet
  */
 export interface SolanaSignTransactionFeature {
-  signTransaction(params: SolanaSignTransactionParams): Promise<SolanaSignTransactionResult>;
+  signTransaction(params: SolanaSignTransactionParams): Promise<SolanaSignTransactionResult[]>;
   supportedTransactionVersions?: number[];
 }
 
