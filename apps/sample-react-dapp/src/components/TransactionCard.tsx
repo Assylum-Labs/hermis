@@ -14,7 +14,7 @@ interface TransactionCardProps {
 
 export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionSent }) => {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, signAndSendTransaction } = useWallet();
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -34,7 +34,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
   };
 
   const handleSendTransaction = async () => {
-    if (!publicKey || !connection || !sendTransaction) return;
+    if (!publicKey || !connection || !signAndSendTransaction) return;
     
     // Validate inputs
     if (!recipient || !amount) {
@@ -75,7 +75,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
       );
       
       // Send the transaction
-      const txSignature = await sendTransaction(transaction, connection);
+      const txSignature = await signAndSendTransaction(transaction, connection);
       
       // Update state and call callback
       setSignature(txSignature);

@@ -1,4 +1,3 @@
-// packages/adapter-base/src/standard/wallet-detection.ts
 
 import type {
   Wallet,
@@ -10,6 +9,9 @@ import { StandardWalletAdapter } from "./wallet-adapter.js";
 import {
   isWalletAdapterCompatibleStandardWallet,
   TypedStandardWallet,
+  WalletRegistryEntry,
+  UiWallet,
+  toUiWallet,
 } from "./types.js";
 
 // Type guard for window with wallet events
@@ -30,42 +32,69 @@ const registrationListeners = new Set<() => void>();
 let walletDetectionInitialized = false;
 
 /**
- * Wallet registry to manage dynamically detected wallets
+ * Wallet registry to manage dynamically detected wallets with enhanced features
  */
 export class WalletRegistry {
-  #wallets: Map<string, TypedStandardWallet> = new Map();
+  #wallets: Map<string, WalletRegistryEntry> = new Map();
   #adapters: Map<string, StandardWalletAdapter> = new Map();
-  #changeListeners: Set<(adapters: StandardWalletAdapter[]) => void> =
-    new Set();
+  #changeListeners: Set<(adapters: StandardWalletAdapter[]) => void> = new Set();
+  #uiWallets: Map<string, UiWallet> = new Map();
+  #disposed = false;
 
   /**
    * Register a wallet and create an adapter for it
    */
   register(wallet: TypedStandardWallet): StandardWalletAdapter | null {
+    if (this.#disposed) {
+      console.warn('[WalletRegistry] Registry has been disposed');
+      return null;
+    }
+
+    // Log wallet registration attempt
+    console.log(`[WalletRegistry] Attempting to register wallet: ${wallet.name}`);
+
     // Check if compatible
-    if (!isWalletAdapterCompatibleStandardWallet(wallet)) {
+    const isCompatible = isWalletAdapterCompatibleStandardWallet(wallet);
+    if (!isCompatible) {
+      console.warn(`[WalletRegistry] Wallet is not compatible`);
       return null;
     }
 
     // Check if already registered
     if (this.#wallets.has(wallet.name)) {
+      const entry = this.#wallets.get(wallet.name)!;
+      entry.lastUsed = Date.now();
       return this.#adapters.get(wallet.name) || null;
     }
 
     try {
+      // console.log(`[WalletRegistry] Creating adapter for compatible wallet: ${wallet.name}`);
+
       // Create adapter
       const adapter = new StandardWalletAdapter(wallet);
+      
+      // Create registry entry
+      const entry: WalletRegistryEntry = {
+        wallet,
+        adapter,
+        registeredAt: Date.now(),
+        lastUsed: Date.now()
+      };
 
-      this.#wallets.set(wallet.name, wallet);
+      // Create UI wallet representation
+      const uiWallet = toUiWallet(wallet);
+
+      this.#wallets.set(wallet.name, entry);
       this.#adapters.set(wallet.name, adapter);
+      this.#uiWallets.set(wallet.name, uiWallet);
 
-      console.log(`[Wallet Registry] Successfully registered wallet: ${wallet.name}`);
+      // console.log(`[WalletRegistry] Successfully registered wallet: ${wallet.name}`);
       this.notifyChange();
 
       return adapter;
     } catch (error) {
       console.error(
-        `Failed to create adapter for wallet ${wallet.name}:`,
+        `[WalletRegistry] Failed to create adapter for wallet ${wallet.name}:`,
         error
       );
       return null;
@@ -76,10 +105,20 @@ export class WalletRegistry {
    * Unregister a wallet
    */
   unregister(wallet: TypedStandardWallet): void {
+    if (this.#disposed) return;
+    
     if (this.#wallets.has(wallet.name)) {
+      // Dispose the adapter
+      // const adapter = this.#adapters.get(wallet.name);
+      // if (adapter && typeof adapter.dispose === 'function') {
+      //   adapter.dispose();
+      // }
+      
       this.#wallets.delete(wallet.name);
       this.#adapters.delete(wallet.name);
-      console.log(`[Wallet Registry] Unregistered wallet: ${wallet.name}`);
+      this.#uiWallets.delete(wallet.name);
+      
+      // console.log(`[WalletRegistry] Unregistered wallet: ${wallet.name}`);
       this.notifyChange();
     }
   }
@@ -92,11 +131,38 @@ export class WalletRegistry {
   }
 
   /**
-   * Get a specific adapter by name
+   * Get all UI wallet representations
    */
-  getAdapter(name: string): StandardWalletAdapter | null {
-    return this.#adapters.get(name) || null;
+  getUiWallets(): UiWallet[] {
+    return Array.from(this.#uiWallets.values());
   }
+
+  /**
+   * Get wallet by name
+   */
+  getWallet(name: string): TypedStandardWallet | undefined {
+    const entry = this.#wallets.get(name);
+    if (entry) {
+      entry.lastUsed = Date.now();
+      return entry.wallet;
+    }
+    return undefined;
+  }
+
+  /**
+   * Get adapter by wallet name
+   */
+  getAdapter(name: string): StandardWalletAdapter | undefined {
+    const adapter = this.#adapters.get(name);
+    if (adapter) {
+      const entry = this.#wallets.get(name);
+      if (entry) {
+        entry.lastUsed = Date.now();
+      }
+    }
+    return adapter;
+  }
+
 
   /**
    * Add a change listener
@@ -112,12 +178,13 @@ export class WalletRegistry {
    * Notify all change listeners
    */
   private notifyChange(): void {
+    if (this.#disposed) return;
     const adapters = this.getAdapters();
     this.#changeListeners.forEach((listener) => {
       try {
         listener(adapters);
       } catch (error) {
-        console.error("Error in wallet registry change listener:", error);
+        console.error("[WalletRegistry] Error in change listener:", error);
       }
     });
   }
@@ -134,6 +201,30 @@ export class WalletRegistry {
    */
   getWalletCount(): number {
     return this.#wallets.size;
+  }
+
+  /**
+   * Dispose the registry and clean up resources
+   */
+  dispose(): void {
+    if (this.#disposed) return;
+    
+    this.#disposed = true;
+    
+    // Dispose all adapters
+    // this.#adapters.forEach(adapter => {
+    //   if (adapter && typeof adapter.dispose === 'function') {
+    //     adapter.dispose();
+    //   }
+    // });
+    
+    // Clear all maps
+    this.#wallets.clear();
+    this.#adapters.clear();
+    this.#uiWallets.clear();
+    this.#changeListeners.clear();
+    
+    // console.log('[WalletRegistry] Registry disposed');
   }
 }
 
