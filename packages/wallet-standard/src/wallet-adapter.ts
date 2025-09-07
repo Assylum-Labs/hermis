@@ -79,7 +79,7 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   private _connecting = false;
   private _eventEmitter = new EventEmitter<WalletAdapterEvents>();
   private _removeAccountChangeListener: (() => void) | null = null;
-  private _connectedAccount: StandardWalletAccount | null = null;
+  private _connectedAccount: StandardWalletAccount[] | null = null;
   private _currentCluster: string | null = null;
   private _rpcEndpoint: string | null = null;
 
@@ -94,99 +94,99 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
     this.icon = wallet.icon || '';
 
     // Extract supported transaction versions if available
-    if (SolanaSignTransactionMethod in wallet.features) {
-      try {
-        const feature = wallet.features[SolanaSignTransactionMethod] as SolanaSignTransactionFeature;
-        if (feature && feature.supportedTransactionVersions) {
-          const versions = feature.supportedTransactionVersions;
-          if (Array.isArray(versions)) {
-            this.supportedTransactionVersions = new Set(versions) as ReadonlySet<TransactionVersion>;
-          }
-        }
-      } catch (error) {
-        console.warn('Error extracting supportedTransactionVersions from signTransaction feature', error);
-      }
-    } else if (SolanaSignAndSendTransactionMethod in wallet.features) {
-      try {
-        const feature = wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
-        if (feature && feature.supportedTransactionVersions) {
-          const versions = feature.supportedTransactionVersions;
-          if (Array.isArray(versions)) {
-            this.supportedTransactionVersions = new Set(versions) as ReadonlySet<TransactionVersion>;
-          }
-        }
-      } catch (error) {
-        console.warn('Error extracting supportedTransactionVersions from signAndSendTransaction feature', error);
-      }
-    }
+    // if (SolanaSignTransactionMethod in wallet.features) {
+    //   try {
+    //     const feature = wallet.features[SolanaSignTransactionMethod] as SolanaSignTransactionFeature;
+    //     if (feature && feature.supportedTransactionVersions) {
+    //       const versions = feature.supportedTransactionVersions;
+    //       if (Array.isArray(versions)) {
+    //         this.supportedTransactionVersions = new Set(versions) as ReadonlySet<TransactionVersion>;
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.warn('Error extracting supportedTransactionVersions from signTransaction feature', error);
+    //   }
+    // } else if (SolanaSignAndSendTransactionMethod in wallet.features) {
+    //   try {
+    //     const feature = wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
+    //     if (feature && feature.supportedTransactionVersions) {
+    //       const versions = feature.supportedTransactionVersions;
+    //       if (Array.isArray(versions)) {
+    //         this.supportedTransactionVersions = new Set(versions) as ReadonlySet<TransactionVersion>;
+    //       }
+    //     }
+    //   } catch (error) {
+    //     console.warn('Error extracting supportedTransactionVersions from signAndSendTransaction feature', error);
+    //   }
+    // }
 
-    // Setup account change listener
-    if (StandardEventsMethod in wallet.features) {
-      try {
-        const events = wallet.features[StandardEventsMethod] as StandardEventsFeature;
-        if (events && typeof events.on === 'function') {
-          this._removeAccountChangeListener = events.on('change', (event: StandardEventsChangeEvent) => {
-            try {
-              if (!event || !event.accounts || !Array.isArray(event.accounts)) {
-                console.warn('Invalid event data received from wallet', event);
-                return;
-              }
+    // // Setup account change listener
+    // if (StandardEventsMethod in wallet.features) {
+    //   try {
+    //     const events = wallet.features[StandardEventsMethod] as StandardEventsFeature;
+    //     if (events && typeof events.on === 'function') {
+    //       this._removeAccountChangeListener = events.on('change', (event: StandardEventsChangeEvent) => {
+    //         try {
+    //           if (!event || !event.accounts || !Array.isArray(event.accounts)) {
+    //             console.warn('Invalid event data received from wallet', event);
+    //             return;
+    //           }
 
-              // Find Solana account - made more flexible to work with real wallet implementations
-              let solanaAccount = event.accounts.find(
-                (account: StandardWalletAccount) => account && account.features &&
-                  Array.isArray(account.features) &&
-                  account.features.includes('solana:publicKey')
-              );
+    //           // Find Solana account - made more flexible to work with real wallet implementations
+    //           let solanaAccount = event.accounts.find(
+    //             (account: StandardWalletAccount) => account && account.features &&
+    //               Array.isArray(account.features) &&
+    //               account.features.includes('solana:publicKey')
+    //           );
 
-              // If no account found with the exact feature, try to find any account with a publicKey
-              if (!solanaAccount) {
-                solanaAccount = event.accounts.find(
-                  (account: StandardWalletAccount) => account && account.publicKey && 
-                    account.publicKey instanceof Uint8Array && account.publicKey.length > 0
-                );
-              }
+    //           // If no account found with the exact feature, try to find any account with a publicKey
+    //           if (!solanaAccount) {
+    //             solanaAccount = event.accounts.find(
+    //               (account: StandardWalletAccount) => account && account.publicKey && 
+    //                 account.publicKey instanceof Uint8Array && account.publicKey.length > 0
+    //             );
+    //           }
 
-              // If still no account found, try to find any account that looks like a Solana account
-              if (!solanaAccount && event.accounts.length > 0) {
-                solanaAccount = event.accounts.find(
-                  (account: StandardWalletAccount) => account && account.publicKey
-                );
-              }
+    //           // If still no account found, try to find any account that looks like a Solana account
+    //           if (!solanaAccount && event.accounts.length > 0) {
+    //             solanaAccount = event.accounts.find(
+    //               (account: StandardWalletAccount) => account && account.publicKey
+    //             );
+    //           }
 
-              if (solanaAccount) {
-                // If account exists, get the public key
-                try {
-                  if (!solanaAccount.publicKey) {
-                    console.warn('Account has no publicKey', solanaAccount);
-                    return;
-                  }
+    //           if (solanaAccount) {
+    //             // If account exists, get the public key
+    //             try {
+    //               if (!solanaAccount.publicKey) {
+    //                 console.warn('Account has no publicKey', solanaAccount);
+    //                 return;
+    //               }
 
-                  const publicKey = new PublicKey(solanaAccount.publicKey);
-                  if (!this._publicKey || !this._publicKey.equals(publicKey)) {
-                    this._publicKey = publicKey;
-                    this._eventEmitter.emit('connect', publicKey);
-                  }
-                } catch (error) {
-                  // If error occurs when creating public key, emit error
-                  console.error('Error creating PublicKey from account', error);
-                  this._eventEmitter.emit('error', new WalletError('Invalid public key from wallet'));
-                }
-              } else if (this._publicKey) {
-                // If no account but we had one before, disconnect
-                this._publicKey = null;
-                this._eventEmitter.emit('disconnect');
-              }
-            } catch (error) {
-              console.error('Error handling wallet account change event', error);
-              this._eventEmitter.emit('error', new WalletError('Error handling wallet event'));
-            }
-          });
-        }
-      } catch (error) {
-        console.error('Error setting up account change listener', error);
-      }
-    }
+    //               const publicKey = new PublicKey(solanaAccount.publicKey);
+    //               if (!this._publicKey || !this._publicKey.equals(publicKey)) {
+    //                 this._publicKey = publicKey;
+    //                 this._eventEmitter.emit('connect', publicKey);
+    //               }
+    //             } catch (error) {
+    //               // If error occurs when creating public key, emit error
+    //               console.error('Error creating PublicKey from account', error);
+    //               this._eventEmitter.emit('error', new WalletError('Invalid public key from wallet'));
+    //             }
+    //           } else if (this._publicKey) {
+    //             // If no account but we had one before, disconnect
+    //             this._publicKey = null;
+    //             this._eventEmitter.emit('disconnect');
+    //           }
+    //         } catch (error) {
+    //           console.error('Error handling wallet account change event', error);
+    //           this._eventEmitter.emit('error', new WalletError('Error handling wallet event'));
+    //         }
+    //       });
+    //     }
+    //   } catch (error) {
+    //     console.error('Error setting up account change listener', error);
+    //   }
+    // }
   }
 
   get publicKey(): PublicKey | null {
@@ -259,7 +259,11 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
 
   async connect(): Promise<void> {
     try {
-      if (this.connected || this.connecting) return;
+      if (this.connected || this.connecting) {
+        console.log("DEBUG connected:", this.connected);
+        console.log("DEBUG connecting:", this.connecting);
+        return;
+      }
       this._connecting = true;
 
       
@@ -273,6 +277,8 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
       }
 
       const connectResult = await connectFeature.connect();
+      this._connectedAccount = connectResult.accounts;
+      console.log("DEBUG connectedAccount", this._connectedAccount);
       if (!connectResult || !connectResult.accounts || !Array.isArray(connectResult.accounts)) {
         throw new Error('Invalid connect result from wallet');
       }
@@ -540,12 +546,7 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
         const result = await feature.signAndSendTransaction({
           transaction: transactionBytes,
           chain: 'solana:mainnet',
-          account: {
-            address: this.publicKey!.toBase58(),
-            publicKey: this.publicKey!.toBytes(),
-            chains: ['solana:mainnet', 'solana:devnet', 'solana:testnet'],
-            features: ['solana:signTransaction']
-          },
+          account: this._connectedAccount![0],
           options
         });
 
@@ -617,12 +618,13 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
       // Send to wallet for signing
       const result = await feature.signTransaction({
         transaction: transactionBytes,
-        account: {
-          address: this.publicKey!.toBase58(),
-          publicKey: this.publicKey!.toBytes(),
-          chains: ['solana:mainnet', 'solana:devnet', 'solana:testnet'],
-          features: ['solana:signTransaction']
-        }
+        account: this._connectedAccount![0]
+        // account: {
+        //   address: this.publicKey!.toBase58(),
+        //   publicKey: this.publicKey!.toBytes(),
+        //   chains: ['solana:mainnet', 'solana:devnet', 'solana:testnet'],
+        //   features: ['solana:signTransaction']
+        // }
       });
 
       if (!result || !result.signedTransaction) {
@@ -665,12 +667,14 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   }
 
   async signMessage(message: Uint8Array): Promise<Uint8Array> {
+    console.log("DEBUG wallet", this._wallet);
     if (!this.connected) throw new Error('Wallet not connected');
 
     try {
       if (!(SolanaSignMessageMethod in this._wallet.features)) {
         throw new Error('Wallet does not support signing messages');
       }
+
 
       const feature = this._wallet.features[SolanaSignMessageMethod] as SolanaSignMessageFeature;
       if (!feature || typeof feature.signMessage !== 'function') {
@@ -679,12 +683,13 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
 
       const result = await feature.signMessage({
         message,
-        account: {
-          address: this.publicKey!.toBase58(),
-          publicKey: this.publicKey!.toBytes(),
-          chains: ['solana:mainnet', 'solana:devnet', 'solana:testnet'],
-          features: ['solana:signMessage']
-        }
+        account: this._connectedAccount![0]
+        // account: {
+        //   address: this.publicKey!.toBase58(),
+        //   publicKey: this.publicKey!.toBytes(),
+        //   chains: ['solana:mainnet', 'solana:devnet', 'solana:testnet'],
+        //   features: ['solana:signMessage']
+        // }
       });
 
       if (!result || result.length < 1 || !result[0].signature) {
