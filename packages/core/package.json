@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@noble/ed25519": "^2.2.3",
+    "@solana/kit": "^3.0.2",
     "@solana/spl-token": "^0.4.13",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/web3.js": "^1.98.0",
