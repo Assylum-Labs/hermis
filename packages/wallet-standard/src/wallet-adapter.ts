@@ -40,6 +40,10 @@ import {
   StandardWalletAccount,
   StandardEventsChangeEvent
 } from './types.js';
+import {
+  detectClusterFromEndpoint,
+  ClusterMismatchError
+} from './utils.js';
 
 import bs58 from 'bs58';
 
@@ -75,6 +79,9 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   private _connecting = false;
   private _eventEmitter = new EventEmitter<WalletAdapterEvents>();
   private _removeAccountChangeListener: (() => void) | null = null;
+  private _connectedAccount: StandardWalletAccount | null = null;
+  private _currentCluster: string | null = null;
+  private _rpcEndpoint: string | null = null;
 
   constructor(wallet: TypedStandardWallet) {
     if (!isWalletAdapterCompatibleStandardWallet(wallet)) {
@@ -353,6 +360,151 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
 
   async sendTransaction(
     transaction: Transaction | VersionedTransaction,
+    connection?: Connection,
+    options: SendOptions = {}
+  ): Promise<TransactionSignature> {
+    if (!this.connected) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (!this.publicKey) {
+      throw new Error('Wallet public key not available');
+    }
+
+    try {
+      // Path 1: If connection is provided, use traditional sign + send approach
+      if (connection) {
+        return await this._sendTransactionWithConnection(transaction, connection, options);
+      }
+
+      // Path 2: If no connection, use wallet's signAndSendTransaction feature
+      return await this._sendTransactionWithWallet(transaction, options);
+    } catch (error: any) {
+      const walletError = this._handleTransactionError(error, 'sendTransaction');
+      console.error('Error in sendTransaction', error);
+      this._eventEmitter.emit('error', walletError);
+      throw walletError;
+    }
+  }
+
+  /**
+   * Send transaction using connection (sign then send)
+   */
+  private async _sendTransactionWithConnection(
+    transaction: Transaction | VersionedTransaction,
+    connection: Connection,
+    options: SendOptions
+  ): Promise<TransactionSignature> {
+    try {
+      // Validate that wallet supports signing
+      if (!(SolanaSignTransactionMethod in this._wallet.features)) {
+        throw new Error('Wallet does not support signing transactions');
+      }
+
+      // Prepare the transaction
+      if (transaction instanceof Transaction) {
+        if (!transaction.feePayer) {
+          transaction.feePayer = this.publicKey!;
+        }
+        
+        if (!transaction.recentBlockhash) {
+          const { blockhash } = await connection.getLatestBlockhash(options.preflightCommitment);
+          transaction.recentBlockhash = blockhash;
+        }
+      }
+
+      // Sign the transaction
+      const signedTransaction = await this.signTransaction(transaction);
+
+      // Serialize the signed transaction
+      const rawTransaction = signedTransaction instanceof Transaction
+        ? signedTransaction.serialize()
+        : signedTransaction.serialize();
+
+      // Send the transaction
+      return await connection.sendRawTransaction(rawTransaction, options);
+    } catch (error: any) {
+      throw new Error(`Failed to send transaction with connection: ${error.message || error}`);
+    }
+  }
+
+  /**
+   * Send transaction using wallet's signAndSendTransaction feature
+   */
+  private async _sendTransactionWithWallet(
+    transaction: Transaction | VersionedTransaction,
+    options: SendOptions
+  ): Promise<TransactionSignature> {
+    try {
+      // Validate that wallet supports signAndSendTransaction
+      if (!(SolanaSignAndSendTransactionMethod in this._wallet.features)) {
+        throw new Error('Wallet does not support signAndSendTransaction feature');
+      }
+
+      const feature = this._wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
+      if (!feature || typeof feature.signAndSendTransaction !== 'function') {
+        throw new Error('Wallet has invalid signAndSendTransaction feature');
+      }
+
+      // Prepare the transaction
+      if (transaction instanceof Transaction) {
+        if (!transaction.feePayer) {
+          transaction.feePayer = this.publicKey!;
+        }
+        // Note: For wallet-based sending, we don't set blockhash as the wallet should handle this
+      }
+
+      // Serialize transaction for wallet
+      let transactionBytes: Uint8Array;
+      try {
+        transactionBytes = transaction instanceof Transaction
+          ? transaction.serialize({ verifySignatures: false })
+          : transaction.serialize();
+      } catch (error) {
+        throw new Error(`Failed to serialize transaction: ${error instanceof Error ? error.message : error}`);
+      }
+
+      // Determine chain based on current cluster or default to mainnet
+      const chain = this._currentCluster || 'solana:mainnet-beta';
+
+      // Prepare account info for wallet
+      const account: StandardWalletAccount = {
+        address: this.publicKey!.toBase58(),
+        publicKey: this.publicKey!.toBytes(),
+        chains: ['solana:mainnet-beta', 'solana:devnet', 'solana:testnet'],
+        features: ['solana:signAndSendTransaction']
+      };
+
+      // Call wallet's signAndSendTransaction
+      const result = await feature.signAndSendTransaction({
+        transaction: transactionBytes,
+        chain,
+        account,
+        options
+      });
+
+      // Validate result
+      if (!result || !Array.isArray(result) || result.length === 0) {
+        throw new Error('No result returned from wallet signAndSendTransaction');
+      }
+
+      if (!result[0].signature) {
+        throw new Error('No signature returned from wallet signAndSendTransaction');
+      }
+
+      // Convert signature to base58
+      try {
+        return bs58.encode(result[0].signature);
+      } catch (error) {
+        throw new Error(`Failed to encode transaction signature: ${error instanceof Error ? error.message : error}`);
+      }
+    } catch (error: any) {
+      throw new Error(`Failed to send transaction with wallet: ${error.message || error}`);
+    }
+  }
+
+  async signAndSendTransaction(
+    transaction: Transaction | VersionedTransaction,
     connection: Connection,
     options: SendOptions = {}
   ): Promise<TransactionSignature> {
@@ -566,5 +718,61 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
       this._eventEmitter.emit('error', error);
       throw error;
     }
+  }
+
+  /**
+   * Set the current RPC endpoint for cluster detection
+   */
+  setRpcEndpoint(endpoint: string): void {
+    this._rpcEndpoint = endpoint;
+    this._currentCluster = detectClusterFromEndpoint(endpoint);
+  }
+
+  /**
+   * Get current cluster
+   */
+  getCurrentCluster(): string | null {
+    return this._currentCluster;
+  }
+
+  /**
+   * Enhanced error handler that detects cluster mismatches
+   */
+  private _handleTransactionError(error: any, operation: string): WalletError {
+    const errorMessage = error?.message || error?.toString() || 'Unknown error';
+    
+    // Check for common account not found errors
+    if (
+      errorMessage.includes('Account not found') ||
+      errorMessage.includes('AccountNotFound') ||
+      errorMessage.includes('could not find account') ||
+      errorMessage.includes('Invalid account owner')
+    ) {
+      if (this._publicKey && this._currentCluster) {
+        const clusterError = ClusterMismatchError.createAccountNotFoundError(
+          this._currentCluster,
+          this._publicKey.toBase58()
+        );
+        return new WalletError(clusterError.message, clusterError);
+      }
+    }
+    
+    // Check for transaction-related cluster errors
+    if (
+      errorMessage.includes('Transaction simulation failed') ||
+      errorMessage.includes('Insufficient funds') ||
+      errorMessage.includes('blockhash not found')
+    ) {
+      if (this._publicKey && this._currentCluster) {
+        const clusterError = ClusterMismatchError.createTransactionError(
+          this._currentCluster,
+          this._publicKey.toBase58()
+        );
+        return new WalletError(clusterError.message, clusterError);
+      }
+    }
+    
+    // Default error handling
+    return new WalletError(`${operation} failed: ${errorMessage}`, error);
   }
 }

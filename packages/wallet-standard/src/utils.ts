@@ -1,4 +1,4 @@
-import { Adapter, WalletAdapterNetwork, WalletReadyState } from '@hermis/solana-headless-core';
+import { Adapter, WalletAdapterNetwork, WalletReadyState, PublicKey } from '@hermis/solana-headless-core';
 // import { Wallet as StandardWallet } from '@wallet-standard/base';
 import { 
   StandardConnectMethod,
@@ -8,6 +8,12 @@ import {
   SolanaSignTransactionMethod,
   SolanaSignMessageMethod,
   SolanaSignInMethod,
+  TypedStandardWallet,
+  StandardWalletAccount,
+  UiWallet,
+  UiWalletAccount,
+  toUiWallet,
+  toUiWalletAccount,
 } from './types.js';
 import { getEnvironment, getUriForAppIdentity, getUserAgent, getInferredNetworkFromEndpoint } from './environment.js';
 import { SolanaMobileWalletAdapterWalletName } from './constants.js';
@@ -290,3 +296,299 @@ export {
   SolanaSignMessageMethod,
   SolanaSignInMethod
 };
+
+/**
+ * Validate a wallet account has required Solana features
+ */
+export function isValidSolanaAccount(account: StandardWalletAccount): boolean {
+  if (!account) return false;
+  
+  // Check for public key
+  if (!account.publicKey || !(account.publicKey instanceof Uint8Array) || account.publicKey.length === 0) {
+    return false;
+  }
+  
+  // Try to create a PublicKey to validate it
+  try {
+    new PublicKey(account.publicKey);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get the best available Solana account from a list of accounts
+ */
+export function getBestSolanaAccount(accounts: StandardWalletAccount[]): StandardWalletAccount | null {
+  if (!accounts || accounts.length === 0) return null;
+  
+  // First, try to find an account with explicit Solana features
+  let account = accounts.find(
+    acc => acc && acc.features && 
+    Array.isArray(acc.features) && 
+    acc.features.includes('solana:publicKey')
+  );
+  
+  // If not found, try to find any valid Solana account
+  if (!account) {
+    account = accounts.find(acc => isValidSolanaAccount(acc));
+  }
+  
+  return account || null;
+}
+
+/**
+ * Convert adapter to UI wallet representation
+ */
+export function adapterToUiWallet(adapter: Adapter): UiWallet | null {
+  if (!adapter) return null;
+  
+  const uiWallet: UiWallet = {
+    name: adapter.name,
+    icon: adapter.icon || '',
+    chains: ['solana:mainnet-beta', 'solana:devnet', 'solana:testnet'],
+    features: [],
+    accounts: [],
+    website: adapter.url || undefined
+  };
+  
+  // Add features based on adapter capabilities
+  if ('connect' in adapter) uiWallet.features.push(StandardConnectMethod);
+  if ('disconnect' in adapter) uiWallet.features.push(StandardDisconnectMethod);
+  if ('signTransaction' in adapter) uiWallet.features.push(SolanaSignTransactionMethod);
+  if ('signAllTransactions' in adapter) uiWallet.features.push(SolanaSignTransactionMethod);
+  if ('signMessage' in adapter) uiWallet.features.push(SolanaSignMessageMethod);
+  if ('signIn' in adapter) uiWallet.features.push(SolanaSignInMethod);
+  
+  // Add connected account if available
+  if (adapter.publicKey) {
+    const account: UiWalletAccount = {
+      address: adapter.publicKey.toBase58(),
+      publicKey: adapter.publicKey.toBytes(),
+      chains: ['solana:mainnet-beta', 'solana:devnet', 'solana:testnet'],
+      features: ['solana:publicKey']
+    };
+    uiWallet.accounts.push(account);
+  }
+  
+  return uiWallet;
+}
+
+/**
+ * Check if wallet supports a specific feature
+ */
+export function walletSupportsFeature(wallet: TypedStandardWallet, feature: string): boolean {
+  return wallet && wallet.features && feature in wallet.features;
+}
+
+/**
+ * Get supported transaction versions from wallet
+ */
+export function getWalletTransactionVersions(wallet: TypedStandardWallet): Set<number> | null {
+  if (!wallet || !wallet.features) return null;
+  
+  // Check sign transaction feature
+  if (SolanaSignTransactionMethod in wallet.features) {
+    const feature = wallet.features[SolanaSignTransactionMethod];
+    if (feature && 'supportedTransactionVersions' in feature) {
+      const versions = (feature as any).supportedTransactionVersions;
+      if (Array.isArray(versions)) {
+        return new Set(versions);
+      }
+    }
+  }
+  
+  // Check sign and send transaction feature
+  if (SolanaSignAndSendTransactionMethod in wallet.features) {
+    const feature = wallet.features[SolanaSignAndSendTransactionMethod];
+    if (feature && 'supportedTransactionVersions' in feature) {
+      const versions = (feature as any).supportedTransactionVersions;
+      if (Array.isArray(versions)) {
+        return new Set(versions);
+      }
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Create a wallet ready state from adapter
+ */
+export function getWalletReadyState(adapter: Adapter): WalletReadyState {
+  if (!adapter) return WalletReadyState.NotDetected;
+  
+  if ('readyState' in adapter) {
+    return adapter.readyState;
+  }
+  
+  // Default to installed for standard wallets
+  return WalletReadyState.Installed;
+}
+
+/**
+ * Safely dispose an adapter
+ */
+export function disposeAdapter(adapter: Adapter | any): void {
+  if (!adapter) return;
+  
+  try {
+    // Call dispose if available
+    if (typeof adapter.dispose === 'function') {
+      adapter.dispose();
+    }
+    
+    // Remove all listeners if available
+    if (typeof adapter.removeAllListeners === 'function') {
+      adapter.removeAllListeners();
+    }
+    
+    // Disconnect if connected
+    if (adapter.connected && typeof adapter.disconnect === 'function') {
+      adapter.disconnect().catch((error: any) => {
+        console.warn('[Utils] Error disconnecting adapter during disposal:', error);
+      });
+    }
+  } catch (error) {
+    console.error('[Utils] Error disposing adapter:', error);
+  }
+}
+
+/**
+ * Create a unique identifier for a wallet
+ */
+export function getWalletIdentifier(wallet: TypedStandardWallet | Adapter): string {
+  if ('name' in wallet) {
+    return wallet.name;
+  }
+  return 'unknown-wallet';
+}
+
+/**
+ * Check if two wallets are the same
+ */
+export function isSameWallet(wallet1: TypedStandardWallet | Adapter, wallet2: TypedStandardWallet | Adapter): boolean {
+  return getWalletIdentifier(wallet1) === getWalletIdentifier(wallet2);
+}
+
+/**
+ * Detect cluster/network from RPC endpoint
+ */
+export function detectClusterFromEndpoint(endpoint: string): string {
+  const url = endpoint.toLowerCase();
+  
+  if (url.includes('mainnet') || url.includes('api.solana.com')) {
+    return 'mainnet-beta';
+  } else if (url.includes('devnet')) {
+    return 'devnet';
+  } else if (url.includes('testnet')) {
+    return 'testnet';
+  } else if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return 'localnet';
+  }
+  
+  return 'unknown';
+}
+
+/**
+ * Get cluster identifier for wallet standard
+ */
+export function getClusterIdentifier(cluster: string): string {
+  switch (cluster) {
+    case 'mainnet-beta':
+      return 'solana:mainnet-beta';
+    case 'devnet':
+      return 'solana:devnet';
+    case 'testnet':
+      return 'solana:testnet';
+    case 'localnet':
+      return 'solana:localnet';
+    default:
+      return `solana:${cluster}`;
+  }
+}
+
+/**
+ * Check if wallet account supports a specific cluster
+ */
+export function walletSupportsCluster(account: StandardWalletAccount, cluster: string): boolean {
+  if (!account.chains || account.chains.length === 0) {
+    // If no chains specified, assume it supports all
+    return true;
+  }
+  
+  const clusterIdentifier = getClusterIdentifier(cluster);
+  return account.chains.includes(clusterIdentifier);
+}
+
+/**
+ * Validate account exists on cluster using connection
+ */
+export async function validateAccountOnCluster(
+  connection: any, // Connection from @solana/web3.js
+  publicKey: PublicKey,
+  cluster: string
+): Promise<{ exists: boolean; balance?: number; error?: string }> {
+  try {
+    const accountInfo = await connection.getAccountInfo(publicKey);
+    
+    if (!accountInfo) {
+      return {
+        exists: false,
+        error: `Account does not exist on ${cluster}. This wallet may not have been used on this network yet.`
+      };
+    }
+    
+    const balance = await connection.getBalance(publicKey);
+    return {
+      exists: true,
+      balance: balance / 1000000000 // Convert lamports to SOL
+    };
+  } catch (error: any) {
+    return {
+      exists: false,
+      error: `Failed to validate account on ${cluster}: ${error.message || 'Unknown error'}`
+    };
+  }
+}
+
+/**
+ * Create cluster mismatch error with helpful message
+ */
+export class ClusterMismatchError extends Error {
+  public readonly cluster: string;
+  public readonly expectedCluster?: string;
+  public readonly accountExists: boolean;
+
+  constructor(
+    message: string,
+    cluster: string,
+    expectedCluster?: string,
+    accountExists: boolean = false
+  ) {
+    super(message);
+    this.name = 'ClusterMismatchError';
+    this.cluster = cluster;
+    this.expectedCluster = expectedCluster;
+    this.accountExists = accountExists;
+  }
+
+  static createAccountNotFoundError(cluster: string, publicKey: string): ClusterMismatchError {
+    const message = `Account ${publicKey} does not exist on ${cluster}. ` +
+      `This usually means the wallet hasn't been used on this network yet. ` +
+      `Try switching to a different network or use a wallet that has been active on ${cluster}.`;
+    
+    return new ClusterMismatchError(message, cluster, undefined, false);
+  }
+
+  static createTransactionError(cluster: string, publicKey: string): ClusterMismatchError {
+    const message = `Transaction failed on ${cluster} - account ${publicKey} may not exist on this network. ` +
+      `Please ensure your wallet has been used on ${cluster} before attempting transactions.`;
+    
+    return new ClusterMismatchError(message, cluster, undefined, false);
+  }
+}
+
+// Re-export utility functions from types
+export { toUiWallet, toUiWalletAccount, isWalletAdapterCompatibleStandardWallet } from './types.js';

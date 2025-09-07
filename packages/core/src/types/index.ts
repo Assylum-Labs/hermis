@@ -54,6 +54,13 @@ import {
 import {
     TOKEN_PROGRAM_ID,
   } from "@solana/spl-token";
+
+// Import kit types
+import {
+    Address,
+    TransactionMessage,
+    Blockhash,
+} from "@solana/kit";
   
   import {
     Adapter,
@@ -131,7 +138,12 @@ export {
     WalletAdapterNetwork,
     WalletReadyState,
     BaseWalletAdapter,
-    EventEmitter
+    EventEmitter,
+
+    // Kit types
+    Address,
+    TransactionMessage,
+    Blockhash,
   }
   
   // Add your own custom types
@@ -146,6 +158,29 @@ export {
     skipPreflight?: boolean;
     preflightCommitment?: Commitment;
     maxRetries?: number;
+  }
+
+  // Types for dual architecture support
+  export type LegacyWallet = Keypair | Adapter;
+  export type KitWallet = CryptoKeyPair | Address;
+  export type DualWallet = LegacyWallet | KitWallet;
+  
+  export type LegacyTransaction = Transaction | VersionedTransaction;
+  export type DualTransaction = LegacyTransaction | TransactionMessage;
+
+  // Interface for wallet signing capabilities
+  export interface WalletSigningCapabilities {
+    canSignTransaction: boolean;
+    canSignAllTransactions: boolean;
+    canSignMessage: boolean;
+    supportedTransactionVersions?: Set<number>;
+    supportsKitArchitecture?: boolean;
+  }
+
+  // Options for dual architecture operations
+  export interface DualArchitectureOptions {
+    preferKitArchitecture?: boolean;
+    fallbackToLegacy?: boolean;
   }
 
 /**

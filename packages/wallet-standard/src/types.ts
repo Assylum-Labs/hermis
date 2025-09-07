@@ -1,6 +1,19 @@
-import { Wallet, WalletIcon } from "@wallet-standard/base";
+import { Wallet, WalletIcon, WalletAccount, IdentifierArray } from "@wallet-standard/base";
 import { Adapter } from '@hermis/solana-headless-core';
 import { SolanaMobileWalletAdapter } from '@solana-mobile/wallet-adapter-mobile';
+
+/**
+ * UI representation of a wallet account with enhanced type safety
+ */
+export interface UiWalletAccount extends WalletAccount {
+  address: string;
+  publicKey: Uint8Array;
+  chains: IdentifierArray;
+  features: IdentifierArray;
+  label?: string;
+  icon?: WalletIcon;
+}
+
 /**
  * Account interface for standard wallet accounts
  */
@@ -8,6 +21,8 @@ export interface StandardWalletAccount {
   address: string;
   publicKey: Uint8Array;
   features: string[];
+  chains?: string[];
+  label?: string;
   // Additional properties may be present
   [key: string]: any;
 }
@@ -86,7 +101,7 @@ export interface SolanaSignTransactionFeature {
 export interface SolanaSignAndSendTransactionParams {
   account: StandardWalletAccount;
   transaction: Uint8Array;
-  chain: string;
+  chain: string | string[];
   options?: Record<string, any>;
 }
 
@@ -191,16 +206,53 @@ export interface StandardWalletFeatures {
 }
 
 /**
- * Standard wallet interface
+ * UI representation of a wallet with enhanced features
  */
-export interface TypedStandardWallet extends Wallet{
+export interface UiWallet {
+  name: string;
+  icon: string | WalletIcon;
+  chains: string[];
+  features: string[];
+  accounts: UiWalletAccount[];
+  version?: string;
+  website?: string;
+}
+
+/**
+ * Standard wallet interface with typed features
+ */
+export interface TypedStandardWallet extends Wallet {
   name: string;
   icon: WalletIcon;
   website?: string;
   features: StandardWalletFeatures;
+  accounts: ReadonlyArray<WalletAccount>;
+  chains: IdentifierArray;
+  version: "1.0.0";
 }
 
+/**
+ * Wallet with UI enhancements
+ */
+export interface UiStandardWallet extends TypedStandardWallet {
+  uiAccounts?: UiWalletAccount[];
+  isConnecting?: boolean;
+  isConnected?: boolean;
+}
 
+/**
+ * Wallet registry entry
+ */
+export interface WalletRegistryEntry {
+  wallet: TypedStandardWallet;
+  adapter?: any; // StandardWalletAdapter instance
+  registeredAt: number;
+  lastUsed?: number;
+}
+
+/**
+ * Check if a wallet is compatible with the wallet adapter
+ */
 export function isWalletAdapterCompatibleStandardWallet(
   wallet: TypedStandardWallet
 ): wallet is TypedStandardWallet {
@@ -209,6 +261,51 @@ export function isWalletAdapterCompatibleStandardWallet(
     StandardEventsMethod in wallet.features &&
     (SolanaSignAndSendTransactionMethod in wallet.features || SolanaSignTransactionMethod in wallet.features)
   );
+}
+
+/**
+ * Convert a standard account to a UI account
+ */
+export function toUiWalletAccount(account: StandardWalletAccount): UiWalletAccount {
+  // Convert chains and features to IdentifierArray format
+  const chains = (account.chains || ['solana:mainnet-beta']) as IdentifierArray;
+  const features = (account.features || ['solana:publicKey']) as IdentifierArray;
+  
+  return {
+    address: account.address,
+    publicKey: account.publicKey,
+    chains,
+    features,
+    label: account.label,
+    icon: undefined
+  };
+}
+
+/**
+ * Convert a wallet to a UI wallet representation
+ */
+export function toUiWallet(wallet: TypedStandardWallet): UiWallet {
+  // Convert WalletAccount to StandardWalletAccount for mapping
+  const accounts = wallet.accounts.map((acc: WalletAccount) => {
+    const standardAccount: StandardWalletAccount = {
+      address: acc.address,
+      publicKey: new Uint8Array(acc.publicKey),
+      features: Array.from(acc.features || []),
+      chains: Array.from(acc.chains || []),
+      label: (acc as any).label
+    };
+    return standardAccount;
+  });
+  
+  return {
+    name: wallet.name,
+    icon: wallet.icon,
+    chains: Array.from(wallet.chains) as string[],
+    features: Object.keys(wallet.features),
+    accounts: accounts.map(toUiWalletAccount),
+    version: wallet.version,
+    website: wallet.website
+  };
 }
 
 /**

@@ -20,6 +20,8 @@ export interface Wallet {
     // readyState: number; // WalletReadyState
 }
 
+export type TWalletAdapterProps = WalletAdapterProps['sendTransaction'] & SignerWalletAdapterProps['signTransaction']
+
 /**
  * State for the wallet context
  */
@@ -38,6 +40,7 @@ export interface WalletContextState {
 
     sendTransaction: WalletAdapterProps['sendTransaction'];
     signTransaction: SignerWalletAdapterProps['signTransaction'] | undefined;
+    signAndSendTransaction: WalletAdapterProps['sendTransaction'];
     signAllTransactions: SignerWalletAdapterProps['signAllTransactions'] | undefined;
     signMessage: MessageSignerWalletAdapterProps['signMessage'] | undefined;
     signIn: SignInMessageSignerWalletAdapterProps['signIn'] | undefined;

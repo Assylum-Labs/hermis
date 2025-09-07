@@ -16,7 +16,9 @@ import {
   SignerWalletAdapter,
   SignInMessageSignerWalletAdapter,
   SendOptions,
-  WalletAdapter
+  WalletAdapter,
+  TransactionSignature,
+  Connection
 } from '@hermis/solana-headless-core';
 import {
   SolanaMobileWalletAdapterWalletName
@@ -30,11 +32,18 @@ import { useLocalStorage, StorageProviderFactory } from '../hooks/useLocalStorag
 import { WalletContext } from '../hooks/useWallet.js';
 import { WalletNotSelectedError } from '../utils/errors.js';
 
+export type TAdapter = {
+  signAndSendTransaction?: (
+    transaction: Transaction | VersionedTransaction,
+    connection?: Connection, 
+    options?: SendOptions
+  ) => Promise<TransactionSignature>;
+} & Adapter
 /**
  * Interface for the adapter state
  */
 interface AdapterState {
-  adapter: Adapter | null;
+  adapter: TAdapter | null;
   connected: boolean;
   connecting: boolean;
   disconnecting: boolean;
@@ -44,19 +53,19 @@ interface AdapterState {
 /**
  * Type guards for wallet adapter capabilities
  */
-function supportsSignMessage(adapter: Adapter): adapter is MessageSignerWalletAdapter {
+function supportsSignMessage(adapter: TAdapter): adapter is MessageSignerWalletAdapter {
   return 'signMessage' in adapter && typeof adapter.signMessage === 'function';
 }
 
-function supportsSignTransaction(adapter: Adapter): adapter is SignerWalletAdapter {
+function supportsSignTransaction(adapter: TAdapter): adapter is SignerWalletAdapter {
   return 'signTransaction' in adapter && typeof adapter.signTransaction === 'function';
 }
 
-function supportsSignAllTransactions(adapter: Adapter): adapter is SignerWalletAdapter {
+function supportsSignAllTransactions(adapter: TAdapter): adapter is SignerWalletAdapter {
   return 'signAllTransactions' in adapter && typeof adapter.signAllTransactions === 'function';
 }
 
-function supportsSignIn(adapter: Adapter): adapter is SignInMessageSignerWalletAdapter {
+function supportsSignIn(adapter: TAdapter): adapter is SignInMessageSignerWalletAdapter {
   return 'signIn' in adapter && typeof adapter.signIn === 'function';
 }
 
@@ -104,7 +113,7 @@ export function WalletProvider({
     storageFactory
   );
 
-  const latestAdapterRef = useRef<Adapter | null>(null);
+  const latestAdapterRef = useRef<TAdapter | null>(null);
   
   const [adapterState, setAdapterState] = useState<AdapterState>({
     adapter: null,
@@ -125,7 +134,7 @@ export function WalletProvider({
     };
   }, [onError]);
 
-  const handleErrorRef = useRef((error: WalletError, adapter?: Adapter) => {
+  const handleErrorRef = useRef((error: WalletError, adapter?: TAdapter) => {
     if (!isUnloadingRef.current) {
       if (onErrorRef.current) {
         onErrorRef.current(error, adapter);
@@ -350,6 +359,11 @@ export function WalletProvider({
 
       setAdapterState(prev => ({ ...prev, connecting: true }));
       
+      // Set RPC endpoint for cluster detection if adapter supports it
+      if (connection?.rpcEndpoint && 'setRpcEndpoint' in currentAdapter && typeof currentAdapter.setRpcEndpoint === 'function') {
+        (currentAdapter as any).setRpcEndpoint(connection.rpcEndpoint);
+      }
+      
       if (hasUserSelectedAWallet.current) {
         await currentAdapter.connect();
       } else {
@@ -384,6 +398,10 @@ export function WalletProvider({
     try {
       return new Promise<WalletAdapter>(async(resolve, reject) => {
         try {
+          // Set RPC endpoint for cluster detection if adapter supports it
+          if (connection?.rpcEndpoint && 'setRpcEndpoint' in currentAdapter && typeof currentAdapter.setRpcEndpoint === 'function') {
+            (currentAdapter as any).setRpcEndpoint(connection.rpcEndpoint);
+          }
           
           await currentAdapter.connect();
           
@@ -444,6 +462,27 @@ export function WalletProvider({
       handleErrorRef.current(error as WalletError, currentAdapter);
     } finally {
       setAdapterState(prev => ({ ...prev, disconnecting: false }));
+    }
+  }, [adapterState.adapter]);
+
+
+  const handleSignAndSendTransaction = useCallback(async (
+    transaction: Transaction | VersionedTransaction,
+    connection: any,
+    options?: SendOptions
+  ) => {
+    const currentAdapter = latestAdapterRef.current || adapterState.adapter;
+    if (!currentAdapter) throw new WalletNotSelectedError();
+    
+    try {
+      if (currentAdapter.signAndSendTransaction) {
+        return await currentAdapter.signAndSendTransaction(transaction, connection, options);
+      } else {
+        return await currentAdapter.sendTransaction(transaction, connection, options);
+      }
+    } catch (error) {
+      handleErrorRef.current(error as WalletError, currentAdapter);
+      throw error;
     }
   }, [adapterState.adapter]);
 
@@ -548,6 +587,7 @@ export function WalletProvider({
         disconnect: handleDisconnect,
         sendTransaction: handleSendTransaction,
         signTransaction: handleSignTransaction,
+        signAndSendTransaction: handleSignAndSendTransaction,
         signAllTransactions: handleSignAllTransactions,
         signMessage: handleSignMessage,
         signIn: handleSignIn,

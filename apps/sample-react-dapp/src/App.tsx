@@ -18,6 +18,8 @@ import { WalletModal } from './components/WalletModal'
 import { TransactionCard } from './components/TransactionCard'
 import { TokenBalances } from './components/TokenBalances'
 import { NFTGallery } from './components/NFTGallery'
+import { NetworkSelector } from './components/NetworkSelector'
+import { useNetwork } from './context/WalletContextProvider'
 
 // Wallet Item Component for the list
 interface WalletItemProps {
@@ -85,6 +87,9 @@ interface LogEntry {
 }
 
 function App() {
+  // Network context
+  const { currentNetwork, changeNetwork, isChangingNetwork } = useNetwork();
+  
   // React hooks from the headless SDK
   const { 
     wallet, 
@@ -358,6 +363,7 @@ function App() {
             {'connect' in adapter ? <li>connect()</li> : null}
             {'disconnect' in adapter ? <li>disconnect()</li> : null}
             {'sendTransaction' in adapter ? <li>sendTransaction()</li> : null}
+            {'signAndSendTransaction' in adapter ? <li>signAndSendTransaction()</li> : null}
             {'signTransaction' in adapter ? <li>signTransaction()</li> : null}
             {'signAllTransactions' in adapter ? <li>signAllTransactions()</li> : null}
             {'signMessage' in adapter ? <li>signMessage()</li> : null}
@@ -383,6 +389,13 @@ function App() {
         <h1>Solana Headless Wallet Demo</h1>
         <p className="subtitle">React implementation using @hermis/solana-headless-react</p>
       </header>
+
+      {/* Network Selector */}
+      <NetworkSelector 
+        currentNetwork={currentNetwork}
+        onNetworkChange={changeNetwork}
+        disabled={isChangingNetwork || connecting}
+      />
 
       <div className={`wallet-container ${isMobile ? 'mobile-view' : ''}`}>
         {/* Wallet Section */}
