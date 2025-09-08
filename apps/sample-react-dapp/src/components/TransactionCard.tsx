@@ -6,7 +6,6 @@ import {
   PublicKey, 
   LAMPORTS_PER_SOL
 } from '@hermis/solana-headless-core';
-// import { SystemProgram } from '@solana/web3.js';
 import './TransactionCard.css';
 
 interface TransactionCardProps {
@@ -22,7 +21,6 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
   const [signature, setSignature] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
-  // Use the transaction hook to track a transaction if we have a signature
   const { status } = useSolanaTransaction(signature || undefined);
 
   const isValidSolanaAddress = (address: string): boolean => {
@@ -58,21 +56,13 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
     setError(null);
     
     try {
-      // Create a new transaction
       const transaction = new Transaction();
       
-      // Get the latest blockhash
       const { blockhash } = await connection.getLatestBlockhash();
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      console.log("DEBUG SysemProgram:", SystemProgram);
-      console.log("DEBUG Tramsaction", transaction);
-      console.log("DEBUG connection", connection);
-      // console.log("DEBUG SysemProgram.transfer:", SystemProgram);
       
-      
-      // Add a transfer instruction
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
@@ -83,17 +73,13 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
 
       const signedTransaction = await signTransaction(transaction);
       
-      // Send the transaction
       const txSignature = await sendTransaction(signedTransaction, connection);
-      // const txSignature = await signAndSendTransaction(transaction, connection);
-      
-      // Update state and call callback
+
       setSignature(txSignature);
       if (onTransactionSent) {
         onTransactionSent(txSignature);
       }
       
-      // Reset form
       setAmount('');
       setRecipient('');
     } catch (err) {
