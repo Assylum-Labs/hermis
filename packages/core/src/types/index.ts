@@ -44,11 +44,15 @@ import {
     LAMPORTS_PER_SOL,
     // VersionedTransactionResponse,
     // SignatureStatus,
-    SystemProgram,
+    // SystemProgram,
     TransactionError,
     TransactionConfirmationStatus,
     VersionedMessage,
     ConfirmedTransactionMeta,
+} from '@solana/web3.js';
+
+export {
+  SystemProgram,
 } from '@solana/web3.js';
 
 import {
@@ -121,7 +125,7 @@ export {
     VersionedTransaction,
     SendOptions,
     SignatureStatus,
-    SystemProgram,
+    // SystemProgram,
     LAMPORTS_PER_SOL,
     TOKEN_PROGRAM_ID,
     // Keypair,
