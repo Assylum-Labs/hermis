@@ -65,10 +65,10 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      console.log("DEBUG SysemProgram.transfer:", SystemProgram.transfer);
       console.log("DEBUG SysemProgram:", SystemProgram);
       console.log("DEBUG Tramsaction", transaction);
       console.log("DEBUG connection", connection);
+      // console.log("DEBUG SysemProgram.transfer:", SystemProgram);
       
       
       // Add a transfer instruction
