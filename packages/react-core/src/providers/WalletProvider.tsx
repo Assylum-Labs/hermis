@@ -21,10 +21,8 @@ import {
   Connection
 } from '@hermis/solana-headless-core';
 import {
-  SolanaMobileWalletAdapterWalletName
-} from '@hermis/wallet-standard-base';
-import {
   getIsMobile,
+  SolanaMobileWalletAdapterWalletName,
 } from '@hermis/solana-headless-adapter-base';
 import { useStandardWalletAdapters } from '../hooks/useStandardWalletAdapters.js';
 import { useConnection } from '../hooks/useConnection.js';

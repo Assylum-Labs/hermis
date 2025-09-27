@@ -1,101 +1,22 @@
-// import { WalletAdapterNetwork, Adapter, WalletReadyState } from '@hermis/solana-headless-core';
-// import { Environment, EnvironmentConfig } from '../types.js';
+import { WalletAdapterNetwork, Adapter, WalletReadyState } from '@solana/wallet-adapter-base';
 
-// /**
-//  * Get the current user agent
-//  * @returns User agent string or null
-//  */
-// let _userAgent: string | null;
-// export function getUserAgent(): string | null {
-//   if (_userAgent === undefined) {
-//     _userAgent = typeof window !== 'undefined' ? window.navigator?.userAgent ?? null : null;
-//   }
-//   return _userAgent;
-// }
+/**
+ * Environment detection enum
+ */
+export enum Environment {
+  DESKTOP_WEB,
+  MOBILE_WEB,
+}
 
-// /**
-//  * Get the URI for app identity
-//  * @returns The protocol + host URI or undefined
-//  */
-// export function getUriForAppIdentity(): string | undefined {
-//   if (typeof window === 'undefined') return undefined;
-//   const location = window.location;
-//   if (!location) return undefined;
-//   return `${location.protocol}//${location.host}`;
-// }
+/**
+ * Configuration for environment detection
+ */
+export interface EnvironmentConfig {
+  adapters: any[]; // Use any[] to allow for different adapter types including SolanaMobileWalletAdapter
+  userAgentString: string | null;
+}
 
-// /**
-//  * Check if the user agent string belongs to a WebView
-//  * @param userAgentString The user agent string to check
-//  * @returns true if it's a WebView
-//  */
-// function isWebView(userAgentString: string): boolean {
-//   return /(WebView|Version\/.+(Chrome)\/(\d+)\.(\d+)\.(\d+)\.(\d+)|; wv\).+(Chrome)\/(\d+)\.(\d+)\.(\d+)\.(\d+))/i.test(
-//     userAgentString
-//   );
-// }
-
-// /**
-//  * Determine the current environment (desktop or mobile web)
-//  * @param config Configuration with adapters and userAgentString
-//  * @returns The detected environment
-//  */
-// export function getEnvironment({ adapters, userAgentString }: EnvironmentConfig): Environment {
-//   // Check if any non-mobile wallet adapters are installed
-//   if (
-//     adapters.some(
-//       adapter => 
-//         adapter.name !== 'Mobile Wallet Adapter' && 
-//         adapter.readyState === WalletReadyState.Installed
-//     )
-//   ) {
-//     return Environment.DESKTOP_WEB;
-//   }
-  
-//   // Check for Android device that's not in a WebView
-//   if (
-//     userAgentString &&
-//     /android/i.test(userAgentString) &&
-//     !isWebView(userAgentString)
-//   ) {
-//     return Environment.MOBILE_WEB;
-//   } 
-  
-//   // Default to desktop
-//   return Environment.DESKTOP_WEB;
-// }
-
-// /**
-//  * Determine if the current environment is mobile
-//  * @param adapters Array of wallet adapters
-//  * @param userAgentString Optional user agent string (for testing)
-//  * @returns true if the environment is mobile
-//  */
-// export function getIsMobile(adapters: Adapter[], userAgentString?: string | null): boolean {
-//   return getEnvironment({ adapters, userAgentString: userAgentString || getUserAgent() }) === Environment.MOBILE_WEB;
-// }
-
-// /**
-//  * Infer Solana cluster from endpoint
-//  * @param endpoint RPC endpoint URL
-//  * @returns The inferred cluster/network
-//  */
-// export function getInferredNetworkFromEndpoint(endpoint?: string): WalletAdapterNetwork {
-//   if (!endpoint) {
-//     return WalletAdapterNetwork.Mainnet;
-//   }
-//   if (/devnet/i.test(endpoint)) {
-//     return WalletAdapterNetwork.Devnet;
-//   } else if (/testnet/i.test(endpoint)) {
-//     return WalletAdapterNetwork.Testnet;
-//   } else {
-//     return WalletAdapterNetwork.Mainnet;
-//   }
-// }
-
-import { WalletAdapterNetwork, Adapter, WalletReadyState } from '@hermis/solana-headless-core';
-import { Environment, EnvironmentConfig } from '@hermis/wallet-standard-base';
-import { SolanaMobileWalletAdapterWalletName } from '@hermis/wallet-standard-base';
+export const SolanaMobileWalletAdapterWalletName = 'Mobile Wallet Adapter';
 
 /**
  * Get the current user agent
@@ -173,23 +94,23 @@ export function getEnvironment({ adapters, userAgentString }: EnvironmentConfig)
   if (isMobileDevice(userAgentString)) {
     return Environment.MOBILE_WEB;
   }
-  
+
   // Check if any non-mobile adapters are installed
   if (
     adapters.some(
-      adapter => 
-        adapter.name !== SolanaMobileWalletAdapterWalletName && 
+      adapter =>
+        adapter.name !== SolanaMobileWalletAdapterWalletName &&
         adapter.readyState === WalletReadyState.Installed
     )
   ) {
     return Environment.DESKTOP_WEB;
   }
-  
+
   // Default based on user agent again if we couldn't determine from adapters
   if (isAndroid(userAgentString) || isIOS(userAgentString)) {
     return Environment.MOBILE_WEB;
   }
-  
+
   // Default to desktop
   return Environment.DESKTOP_WEB;
 }
@@ -200,7 +121,7 @@ export function getEnvironment({ adapters, userAgentString }: EnvironmentConfig)
  * @param userAgentString Optional user agent string (for testing)
  * @returns true if the environment is mobile
  */
-export function getIsMobile(adapters: Adapter[], userAgentString?: string | null): boolean {
+export function getIsMobile(adapters: any[], userAgentString?: string | null): boolean {
   return getEnvironment({ adapters, userAgentString: userAgentString || getUserAgent() }) === Environment.MOBILE_WEB;
 }
 
@@ -216,7 +137,7 @@ export function isIosAndRedirectable(): boolean {
 
   // if on iOS and not in a webview
   const isIos = userAgent.includes('iphone') || userAgent.includes('ipad');
-  
+
   // if in a webview then it will not include Safari
   // note that other iOS browsers also include Safari
   const isSafari = userAgent.includes('safari');

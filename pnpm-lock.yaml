@@ -250,21 +250,15 @@ importers:
 
   packages/adapter-base:
     dependencies:
-      '@hermis/solana-headless-core':
-        specifier: 1.1.2
-        version: 1.1.2(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10)
-      '@hermis/wallet-standard-base':
-        specifier: workspace:*
-        version: link:../wallet-standard
-      '@solana-mobile/wallet-adapter-mobile':
-        specifier: 2.0.0
-        version: 2.0.0(@solana/web3.js@1.98.4(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10))(react-native@0.81.1(@babel/core@7.28.4)(@types/react@19.1.12)(bufferutil@4.0.9)(react@19.1.1)(utf-8-validate@5.0.10))(react@19.1.1)
+      '@solana/wallet-adapter-base':
+        specifier: ^0.9.23
+        version: 0.9.27(@solana/web3.js@1.98.4(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10))
+      '@solana/web3.js':
+        specifier: ^1.98.0
+        version: 1.98.4(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10)
       '@wallet-standard/base':
         specifier: ^1.1.0
         version: 1.1.0
-      bs58:
-        specifier: ^6.0.0
-        version: 6.0.0
     devDependencies:
       '@hermis/solana-headless-format-config':
         specifier: 1.0.5
@@ -278,9 +272,15 @@ importers:
 
   packages/core:
     dependencies:
+      '@hermis/solana-headless-adapter-base':
+        specifier: workspace:*
+        version: link:../adapter-base
       '@noble/ed25519':
         specifier: ^2.2.3
         version: 2.3.0
+      '@noble/hashes':
+        specifier: ^2.0.1
+        version: 2.0.1
       '@solana/kit':
         specifier: ^3.0.2
         version: 3.0.2(fastestsmallesttextencoderdecoder@1.0.22)(typescript@5.9.2)(ws@8.18.3(bufferutil@4.0.9)(utf-8-validate@5.0.10))
@@ -293,6 +293,9 @@ importers:
       '@solana/web3.js':
         specifier: ^1.98.0
         version: 1.98.4(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10)
+      bs58:
+        specifier: ^6.0.0
+        version: 6.0.0
       buffer:
         specifier: ^6.0.3
         version: 6.0.3
@@ -361,12 +364,18 @@ importers:
 
   packages/wallet-standard:
     dependencies:
+      '@hermis/solana-headless-adapter-base':
+        specifier: workspace:*
+        version: link:../adapter-base
       '@hermis/solana-headless-core':
         specifier: workspace:*
         version: link:../core
       '@solana-mobile/wallet-adapter-mobile':
         specifier: ^2.0.0
         version: 2.0.0(@solana/web3.js@1.98.4(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10))(react-native@0.81.1(@babel/core@7.28.4)(@types/react@19.1.12)(bufferutil@4.0.9)(react@19.1.1)(utf-8-validate@5.0.10))(react@19.1.1)
+      '@solana/web3.js':
+        specifier: ^1.98.0
+        version: 1.98.4(bufferutil@4.0.9)(typescript@5.9.2)(utf-8-validate@5.0.10)
       '@wallet-standard/base':
         specifier: ^1.1.0
         version: 1.1.0
@@ -1444,6 +1453,10 @@ packages:
   '@noble/hashes@1.8.0':
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
     engines: {node: ^14.21.3 || >=16}
+
+  '@noble/hashes@2.0.1':
+    resolution: {integrity: sha512-XlOlEbQcE9fmuXxrVTXCTlG2nlRXa9Rj3rr5Ue/+tX+nmkgbX720YHh0VR3hBF9xDvwnb8D2shVGOwNx+ulArw==}
+    engines: {node: '>= 20.19.0'}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -7374,6 +7387,8 @@ snapshots:
   '@noble/ed25519@2.3.0': {}
 
   '@noble/hashes@1.8.0': {}
+
+  '@noble/hashes@2.0.1': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

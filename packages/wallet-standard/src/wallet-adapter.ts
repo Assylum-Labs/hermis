@@ -1,13 +1,6 @@
 import {
   WalletReadyState,
   WalletName,
-  Connection,
-  PublicKey,
-  SendOptions,
-  Transaction,
-  VersionedTransaction,
-  TransactionSignature,
-  TransactionVersion,
   WalletAdapterEvents,
   MessageSignerWalletAdapter,
   SignerWalletAdapter,
@@ -16,7 +9,20 @@ import {
   WalletAdapter,
   WalletError,
   EventEmitter
-} from '@hermis/solana-headless-core';
+} from '@hermis/solana-headless-adapter-base';
+
+import {
+  Connection,
+  PublicKey,
+  SendOptions,
+  Transaction,
+  VersionedTransaction,
+  TransactionSignature,
+  TransactionVersion,
+} from '@solana/web3.js';
+
+// Removed coreSignMessage import to avoid circular dependency
+// The centralized signMessage is for external use, not internal adapter implementation
 
 import {
   isWalletAdapterCompatibleStandardWallet,
@@ -47,6 +53,7 @@ import {
 
 import bs58 from 'bs58';
 
+import { signMessage as coreSignMessage } from '@hermis/solana-headless-core';
 
 type IStandardWalletAdapter =
   Pick<WalletAdapter, 'name' | 'url' | 'icon' | 'publicKey' | 'connecting' | 'on' | 'off' | 'emit'> &
@@ -278,6 +285,8 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
 
       const connectResult = await connectFeature.connect();
       this._connectedAccount = connectResult.accounts;
+      // this._wallet.accounts = connectResult.accounts as readonly any[];
+      // this._wallet.accounts = connectResult.accounts as readonly WalletAccount[];
       console.log("DEBUG connectedAccount", this._connectedAccount);
       if (!connectResult || !connectResult.accounts || !Array.isArray(connectResult.accounts)) {
         throw new Error('Invalid connect result from wallet');
@@ -685,32 +694,29 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
     if (!this.connected) throw new Error('Wallet not connected');
 
     try {
-      if (!(SolanaSignMessageMethod in this._wallet.features)) {
-        throw new Error('Wallet does not support signing messages');
-      }
+      return await coreSignMessage(message, this._wallet);
+      // Direct implementation to avoid circular dependency with centralized signMessage
+      // The centralized signMessage is designed for external callers, not internal adapter use
 
+      // if (!(SolanaSignMessageMethod in this._wallet.features)) {
+      //   throw new Error('Wallet does not support signing messages');
+      // }
 
-      const feature = this._wallet.features[SolanaSignMessageMethod] as SolanaSignMessageFeature;
-      if (!feature || typeof feature.signMessage !== 'function') {
-        throw new Error('Wallet has invalid signMessage feature');
-      }
+      // const feature = this._wallet.features[SolanaSignMessageMethod] as SolanaSignMessageFeature;
+      // if (!feature || typeof feature.signMessage !== 'function') {
+      //   throw new Error('Wallet has invalid signMessage feature');
+      // }
 
-      const result = await feature.signMessage({
-        message,
-        account: this._connectedAccount![0]
-        // account: {
-        //   address: this.publicKey!.toBase58(),
-        //   publicKey: this.publicKey!.toBytes(),
-        //   chains: ['solana:mainnet', 'solana:devnet', 'solana:testnet'],
-        //   features: ['solana:signMessage']
-        // }
-      });
+      // const result = await feature.signMessage({
+      //   message,
+      //   account: this._connectedAccount![0]
+      // });
 
-      if (!result || result.length < 1 || !result[0].signature) {
-        throw new Error('No signature returned from signMessage');
-      }
+      // if (!result || result.length < 1 || !result[0].signature) {
+      //   throw new Error('No signature returned from signMessage');
+      // }
 
-      return result[0].signature;
+      // return result[0].signature;
     } catch (error: any) {
       console.error('Error in signMessage', error);
       this._eventEmitter.emit('error', error);

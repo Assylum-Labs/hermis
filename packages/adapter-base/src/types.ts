@@ -1,6 +1,5 @@
 // src/types.ts
-import { Adapter, WalletName, WalletReadyState } from '@hermis/solana-headless-core';
-import { SolanaMobileWalletAdapter } from '@solana-mobile/wallet-adapter-mobile';
+import { Adapter, WalletName, WalletReadyState } from '@hermis/solana-headless-adapter-base';
 
 /**
  * Interface for wallet provider information

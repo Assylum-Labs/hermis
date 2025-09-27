@@ -32,9 +32,9 @@ export {
   getIsMobile,
   sortWalletAdapters,
   getAdaptersByReadyState,
+  SolanaMobileWalletAdapterWalletName,
 } from '@hermis/solana-headless-adapter-base';
 
 export {
-  SolanaMobileWalletAdapterWalletName,
   getStandardWalletAdapters
 } from '@hermis/wallet-standard-base';

@@ -23,11 +23,9 @@
     }
   },
   "dependencies": {
-    "@hermis/solana-headless-core": "1.1.2",
-    "@hermis/wallet-standard-base": "workspace:*",
-    "@solana-mobile/wallet-adapter-mobile": "2.0.0",
-    "@wallet-standard/base": "^1.1.0",
-    "bs58": "^6.0.0"
+    "@solana/wallet-adapter-base": "^0.9.23",
+    "@solana/web3.js": "^1.98.0",
+    "@wallet-standard/base": "^1.1.0"
   },
   "files": [
     "dist",

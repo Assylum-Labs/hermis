@@ -1,6 +1,6 @@
 import { Adapter, WalletName, WalletReadyState, PublicKey } from '@hermis/solana-headless-core';
 import { WalletProvider } from '../types.js';
-import { SolanaMobileWalletAdapterWalletName } from '@hermis/wallet-standard-base';
+import { SolanaMobileWalletAdapterWalletName } from '../utils/environment.js';
 import { getDetectedWalletAdapters, initializeWalletDetection } from '@hermis/wallet-standard-base';
 
 // Store for all initialized adapters
@@ -67,14 +67,20 @@ export function getWalletAdapters(readyState?: WalletReadyState): WalletProvider
   }));
 }
 
+// Import utility functions from utils to avoid code duplication
+import {
+  getAdaptersByReadyState as getAdaptersByReadyStateUtil,
+  sortWalletAdapters as sortWalletAdaptersUtil
+} from '../utils/adapter-utils.js';
+
 /**
  * Get wallet adapters by ready state
- * @param adapters Array of adapters 
+ * @param adapters Array of adapters
  * @param readyState The ready state to filter by
  * @returns Filtered array of adapters
  */
 export function getAdaptersByReadyState(adapters: Adapter[], readyState: WalletReadyState): Adapter[] {
-  return adapters.filter(adapter => adapter.readyState === readyState);
+  return getAdaptersByReadyStateUtil(adapters, readyState);
 }
 
 /**
@@ -83,33 +89,7 @@ export function getAdaptersByReadyState(adapters: Adapter[], readyState: WalletR
  * @returns Sorted array of wallet adapters
  */
 export function sortWalletAdapters(adapters: Adapter[]): Adapter[] {
-  // Create a copy of the array to avoid mutating the original
-  const sortedAdapters = [...adapters];
-  
-  // Sort the adapters by ready state priority
-  return sortedAdapters.sort((a, b) => {
-    // Mobile wallet adapter gets top priority on mobile
-    if (a.name === SolanaMobileWalletAdapterWalletName) return -1;
-    if (b.name === SolanaMobileWalletAdapterWalletName) return 1;
-
-    // Then installed wallets
-    if (a.readyState === WalletReadyState.Installed && b.readyState !== WalletReadyState.Installed) {
-      return -1;
-    }
-    if (a.readyState !== WalletReadyState.Installed && b.readyState === WalletReadyState.Installed) {
-      return 1;
-    }
-    
-    // Then loadable wallets
-    if (a.readyState === WalletReadyState.Loadable && b.readyState !== WalletReadyState.Loadable) {
-      return -1;
-    }
-    if (a.readyState !== WalletReadyState.Loadable && b.readyState === WalletReadyState.Loadable) {
-      return 1;
-    }
-    
-    return 0;
-  });
+  return sortWalletAdaptersUtil(adapters);
 }
 
 /**

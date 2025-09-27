@@ -1,4 +1,5 @@
-import { Adapter, WalletAdapterNetwork, WalletReadyState, PublicKey } from '@hermis/solana-headless-core';
+import { Adapter, WalletAdapterNetwork, WalletReadyState } from '@hermis/solana-headless-adapter-base';
+import { PublicKey } from '@solana/web3.js';
 // import { Wallet as StandardWallet } from '@wallet-standard/base';
 import { 
   StandardConnectMethod,

@@ -54,12 +54,8 @@ import {
     TOKEN_PROGRAM_ID,
   } from "@solana/spl-token";
 
-// Import kit types
-import {
-    Address,
-    TransactionMessage,
-    Blockhash,
-} from "@solana/kit";
+// Kit types are imported directly in transaction/index.ts where they're used
+// This avoids export conflicts at the package level
   
   import {
     Adapter,
@@ -78,12 +74,13 @@ import {
     BaseSignInMessageSignerWalletAdapter as SignerWalletAdapterProps,
     SignInMessageSignerWalletAdapterProps,
     WalletAdapterProps,
-    BaseSignerWalletAdapter as SignerWalletAdapter, 
-    // SignInMessageSignerWalletAdapter, 
-    // SupportedTransactionVersions, 
+    BaseSignerWalletAdapter as SignerWalletAdapter,
+    // SignInMessageSignerWalletAdapter,
+    // SupportedTransactionVersions,
     // WalletAdapter,
     // WalletAdapter as nativeAdapter,
 } from '@solana/wallet-adapter-base';
+
 
 // Export only the specific types you need
 export type {
@@ -134,11 +131,6 @@ export {
     WalletReadyState,
     BaseWalletAdapter,
     EventEmitter,
-
-    // Kit types
-    Address,
-    TransactionMessage,
-    Blockhash,
   }
   
   // Add your own custom types
@@ -155,13 +147,23 @@ export {
     maxRetries?: number;
   }
 
+
+  // Import TypedStandardWallet from adapter-base
+  import { TypedStandardWallet } from '@hermis/solana-headless-adapter-base';
+
   // Types for dual architecture support
-  export type LegacyWallet = Keypair | Adapter;
-  export type KitWallet = CryptoKeyPair | Address;
+  export type LegacyWallet = Keypair | Adapter | TypedStandardWallet;
+  export type KitWallet = CryptoKeyPair | string | object; // CryptoKeyPair, Address (string), or MessagePartialSigner (object)
   export type DualWallet = LegacyWallet | KitWallet;
-  
+
   export type LegacyTransaction = Transaction | VersionedTransaction;
-  export type DualTransaction = LegacyTransaction | TransactionMessage;
+  export type DualTransaction = LegacyTransaction | object; // TransactionMessage is an object
+
+  // Options for dual architecture operations
+  export interface DualArchitectureOptions {
+    preferKitArchitecture?: boolean;
+    fallbackToLegacy?: boolean;
+  }
 
   // Interface for wallet signing capabilities
   export interface WalletSigningCapabilities {
