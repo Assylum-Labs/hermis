@@ -71,6 +71,8 @@ import { generateNonce, generateSignInMessage } from '../utils/index.js';
 // Import required packages for CryptoKeyPair conversion
 import * as ed25519 from '@noble/ed25519';
 import bs58 from 'bs58';
+import nacl from 'tweetnacl';
+
 
 // Import kit functions with correct names based on actual exports
 import {
@@ -974,9 +976,8 @@ async function signMessageLegacy(
   // Handle different wallet types
   if ('secretKey' in wallet) {
     // It's a Keypair
-    // Note: Keypair doesn't have a direct message signing method in web3.js
-    // You would need to implement it using nacl or similar
-    throw new Error('Direct message signing with Keypair is not supported');
+    const signature = nacl.sign.detached(messageBytes, wallet.secretKey);
+    return signature;
   } else if ("_connectedAccount" in wallet && "_wallet" in wallet) {
     // It's a Standard Wallet
     const feature = wallet._wallet.features[SolanaSignMessageMethod] as SolanaSignMessageFeature;

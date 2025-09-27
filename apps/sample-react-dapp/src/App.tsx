@@ -1,17 +1,20 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import './App.css'
-import { 
-  useWallet, 
-  useConnection, 
-  useWalletAdapters, 
+import {
+  useWallet,
+  useConnection,
+  useWalletAdapters,
   useSolanaBalance,
-  getIsMobile
+  getIsMobile,
+  signMessageDualArchitecture
 } from '@hermis/solana-headless-react'
 import { 
   WalletReadyState, 
   PublicKey, 
-  WalletName 
+  WalletName, 
 } from '@hermis/solana-headless-core'
+
+import { generateKeyPairSigner } from '@solana/kit';
 
 // Import the custom components we created
 import { WalletModal } from './components/WalletModal'
@@ -20,6 +23,7 @@ import { TokenBalances } from './components/TokenBalances'
 import { NFTGallery } from './components/NFTGallery'
 import { NetworkSelector } from './components/NetworkSelector'
 import { useNetwork } from './context/WalletContextProvider'
+// import { Keypair } from '@solana/web3.js';
 
 // Wallet Item Component for the list
 interface WalletItemProps {
@@ -293,6 +297,42 @@ function App() {
     }
   };
 
+  // Sign a message using Kit (dual architecture)
+  const handleSignMessageKit = async () => {
+    if (!connected || !wallet?.adapter) {
+      addLogEntry('Wallet not connected for kit message signing', 'error');
+      return;
+    }
+
+    const message = `Test Kit message for wallet authentication at ${new Date().toISOString()}`;
+    addLogEntry(`Signing message using Kit (dual architecture): "${message}"`, 'info');
+    addLogEntry('Using dual architecture signMessage with connected wallet adapter', 'info');
+
+    try {
+      // const signer = Keypair.generate();
+      const signer = await generateKeyPairSigner();
+      const messageBytes = new TextEncoder().encode(message);
+
+      // Use the dual architecture signMessage function from core
+      // This will detect that wallet.adapter is a legacy wallet and route appropriately
+      const signature = await signMessageDualArchitecture(messageBytes, signer);
+      // const signature = await signMessageDualArchitecture(messageBytes, wallet.adapter);
+
+      let signatureBase64: string;
+      try {
+        signatureBase64 = btoa(String.fromCharCode.apply(null, Array.from(signature)));
+      } catch {
+        signatureBase64 = Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join('');
+      }
+
+      addLogEntry(`Kit message signed successfully! Signature: ${signatureBase64}`, 'success');
+      addLogEntry('Note: This used the dual architecture approach - same wallet, different code path', 'info');
+    } catch (error) {
+      console.error('Kit sign message error:', error);
+      addLogEntry(`Kit sign message error: ${(error as Error).message}`, 'error');
+    }
+  };
+
   // Disconnect wallet
   const handleDisconnectWallet = async () => {
     addLogEntry('Disconnecting wallet...', 'info');
@@ -507,15 +547,27 @@ function App() {
             >
               Connect with Modal
             </button>
-            <button 
-              onClick={() =>handleSignMessage()} 
+            <button
+              onClick={() =>handleSignMessage()}
               disabled={!connected || !signMessage}
               style={{ display: connected && signMessage ? 'block' : 'none' }}
             >
               Sign Message
             </button>
-            <button 
-              onClick={handleDisconnectWallet} 
+            <button
+              onClick={handleSignMessageKit}
+              disabled={!connected || !wallet?.adapter}
+              style={{
+                display: connected && wallet?.adapter ? 'block' : 'none',
+                backgroundColor: '#4CAF50',
+                color: 'white'
+              }}
+              title="Sign message using Kit dual architecture approach"
+            >
+              Sign Message (Kit)
+            </button>
+            <button
+              onClick={handleDisconnectWallet}
               disabled={!connected}
             >
               Disconnect

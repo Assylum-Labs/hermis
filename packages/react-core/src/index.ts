@@ -22,10 +22,11 @@ export * from './components/HermisProvider.js';
 
 export * from './utils/errors.js';
 
-export { 
-  WalletAdapterNetwork, 
+export {
+  WalletAdapterNetwork,
   WalletReadyState,
-  WalletError 
+  WalletError,
+  signMessage as signMessageDualArchitecture
 } from '@hermis/solana-headless-core';
 
 export {

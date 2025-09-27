@@ -31,7 +31,8 @@
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/web3.js": "^1.98.0",
     "bs58": "^6.0.0",
-    "buffer": "^6.0.3"
+    "buffer": "^6.0.3",
+    "tweetnacl": "^1.0.3"
   },
   "devDependencies": {
     "@hermis/solana-headless-format-config": "^1.0.5",
