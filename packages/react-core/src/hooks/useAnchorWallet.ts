@@ -20,10 +20,10 @@ export interface AnchorWallet {
  */
 export function useAnchorWallet(): AnchorWallet | undefined {
   const { publicKey, signTransaction, signAllTransactions } = useWallet();
-  
+
   return useMemo(
     () => {
-      if (publicKey && signTransaction && signAllTransactions) {
+      if (publicKey) {
         return { publicKey, signTransaction, signAllTransactions };
       }
       return undefined;

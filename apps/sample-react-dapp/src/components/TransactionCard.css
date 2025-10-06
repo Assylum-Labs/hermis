@@ -95,6 +95,13 @@
     color: #d73a49;
   }
   
+  .button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+  }
+
   .send-button {
     background-color: #9945FF;
     color: white;
@@ -104,17 +111,25 @@
     cursor: pointer;
     font-size: 0.95rem;
     font-weight: 500;
-    margin-top: 10px;
     transition: background-color 0.2s;
   }
-  
+
   .send-button:hover:not(:disabled) {
     background-color: #8a3deb;
   }
-  
+
   .send-button:disabled {
     background-color: #cccccc;
     cursor: not-allowed;
+  }
+
+  .kit-button {
+    background-color: #14F195;
+    color: #000;
+  }
+
+  .kit-button:hover:not(:disabled) {
+    background-color: #00d084;
   }
   
   .transaction-card-message {
@@ -122,4 +137,115 @@
     font-style: italic;
     text-align: center;
     padding: 20px 0;
+  }
+
+  /* New styles for enhanced dual architecture demo */
+  .architecture-log {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 16px 0;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .log-header h5 {
+    margin: 0;
+    color: #2d3748;
+    font-size: 0.9rem;
+  }
+
+  .clear-log-button {
+    background: #e53e3e;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  .clear-log-button:hover {
+    background: #c53030;
+  }
+
+  .log-content {
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.4;
+  }
+
+  .log-entry {
+    color: #4a5568;
+    margin-bottom: 2px;
+    padding: 2px 0;
+  }
+
+  .button-section {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 12px;
+  }
+
+  .button-section h5 {
+    margin: 0 0 8px 0;
+    color: #2d3748;
+    font-size: 0.9rem;
+  }
+
+  .button-section:first-child {
+    background: linear-gradient(135deg, #ebf8ff 0%, #f7fafc 100%);
+    border-color: #bee3f8;
+  }
+
+  .button-section:last-child {
+    background: linear-gradient(135deg, #f0fff4 0%, #f7fafc 100%);
+    border-color: #9ae6b4;
+  }
+
+  .new-method-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .new-method-button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+  }
+
+  .kit-pure-button {
+    background: linear-gradient(135deg, #38b2ac 0%, #319795 100%);
+    color: white;
+  }
+
+  .kit-pure-button:hover:not(:disabled) {
+    background: linear-gradient(135deg, #319795 0%, #2c7a7b 100%);
+  }
+
+  .architecture-info {
+    background: linear-gradient(135deg, #fed7d7 0%, #fbb6ce 100%);
+    border: 1px solid #feb2b2;
+    border-radius: 6px;
+    padding: 12px;
+    margin-top: 16px;
+    text-align: center;
+  }
+
+  .architecture-info p {
+    margin: 4px 0;
+    font-size: 0.9rem;
+    color: #742a2a;
+  }
+
+  .architecture-info strong {
+    color: #c53030;
   }

@@ -1,0 +1,183 @@
+.transaction-methods-demo {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin: 20px 0;
+  max-width: 1200px;
+}
+
+.demo-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.demo-header h3 {
+  color: #2d3748;
+  margin-bottom: 8px;
+  font-size: 1.5rem;
+}
+
+.demo-header p {
+  color: #718096;
+  margin-bottom: 16px;
+}
+
+.architecture-legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.legend-item {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.legend-item.web3js {
+  background: #ebf8ff;
+  color: #2b6cb0;
+  border: 1px solid #bee3f8;
+}
+
+.legend-item.kit {
+  background: #f0fff4;
+  color: #38a169;
+  border: 1px solid #9ae6b4;
+}
+
+.methods-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.method-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.2s ease;
+}
+
+.method-card:hover {
+  border-color: #cbd5e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.method-card.kit-demo {
+  background: linear-gradient(135deg, #f0fff4 0%, #f7fafc 100%);
+  border-color: #9ae6b4;
+}
+
+.method-card h4 {
+  color: #2d3748;
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+}
+
+.method-card p {
+  color: #718096;
+  margin: 0 0 16px 0;
+  font-size: 0.9rem;
+}
+
+.method-button {
+  background: #4299e1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.method-button:hover:not(:disabled) {
+  background: #3182ce;
+  transform: translateY(-1px);
+}
+
+.method-button:disabled {
+  background: #a0aec0;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.method-button.kit-button {
+  background: #48bb78;
+}
+
+.method-button.kit-button:hover:not(:disabled) {
+  background: #38a169;
+}
+
+.result {
+  padding: 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.result.success {
+  background: #f0fff4;
+  border: 1px solid #9ae6b4;
+  color: #276749;
+}
+
+.result.error {
+  background: #fed7d7;
+  border: 1px solid #feb2b2;
+  color: #c53030;
+}
+
+.signature-preview {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-top: 6px;
+  word-break: break-all;
+}
+
+.demo-footer {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+}
+
+.demo-footer p {
+  margin: 4px 0;
+}
+
+.demo-footer strong {
+  color: #ffd700;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .methods-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .architecture-legend {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .transaction-methods-demo {
+    padding: 16px;
+    margin: 10px 0;
+  }
+}

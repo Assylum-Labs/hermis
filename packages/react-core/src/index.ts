@@ -26,7 +26,23 @@ export {
   WalletAdapterNetwork,
   WalletReadyState,
   WalletError,
-  signMessage as signMessageDualArchitecture
+  // Core transaction methods - NOW SUPPORT BOTH web3.js AND Kit!
+  signMessage,
+  signTransaction,
+  signAllTransactions,
+  sendTransaction,
+  signAndSendTransaction,
+  // Kit-specific utilities
+  createKitTransaction,
+  generateKitKeypair,
+  generateKeyPairSigner,
+  signTransactionWithSigner,
+  createRPCConnection,
+  sendTransactionWithRPC,
+  signMessageWithKitCryptoKeyPair,
+  signMessageWithGeneratedKitKeypair,
+  supportsKitArchitecture,
+  isKitTransaction
 } from '@hermis/solana-headless-core';
 
 export {

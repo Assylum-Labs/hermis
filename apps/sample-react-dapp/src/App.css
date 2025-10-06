@@ -37,6 +37,34 @@ h1 {
   font-size: 1rem;
 }
 
+/* Dual Architecture Showcase Styles */
+.dual-architecture-showcase {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  padding: 24px;
+  margin: 32px 0;
+  color: white;
+}
+
+.showcase-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.showcase-header h2 {
+  color: #ffd700;
+  border-bottom: 2px solid #ffd700;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+
+.showcase-header p {
+  color: #e2e8f0;
+  font-size: 1.1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
 h2 {
   font-size: 1.3rem;
   margin-bottom: 15px;

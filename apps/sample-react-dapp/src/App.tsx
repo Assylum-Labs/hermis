@@ -6,7 +6,7 @@ import {
   useWalletAdapters,
   useSolanaBalance,
   getIsMobile,
-  signMessageDualArchitecture
+  signMessage as signMessageCore
 } from '@hermis/solana-headless-react'
 import { 
   WalletReadyState, 
@@ -22,6 +22,9 @@ import { TransactionCard } from './components/TransactionCard'
 import { TokenBalances } from './components/TokenBalances'
 import { NFTGallery } from './components/NFTGallery'
 import { NetworkSelector } from './components/NetworkSelector'
+// import { TransactionMethodsDemo } from './components/TransactionMethodsDemo'
+// import { ArchitectureComparison } from './components/ArchitectureComparison'
+// import { UnifiedAPIDemo } from './components/UnifiedAPIDemo'
 import { useNetwork } from './context/WalletContextProvider'
 // import { Keypair } from '@solana/web3.js';
 
@@ -315,8 +318,8 @@ function App() {
 
       // Use the dual architecture signMessage function from core
       // This will detect that wallet.adapter is a legacy wallet and route appropriately
-      const signature = await signMessageDualArchitecture(messageBytes, signer);
-      // const signature = await signMessageDualArchitecture(messageBytes, wallet.adapter);
+      const signature = await signMessageCore(messageBytes, signer);
+      // const signature = await signMessageCore(messageBytes, wallet.adapter);
 
       let signatureBase64: string;
       try {
@@ -421,6 +424,11 @@ function App() {
   const handleTransactionSent = (signature: string) => {
     addLogEntry(`Transaction sent with signature: ${signature}`, 'success');
   };
+
+  // Handler for dual architecture method results
+  // const handleMethodResult = (method: string, _result: string, architecture: string) => {
+  //   addLogEntry(`🔄 ${method} completed using ${architecture} architecture`, 'success');
+  // };
 
   // Main JSX render
   return (
@@ -610,6 +618,22 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Dual Architecture Demo - Always visible */}
+      {/* <div className="dual-architecture-showcase">
+        <div className="showcase-header">
+          <h2>🔄 Dual Architecture Showcase</h2>
+          <p>Demonstrating true backward compatibility: ONE method handles BOTH web3.js and kit architectures</p>
+        </div>
+
+        <ArchitectureComparison />
+        <TransactionMethodsDemo onMethodResult={handleMethodResult} />
+
+        <UnifiedAPIDemo
+          recipient="So11111111111111111111111111111111111111112"
+          amount="0.001"
+        />
+      </div> */}
 
       {/* Additional components will be visible when wallet is connected */}
       {connected && (

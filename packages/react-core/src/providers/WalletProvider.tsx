@@ -570,6 +570,87 @@ export function WalletProvider({
     return feature in currentAdapter;
   }, [adapterState.adapter]);
 
+  // EXTENDED METHODS: These now support BOTH web3.js and Kit architectures automatically
+  // No more "DualArchitecture" or "Unified" suffixes - just the standard names!
+
+  const handleSignTransactionExtended = useCallback(async <T = any>(
+    transaction: T,
+    options?: any
+  ): Promise<T> => {
+    const currentAdapter = latestAdapterRef.current || adapterState.adapter;
+    if (!currentAdapter) throw new WalletNotSelectedError();
+
+    try {
+      // Import the core dual architecture function
+      const { signTransaction: signTransactionCore } = await import('@hermis/solana-headless-core');
+
+      // Route to core - it automatically detects web3.js vs Kit
+      return await signTransactionCore(transaction as any, currentAdapter, options) as T;
+    } catch (error) {
+      handleErrorRef.current(error as WalletError, currentAdapter);
+      throw error;
+    }
+  }, [adapterState.adapter]);
+
+  const handleSendTransactionExtended = useCallback(async (
+    transaction: any,
+    connection: any,
+    options?: any
+  ): Promise<string> => {
+    const currentAdapter = latestAdapterRef.current || adapterState.adapter;
+    if (!currentAdapter) throw new WalletNotSelectedError();
+
+    try {
+      // Import the core dual architecture function
+      const { sendTransaction: sendTransactionCore } = await import('@hermis/solana-headless-core');
+
+      // Route to core - it automatically detects web3.js vs Kit
+      return await sendTransactionCore(connection, transaction, currentAdapter, options);
+    } catch (error) {
+      handleErrorRef.current(error as WalletError, currentAdapter);
+      throw error;
+    }
+  }, [adapterState.adapter]);
+
+  const handleSignAndSendTransactionExtended = useCallback(async (
+    transaction: any,
+    connection: any,
+    options?: any
+  ): Promise<string> => {
+    const currentAdapter = latestAdapterRef.current || adapterState.adapter;
+    if (!currentAdapter) throw new WalletNotSelectedError();
+
+    try {
+      // Import the core dual architecture function
+      const { signAndSendTransaction: signAndSendTransactionCore } = await import('@hermis/solana-headless-core');
+
+      // Route to core - it automatically detects web3.js vs Kit
+      return await signAndSendTransactionCore(connection, transaction, currentAdapter, options);
+    } catch (error) {
+      handleErrorRef.current(error as WalletError, currentAdapter);
+      throw error;
+    }
+  }, [adapterState.adapter]);
+
+  const handleSignAllTransactionsExtended = useCallback(async <T = any>(
+    transactions: T[],
+    options?: any
+  ): Promise<T[]> => {
+    const currentAdapter = latestAdapterRef.current || adapterState.adapter;
+    if (!currentAdapter) throw new WalletNotSelectedError();
+
+    try {
+      // Import the core dual architecture function
+      const { signAllTransactions: signAllTransactionsCore } = await import('@hermis/solana-headless-core');
+
+      // Route to core - it automatically detects web3.js vs Kit
+      return await signAllTransactionsCore(transactions as any[], currentAdapter, options) as T[];
+    } catch (error) {
+      handleErrorRef.current(error as WalletError, currentAdapter);
+      throw error;
+    }
+  }, [adapterState.adapter]);
+
   return (
     <WalletContext.Provider
       value={{
@@ -583,13 +664,15 @@ export function WalletProvider({
         select: updateWalletNameAsync,
         connect: handleConnect,
         disconnect: handleDisconnect,
-        sendTransaction: handleSendTransaction,
-        signTransaction: handleSignTransaction,
-        signAndSendTransaction: handleSignAndSendTransaction,
-        signAllTransactions: handleSignAllTransactions,
+        // EXTENDED METHODS: Now support BOTH web3.js AND Kit architectures!
+        // These replace the old legacy-only implementations
+        signTransaction: handleSignTransactionExtended,
+        sendTransaction: handleSendTransactionExtended,
+        signAndSendTransaction: handleSignAndSendTransactionExtended,
+        signAllTransactions: handleSignAllTransactionsExtended,
         signMessage: handleSignMessage,
         signIn: handleSignIn,
-        hasFeature
+        hasFeature,
       }}
     >
       {children}

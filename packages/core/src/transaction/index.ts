@@ -51,11 +51,13 @@
 import { Adapter } from '@solana/wallet-adapter-base';
 import {
   Connection,
+  ConnectionConfig,
   Keypair,
   Transaction,
   TransactionSignature,
   sendAndConfirmTransaction,
   VersionedTransaction,
+  PublicKey,
 } from '@solana/web3.js';
 import {
   SolanaSignInInput,
@@ -67,6 +69,7 @@ import {
   KitWallet
 } from '../types/index.js';
 import { generateNonce, generateSignInMessage } from '../utils/index.js';
+import { createConnection } from '../connection/index.js';
 
 // Import required packages for CryptoKeyPair conversion
 import * as ed25519 from '@noble/ed25519';
@@ -88,13 +91,20 @@ import {
   // Transaction message creation
   createTransactionMessage,
   setTransactionMessageFeePayer,
+  setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction,
 
   // Message signing
   createSignableMessage,
 
   // Signing
   signTransaction as kitSignTransaction,
+  signTransactionMessageWithSigners,
+
+  // Transaction utilities
+  getTransactionEncoder,
+  compileTransaction,
 } from '@solana/kit';
 
 // Import types
@@ -175,8 +185,11 @@ function isTransactionMessage(transaction: DualTransaction): transaction is obje
     typeof transaction === 'object' &&
     transaction !== null &&
     'instructions' in transaction &&
-    !('recentBlockhash' in transaction) &&
-    !('version' in transaction)
+    'version' in transaction &&
+    // Kit transactions have 'version' but it's a string like '0' not a number
+    // Legacy VersionedTransaction also has 'version' but also has 'signatures'
+    !('signatures' in transaction) &&
+    !('recentBlockhash' in transaction)
   );
 }
 
@@ -207,18 +220,57 @@ function isAddress(wallet: KitWallet): wallet is string {
  * @returns The signed transaction
  */
 export async function signTransaction<T extends DualTransaction>(
-  transaction: T, 
+  transaction: T,
   wallet: DualWallet,
+  options?: DualArchitectureOptions
+): Promise<T>;
+
+/**
+ * Signs a transaction using the specified signer (overload for explicit signer support)
+ * @param transaction The transaction to sign
+ * @param signer The signer to use (Keypair, MessagePartialSigner, or KeyPairSigner)
+ * @param options Optional configuration for dual architecture behavior
+ * @returns The signed transaction
+ */
+export async function signTransaction<T extends DualTransaction>(
+  transaction: T,
+  signer: Keypair | MessagePartialSigner | KeyPairSigner,
+  options?: DualArchitectureOptions
+): Promise<T>;
+
+/**
+ * Implementation for signTransaction with improved signer compatibility
+ */
+export async function signTransaction<T extends DualTransaction>(
+  transaction: T,
+  walletOrSigner: DualWallet | Keypair | MessagePartialSigner | KeyPairSigner,
   options: DualArchitectureOptions = {}
 ): Promise<T> {
+  // Handle MessagePartialSigner or KeyPairSigner directly (kit signers)
+  if (isMessagePartialSigner(walletOrSigner)) {
+    if (isTransactionMessage(transaction)) {
+      // Kit signer with kit transaction
+      return await signTransactionWithKitSigner(transaction as TransactionMessage, walletOrSigner) as T;
+    } else {
+      // Kit signer with legacy transaction - use Web Crypto API signing
+      if (options.fallbackToLegacy !== false) {
+        return await signTransactionLegacyWithKitSigner(
+          transaction as Transaction | VersionedTransaction,
+          walletOrSigner
+        ) as T;
+      } else {
+        throw new Error('Kit signer cannot sign legacy transaction without fallback enabled');
+      }
+    }
+  }
+
   // Handle kit architecture
-  if (isKitWallet(wallet)) {
+  if (isKitWallet(walletOrSigner)) {
     if (isTransactionMessage(transaction)) {
       // Both wallet and transaction are kit architecture
-      if (isCryptoKeyPair(wallet)) {
-        // The transaction message needs to be properly formatted for signing
-        // For now, we'll throw an error indicating this needs proper implementation
-        throw new Error('Kit transaction signing requires proper transaction message formatting - not yet implemented');
+      if (isCryptoKeyPair(walletOrSigner)) {
+        // Both wallet and transaction are kit architecture - use kit signing
+        return await signTransactionKit(transaction as TransactionMessage, walletOrSigner) as T;
       } else {
         // Address without private key - cannot sign
         throw new Error('Cannot sign transaction with Address - private key required');
@@ -227,8 +279,8 @@ export async function signTransaction<T extends DualTransaction>(
       // Kit wallet but legacy transaction - convert if possible
       if (options.fallbackToLegacy !== false) {
         // Convert kit wallet to legacy for signing
-        if (isCryptoKeyPair(wallet)) {
-          const legacyKeypair = await convertCryptoKeyPairToKeypair(wallet);
+        if (isCryptoKeyPair(walletOrSigner)) {
+          const legacyKeypair = await convertCryptoKeyPairToKeypair(walletOrSigner);
           return await signTransactionLegacy(transaction as Transaction | VersionedTransaction, legacyKeypair) as T;
         } else {
           throw new Error('Cannot convert Address to legacy wallet for signing');
@@ -240,13 +292,13 @@ export async function signTransaction<T extends DualTransaction>(
   }
 
   // Handle legacy architecture
-  if (isLegacyWallet(wallet)) {
+  if (isLegacyWallet(walletOrSigner)) {
     if (isTransactionMessage(transaction)) {
       // Legacy wallet but kit transaction - convert if possible
       if (options.preferKitArchitecture === false || options.fallbackToLegacy !== false) {
         // Convert transaction to legacy format
         const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
-        const signedLegacy = await signTransactionLegacy(legacyTransaction, wallet);
+        const signedLegacy = await signTransactionLegacy(legacyTransaction, walletOrSigner);
         // Convert back to TransactionMessage if needed
         // This would need proper implementation using conversion utilities
         throw new Error('Legacy to kit transaction conversion not yet implemented');
@@ -255,7 +307,7 @@ export async function signTransaction<T extends DualTransaction>(
       }
     } else {
       // Both wallet and transaction are legacy architecture
-      return await signTransactionLegacy(transaction as Transaction | VersionedTransaction, wallet) as T;
+      return await signTransactionLegacy(transaction as Transaction | VersionedTransaction, walletOrSigner) as T;
     }
   }
 
@@ -277,9 +329,8 @@ async function signTransactionLegacy<T extends Transaction | VersionedTransactio
       (transaction as Transaction).sign(wallet);
       return transaction;
     } else {
-      // For VersionedTransaction, we need different signing logic
-      // Currently not implemented in standard web3.js for Keypair
-      throw new Error('Signing versioned transactions with a Keypair directly is not supported');
+      // For VersionedTransaction, we need manual signing logic
+      return await signVersionedTransactionWithKeypair(transaction as VersionedTransaction, wallet) as T;
     }
   } else if ("features" in wallet) {
     // It's a Standard Wallet
@@ -314,12 +365,32 @@ async function signTransactionLegacy<T extends Transaction | VersionedTransactio
 }
 
 /**
- * Convert CryptoKeyPair to legacy Keypair (placeholder - needs proper implementation)
+ * Convert CryptoKeyPair to legacy Keypair
+ * This extracts the private key bytes and creates a @solana/web3.js Keypair
  */
 async function convertCryptoKeyPairToKeypair(cryptoKeyPair: CryptoKeyPair): Promise<Keypair> {
-  // This would need proper implementation using @solana/compat
-  // For now, throw an error to indicate this needs implementation
-  throw new Error('CryptoKeyPair to Keypair conversion not yet implemented');
+  try {
+    // Extract the private key bytes using our existing extraction method
+    const privateKeyBytes = await attemptPrivateKeyExtraction(cryptoKeyPair);
+
+    if (!privateKeyBytes) {
+      throw new Error('Cannot extract private key from CryptoKeyPair - key is not extractable');
+    }
+
+    // Create a Keypair from the private key bytes
+    // For Ed25519, we need to create a 64-byte seed (32 bytes private key + 32 bytes public key)
+    const publicKeyBytes = new Uint8Array(await crypto.subtle.exportKey("raw", cryptoKeyPair.publicKey));
+
+    // Create the 64-byte secret key format expected by Keypair.fromSecretKey
+    const secretKeyBytes = new Uint8Array(64);
+    secretKeyBytes.set(privateKeyBytes, 0);
+    secretKeyBytes.set(publicKeyBytes, 32);
+
+    // Create and return the Keypair
+    return Keypair.fromSecretKey(secretKeyBytes);
+  } catch (error) {
+    throw new Error(`Failed to convert CryptoKeyPair to Keypair: ${error instanceof Error ? error.message : error}`);
+  }
 }
 
 /**
@@ -603,12 +674,51 @@ function wrapEd25519PrivateKeyInPKCS8(privateKeyBytes: Uint8Array): Uint8Array {
 }
 
 /**
- * Convert TransactionMessage to legacy Transaction (placeholder - needs proper implementation)
+ * Convert TransactionMessage to legacy Transaction
+ * This converts a kit TransactionMessage to a @solana/web3.js Transaction
  */
 async function convertTransactionMessageToLegacy(transactionMessage: TransactionMessage): Promise<Transaction> {
-  // This would need proper implementation using @solana/compat
-  // For now, throw an error to indicate this needs implementation
-  throw new Error('TransactionMessage to Transaction conversion not yet implemented');
+  try {
+    // Create a new legacy Transaction
+    const transaction = new Transaction();
+
+    // Extract transaction properties - skip compilation for legacy conversion
+    // const compiledTransaction = compileTransaction(transactionMessage);
+
+    // Convert kit instructions to legacy format
+    if ('instructions' in transactionMessage && Array.isArray(transactionMessage.instructions)) {
+      for (const instruction of transactionMessage.instructions) {
+        // Convert kit instruction to legacy TransactionInstruction
+        const legacyInstruction = {
+          programId: new PublicKey(instruction.programAddress),
+          keys: instruction.accounts?.map((account: any) => ({
+            pubkey: new PublicKey(account.address),
+            isSigner: account.role?.includes('signer') || false,
+            isWritable: account.role?.includes('writable') || false,
+          })) || [],
+          data: instruction.data || Buffer.alloc(0),
+        };
+
+        transaction.add(legacyInstruction);
+      }
+    }
+
+    // Set transaction properties if available
+    if ('feePayer' in transactionMessage && transactionMessage.feePayer) {
+      transaction.feePayer = new PublicKey(transactionMessage.feePayer);
+    }
+
+    if ('lifetimeConstraint' in transactionMessage && transactionMessage.lifetimeConstraint) {
+      const lifetime = transactionMessage.lifetimeConstraint as any;
+      if (lifetime.blockhash) {
+        transaction.recentBlockhash = lifetime.blockhash;
+      }
+    }
+
+    return transaction;
+  } catch (error) {
+    throw new Error(`Failed to convert TransactionMessage to Transaction: ${error instanceof Error ? error.message : error}`);
+  }
 }
 
 /**
@@ -704,8 +814,8 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
     const signedTransactions = transactions.map(transaction => {
       // Check if transaction is a Transaction or VersionedTransaction
       if (isVersionedTransaction(transaction)) {
-        // For VersionedTransaction, we would need custom signing logic
-        throw new Error('Signing versioned transactions with a Keypair directly is not supported');
+        // For VersionedTransaction, use our custom signing logic
+        return signVersionedTransactionWithKeypair(transaction as VersionedTransaction, wallet) as any;
       }
       
       // Create a copy to avoid modifying the original
@@ -762,6 +872,21 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
 
 /**
  * Sends a transaction to the Solana network (supports both legacy and kit architectures)
+ * @param connectionOrTransaction The Solana connection to use, or transaction when used with default connection
+ * @param transactionOrWallet The transaction to send, or wallet when connection is omitted
+ * @param walletOrOptions The wallet to sign with, or options when connection is omitted
+ * @param options Optional configuration for dual architecture behavior
+ * @returns A promise that resolves to the transaction signature
+ */
+export async function sendTransaction(
+  connectionOrTransaction: Connection | DualTransaction,
+  transactionOrWallet: DualTransaction | DualWallet,
+  walletOrOptions?: DualWallet | DualArchitectureOptions,
+  options?: DualArchitectureOptions
+): Promise<TransactionSignature>;
+
+/**
+ * Sends a transaction to the Solana network (supports both legacy and kit architectures)
  * @param connection The Solana connection to use
  * @param transaction The transaction to send
  * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
@@ -769,25 +894,56 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
  * @returns A promise that resolves to the transaction signature
  */
 export async function sendTransaction(
-  connection: Connection, 
-  transaction: DualTransaction, 
+  connection: Connection,
+  transaction: DualTransaction,
   wallet: DualWallet,
+  options?: DualArchitectureOptions
+): Promise<TransactionSignature>;
+
+/**
+ * Implementation for sendTransaction with flexible parameter handling
+ */
+export async function sendTransaction(
+  connectionOrTransaction: Connection | DualTransaction,
+  transactionOrWallet?: DualTransaction | DualWallet,
+  walletOrOptions?: DualWallet | DualArchitectureOptions,
   options: DualArchitectureOptions = {}
 ): Promise<TransactionSignature> {
+  let connection: Connection;
+  let transaction: DualTransaction;
+  let wallet: DualWallet;
+  let finalOptions: DualArchitectureOptions;
+
+  // Parse parameters based on overload usage
+  if (connectionOrTransaction instanceof Connection) {
+    // Standard usage: connection, transaction, wallet, options
+    connection = connectionOrTransaction;
+    transaction = transactionOrWallet as DualTransaction;
+    wallet = walletOrOptions as DualWallet;
+    finalOptions = options;
+  } else {
+    // Alternative usage: transaction, wallet, options (creates default connection)
+    transaction = connectionOrTransaction;
+    wallet = transactionOrWallet as DualWallet;
+    finalOptions = (walletOrOptions as DualArchitectureOptions) || {};
+
+    // Create a default connection to devnet
+    connection = createConnection('https://api.devnet.solana.com');
+  }
   try {
     // Handle kit architecture
     if (isKitWallet(wallet)) {
       if (isTransactionMessage(transaction)) {
         // Both wallet and transaction are kit architecture
         if (isCryptoKeyPair(wallet)) {
-          // Kit transaction sending requires proper implementation
-          throw new Error('Kit transaction sending not yet implemented');
+          // Both wallet and transaction are kit architecture - sign and send
+          return await sendTransactionKit(connection, transaction as TransactionMessage, wallet);
         } else {
           throw new Error('Cannot send transaction with Address - private key required');
         }
       } else {
         // Kit wallet but legacy transaction
-        if (options.fallbackToLegacy !== false) {
+        if (finalOptions.fallbackToLegacy !== false) {
           if (isCryptoKeyPair(wallet)) {
             const legacyKeypair = await convertCryptoKeyPairToKeypair(wallet);
             return await sendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, legacyKeypair);
@@ -804,7 +960,7 @@ export async function sendTransaction(
     if (isLegacyWallet(wallet)) {
       if (isTransactionMessage(transaction)) {
         // Legacy wallet but kit transaction
-        if (options.preferKitArchitecture === false || options.fallbackToLegacy !== false) {
+        if (finalOptions.preferKitArchitecture === false || finalOptions.fallbackToLegacy !== false) {
           const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
           return await sendTransactionLegacy(connection, legacyTransaction, wallet);
         } else {
@@ -843,7 +999,9 @@ async function sendTransactionLegacy(
     if (!isVersionedTransaction(transaction)) {
       return await sendAndConfirmTransaction(connection, transaction as Transaction, [wallet]);
     } else {
-      throw new Error('Sending versioned transactions with a Keypair is not directly supported');
+      // For VersionedTransaction, sign and send manually
+      const signedTransaction = await signVersionedTransactionWithKeypair(transaction as VersionedTransaction, wallet);
+      return await connection.sendTransaction(signedTransaction);
     }
   } else if ("features" in wallet) {
       // It's a Standard Wallet
@@ -962,6 +1120,216 @@ async function signMessageKit(
     return signature;
   } catch (error) {
     throw new Error(`Kit message signing failed: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+/**
+ * Kit implementation for transaction signing using @solana/kit with direct signer
+ * This follows the exact pattern from @solana/signers/sign-transaction.ts
+ *
+ * Key Points:
+ * - Input: TransactionMessage (unsigned transaction message)
+ * - Output: Transaction (compiled transaction with signatures)
+ * - Process: compile → sign messageBytes → attach signatures → return Transaction
+ *
+ * @param transactionMessage The TransactionMessage to sign
+ * @param signer The MessagePartialSigner to sign with (must be KeyPairSigner or compatible)
+ * @returns The signed Transaction (NOT TransactionMessage)
+ */
+async function signTransactionWithKitSigner(
+  transactionMessage: TransactionMessage,
+  signer: MessagePartialSigner
+): Promise<any> {
+  try {
+    // Step 1: Compile the TransactionMessage to Transaction
+    // This converts the high-level TransactionMessage to a low-level Transaction
+    // with messageBytes and an empty signatures map
+    const transaction = compileTransaction(transactionMessage as any);
+
+    // Type assertion: transaction has { messageBytes, signatures, lifetimeConstraint? }
+    const messageBytes = (transaction as any).messageBytes;
+
+    if (!messageBytes) {
+      throw new Error('Failed to get message bytes from compiled transaction');
+    }
+
+    // Step 2: Sign the messageBytes using the signer's signMessages method
+    // KeyPairSigner.signMessages expects an array of SignableMessage objects
+    // Each SignableMessage has { content: Uint8Array, signatures: SignatureDictionary }
+    const signableMessage = createSignableMessage(messageBytes);
+
+    // Sign the message - returns array of SignatureDictionary
+    const signatureDictionaries = await signer.signMessages([signableMessage]);
+
+    if (!signatureDictionaries || signatureDictionaries.length === 0) {
+      throw new Error('No signatures returned from signer');
+    }
+
+    // Step 3: Extract the signature from the dictionary
+    const signatureDict = signatureDictionaries[0];
+    const signature = signatureDict[signer.address];
+
+    if (!signature) {
+      throw new Error(`No signature found for address ${signer.address}`);
+    }
+
+    // Step 4: Merge signatures into the transaction
+    // The compiled transaction has a signatures map with null values
+    // We merge our new signature into it
+    const signedTransaction = {
+      ...transaction,
+      signatures: {
+        ...((transaction as any).signatures || {}),
+        [signer.address]: signature
+      }
+    };
+
+    // Return the signed Transaction object
+    // Note: This is a Transaction, not a TransactionMessage
+    return signedTransaction;
+  } catch (error) {
+    throw new Error(`Kit transaction signing with signer failed: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+/**
+ * Signs a legacy transaction (Transaction or VersionedTransaction) using a Kit signer
+ * This enables Kit signers to sign legacy transactions without extracting private keys
+ * @param transaction The legacy transaction to sign
+ * @param signer The MessagePartialSigner (KeyPairSigner) to sign with
+ * @returns The signed transaction
+ */
+async function signTransactionLegacyWithKitSigner<T extends Transaction | VersionedTransaction>(
+  transaction: T,
+  signer: MessagePartialSigner
+): Promise<T> {
+  try {
+    // Extract CryptoKeyPair from the signer if available
+    const cryptoKeyPair = (signer as any).keyPair as CryptoKeyPair | undefined;
+
+    if (!cryptoKeyPair || !cryptoKeyPair.privateKey) {
+      throw new Error('Signer does not contain a CryptoKeyPair with private key');
+    }
+
+    // Serialize the transaction message to bytes
+    const messageBytesRaw = isVersionedTransaction(transaction)
+      ? (transaction as VersionedTransaction).message.serialize()
+      : (transaction as Transaction).serializeMessage();
+
+    // Convert to Uint8Array if it's a Buffer (for Web Crypto API compatibility)
+    const messageBytes = messageBytesRaw instanceof Uint8Array
+      ? messageBytesRaw
+      : new Uint8Array(messageBytesRaw);
+
+    // Sign using Web Crypto API
+    const signatureArrayBuffer = await crypto.subtle.sign(
+      'Ed25519',
+      cryptoKeyPair.privateKey,
+      messageBytes as BufferSource
+    );
+    const signatureBytes = new Uint8Array(signatureArrayBuffer);
+
+    // Get the public key from the signer
+    const publicKeyBuffer = await crypto.subtle.exportKey('raw', cryptoKeyPair.publicKey);
+    const publicKeyBytes = new Uint8Array(publicKeyBuffer);
+    const publicKey = new PublicKey(publicKeyBytes);
+
+    // Convert signature to Buffer for @solana/web3.js compatibility
+    const signature = Buffer.from(signatureBytes);
+
+    // Add signature to the transaction
+    if (isVersionedTransaction(transaction)) {
+      const signedTransaction = new VersionedTransaction((transaction as VersionedTransaction).message);
+      signedTransaction.addSignature(publicKey, signature);
+      return signedTransaction as T;
+    } else {
+      // For legacy Transaction, add the signature
+      (transaction as Transaction).addSignature(publicKey, signature);
+      return transaction;
+    }
+  } catch (error) {
+    throw new Error(`Failed to sign legacy transaction with Kit signer: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+/**
+ * Kit implementation for transaction signing using @solana/kit
+ * @param transactionMessage The TransactionMessage to sign
+ * @param cryptoKeyPair The CryptoKeyPair to sign with
+ * @returns The signed TransactionMessage
+ */
+async function signTransactionKit(
+  transactionMessage: TransactionMessage,
+  cryptoKeyPair: CryptoKeyPair
+): Promise<TransactionMessage> {
+  try {
+    // Convert CryptoKeyPair to MessagePartialSigner for kit signing
+    const messageSigner = await convertCryptoKeyPairToMessageSigner(cryptoKeyPair);
+
+    // Use the direct signer method
+    return await signTransactionWithKitSigner(transactionMessage, messageSigner);
+  } catch (error) {
+    throw new Error(`Kit transaction signing failed: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+/**
+ * Kit implementation for transaction sending using @solana/kit
+ * @param connection The Solana connection
+ * @param transactionMessage The TransactionMessage to send
+ * @param cryptoKeyPair The CryptoKeyPair to sign with
+ * @returns The transaction signature
+ */
+async function sendTransactionKit(
+  connection: Connection,
+  transactionMessage: TransactionMessage,
+  cryptoKeyPair: CryptoKeyPair
+): Promise<TransactionSignature> {
+  try {
+    // First sign the transaction using kit
+    const signedTransaction = await signTransactionKit(transactionMessage, cryptoKeyPair);
+
+    // Convert the signed kit transaction to a format the connection can send
+    const compiledTransaction = compileTransaction(signedTransaction as any);
+
+    // Use getTransactionEncoder to encode the transaction
+    const transactionEncoder = getTransactionEncoder();
+    const serializedTransaction = transactionEncoder.encode(compiledTransaction);
+
+    // Send the raw transaction to the network
+    const signature = await connection.sendRawTransaction(new Uint8Array(serializedTransaction), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+    });
+
+    return signature;
+  } catch (error) {
+    throw new Error(`Kit transaction sending failed: ${error instanceof Error ? error.message : error}`);
+  }
+}
+
+/**
+ * Sign a VersionedTransaction with a Keypair
+ * This implements manual signing for VersionedTransaction since @solana/web3.js doesn't support it directly
+ */
+async function signVersionedTransactionWithKeypair(
+  transaction: VersionedTransaction,
+  keypair: Keypair
+): Promise<VersionedTransaction> {
+  try {
+    // Create a message from the transaction for signing
+    const messageBytes = transaction.message.serialize();
+
+    // Sign the message bytes with the keypair
+    const signature = nacl.sign.detached(messageBytes, keypair.secretKey);
+
+    // Create a new VersionedTransaction with the signature
+    const signedTransaction = new VersionedTransaction(transaction.message);
+    signedTransaction.addSignature(keypair.publicKey, signature);
+
+    return signedTransaction;
+  } catch (error) {
+    throw new Error(`Failed to sign VersionedTransaction with Keypair: ${error instanceof Error ? error.message : error}`);
   }
 }
 
@@ -1324,9 +1692,277 @@ export async function signAllTransactionsLegacyCompatible<T extends Transaction 
  * Legacy-compatible send transaction function
  */
 export async function sendTransactionLegacyCompatible(
-  connection: Connection, 
-  transaction: Transaction | VersionedTransaction, 
+  connection: Connection,
+  transaction: Transaction | VersionedTransaction,
   wallet: Keypair | Adapter
 ): Promise<TransactionSignature> {
   return await sendTransactionLegacy(connection, transaction, wallet);
+}
+
+/**
+ * Create RPC connection helper function
+ * This provides a more convenient way to create connections for transaction operations
+ * @param rpcUrl The RPC URL to connect to
+ * @param options Optional connection configuration
+ * @returns A Connection instance configured for transaction operations
+ */
+export function createRPCConnection(rpcUrl: string, options?: ConnectionConfig): Connection {
+  return createConnection(rpcUrl, {
+    commitment: 'confirmed',
+    confirmTransactionInitialTimeout: 60000,
+    ...options
+  });
+}
+
+/**
+ * Send transaction with automatic RPC connection creation
+ * @param rpcUrl The RPC URL to use for the connection
+ * @param transaction The transaction to send
+ * @param wallet The wallet to sign with
+ * @param options Optional dual architecture options
+ * @returns Promise resolving to transaction signature
+ */
+export async function sendTransactionWithRPC(
+  rpcUrl: string,
+  transaction: DualTransaction,
+  wallet: DualWallet,
+  options: DualArchitectureOptions = {}
+): Promise<TransactionSignature> {
+  const connection = createRPCConnection(rpcUrl);
+  return await sendTransaction(connection, transaction, wallet, options);
+}
+
+/**
+ * Sign transaction with explicit signer support (improved compatibility)
+ * @param transaction The transaction to sign
+ * @param signer The signer to use (supports all signer types)
+ * @param options Optional dual architecture options
+ * @returns Promise resolving to signed transaction
+ */
+export async function signTransactionWithSigner<T extends DualTransaction>(
+  transaction: T,
+  signer: Keypair | MessagePartialSigner | KeyPairSigner | CryptoKeyPair,
+  options: DualArchitectureOptions = {}
+): Promise<T> {
+  return await signTransaction(transaction, signer as any, options);
+}
+
+/**
+ * Signs and sends a transaction in a single operation (supports both legacy and kit architectures)
+ * @param connectionOrTransaction The Solana connection to use, or transaction when used with default connection
+ * @param transactionOrWallet The transaction to sign and send, or wallet when connection is omitted
+ * @param walletOrOptions The wallet to sign with, or options when connection is omitted
+ * @param options Optional configuration for dual architecture behavior
+ * @returns A promise that resolves to the transaction signature
+ */
+export async function signAndSendTransaction(
+  connectionOrTransaction: Connection | DualTransaction,
+  transactionOrWallet: DualTransaction | DualWallet,
+  walletOrOptions?: DualWallet | DualArchitectureOptions,
+  options?: DualArchitectureOptions
+): Promise<TransactionSignature>;
+
+/**
+ * Signs and sends a transaction in a single operation (supports both legacy and kit architectures)
+ * @param connection The Solana connection to use
+ * @param transaction The transaction to sign and send
+ * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
+ * @param options Optional configuration for dual architecture behavior
+ * @returns A promise that resolves to the transaction signature
+ */
+export async function signAndSendTransaction(
+  connection: Connection,
+  transaction: DualTransaction,
+  wallet: DualWallet,
+  options?: DualArchitectureOptions
+): Promise<TransactionSignature>;
+
+/**
+ * Implementation for signAndSendTransaction with flexible parameter handling
+ */
+export async function signAndSendTransaction(
+  connectionOrTransaction: Connection | DualTransaction,
+  transactionOrWallet?: DualTransaction | DualWallet,
+  walletOrOptions?: DualWallet | DualArchitectureOptions,
+  options: DualArchitectureOptions = {}
+): Promise<TransactionSignature> {
+  let connection: Connection;
+  let transaction: DualTransaction;
+  let wallet: DualWallet;
+  let finalOptions: DualArchitectureOptions;
+
+  // Parse parameters based on overload usage
+  if (connectionOrTransaction instanceof Connection) {
+    // Standard usage: connection, transaction, wallet, options
+    connection = connectionOrTransaction;
+    transaction = transactionOrWallet as DualTransaction;
+    wallet = walletOrOptions as DualWallet;
+    finalOptions = options;
+  } else {
+    // Alternative usage: transaction, wallet, options (creates default connection)
+    transaction = connectionOrTransaction;
+    wallet = transactionOrWallet as DualWallet;
+    finalOptions = (walletOrOptions as DualArchitectureOptions) || {};
+
+    // Create a default connection to devnet
+    connection = createConnection('https://api.devnet.solana.com');
+  }
+
+  try {
+    // Handle kit architecture
+    if (isKitWallet(wallet)) {
+      if (isTransactionMessage(transaction)) {
+        // Both wallet and transaction are kit architecture
+        if (isCryptoKeyPair(wallet)) {
+          // Both wallet and transaction are kit architecture - sign and send directly
+          return await signAndSendTransactionKit(connection, transaction as TransactionMessage, wallet);
+        } else {
+          throw new Error('Cannot sign and send transaction with Address - private key required');
+        }
+      } else {
+        // Kit wallet but legacy transaction
+        if (finalOptions.fallbackToLegacy !== false) {
+          if (isCryptoKeyPair(wallet)) {
+            const legacyKeypair = await convertCryptoKeyPairToKeypair(wallet);
+            return await signAndSendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, legacyKeypair);
+          } else {
+            throw new Error('Cannot convert Address to legacy wallet for signing and sending');
+          }
+        } else {
+          throw new Error('Kit wallet cannot sign and send legacy transaction without fallback enabled');
+        }
+      }
+    }
+
+    // Handle legacy architecture
+    if (isLegacyWallet(wallet)) {
+      if (isTransactionMessage(transaction)) {
+        // Legacy wallet but kit transaction
+        if (finalOptions.preferKitArchitecture === false || finalOptions.fallbackToLegacy !== false) {
+          const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
+          return await signAndSendTransactionLegacy(connection, legacyTransaction, wallet);
+        } else {
+          throw new Error('Legacy wallet cannot sign and send kit transaction without conversion enabled');
+        }
+      } else {
+        // Both wallet and transaction are legacy architecture
+        return await signAndSendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, wallet);
+      }
+    }
+
+    throw new Error('Invalid wallet or transaction type');
+  } catch (error) {
+    console.error('Failed to sign and send transaction:', error);
+    throw error;
+  }
+}
+
+/**
+ * Legacy implementation for signing and sending transactions
+ */
+async function signAndSendTransactionLegacy(
+  connection: Connection,
+  transaction: Transaction | VersionedTransaction,
+  wallet: LegacyWallet
+): Promise<TransactionSignature> {
+  // Set recent blockhash if not already set (for regular transactions)
+  if (!isVersionedTransaction(transaction) && !(transaction as Transaction).recentBlockhash) {
+    const { blockhash } = await connection.getLatestBlockhash();
+    (transaction as Transaction).recentBlockhash = blockhash;
+  }
+
+  // Handle different wallet types
+  if ('secretKey' in wallet) {
+    // It's a Keypair - sign and send in one operation
+    if (!isVersionedTransaction(transaction)) {
+      return await sendAndConfirmTransaction(connection, transaction as Transaction, [wallet]);
+    } else {
+      // For VersionedTransaction, sign and send manually
+      const signedTransaction = await signVersionedTransactionWithKeypair(transaction as VersionedTransaction, wallet);
+      return await connection.sendTransaction(signedTransaction);
+    }
+  } else if ("features" in wallet) {
+    // It's a Standard Wallet - use signAndSendTransaction feature
+    const feature = wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
+    if (!feature || typeof feature.signAndSendTransaction !== 'function') {
+      throw new Error('Wallet has invalid signAndSendTransaction feature');
+    }
+
+    const result = await feature.signAndSendTransaction({
+      account: wallet.accounts[0] as StandardWalletAccount,
+      transaction: transaction as any,
+      chain: 'solana:mainnet'
+    });
+
+    return result[0].signature.toString();
+  } else {
+    // It's an Adapter - sign then send separately
+    if (!wallet.publicKey) {
+      throw new Error('Wallet not connected');
+    }
+
+    if (!wallet.sendTransaction) {
+      throw new Error('Wallet does not support sending transactions');
+    }
+
+    // Set fee payer if not already set (for regular transactions)
+    if (!isVersionedTransaction(transaction) && !(transaction as Transaction).feePayer) {
+      (transaction as Transaction).feePayer = wallet.publicKey;
+    }
+
+    // Check for versioned transaction support
+    if (
+      isVersionedTransaction(transaction) &&
+      wallet.supportedTransactionVersions &&
+      !wallet.supportedTransactionVersions.has((transaction as any).version)
+    ) {
+      throw new Error(`Wallet doesn't support transaction version ${(transaction as any).version}`);
+    }
+
+    // Check if adapter supports signAndSendTransaction
+    if ('signAndSendTransaction' in wallet && typeof wallet.signAndSendTransaction === 'function') {
+      return await wallet.signAndSendTransaction(transaction, connection);
+    } else if ('signTransaction' in wallet && typeof wallet.signTransaction === 'function') {
+      // Fall back to sign then send
+      const signedTransaction = await wallet.signTransaction(transaction);
+      return await wallet.sendTransaction(signedTransaction, connection);
+    } else {
+      throw new Error('Wallet adapter does not support transaction signing or sending');
+    }
+  }
+}
+
+/**
+ * Kit implementation for signing and sending transactions using @solana/kit
+ * @param connection The Solana connection
+ * @param transactionMessage The TransactionMessage to sign and send
+ * @param cryptoKeyPair The CryptoKeyPair to sign with
+ * @returns The transaction signature
+ */
+async function signAndSendTransactionKit(
+  connection: Connection,
+  transactionMessage: TransactionMessage,
+  cryptoKeyPair: CryptoKeyPair
+): Promise<TransactionSignature> {
+  try {
+    // First sign the transaction using kit
+    const signedTransaction = await signTransactionKit(transactionMessage, cryptoKeyPair);
+
+    // Convert the signed kit transaction to a format the connection can send
+    const compiledTransaction = compileTransaction(signedTransaction as any);
+
+    // Use getTransactionEncoder to encode the transaction
+    const transactionEncoder = getTransactionEncoder();
+    const serializedTransaction = transactionEncoder.encode(compiledTransaction);
+
+    // Send the raw transaction to the network
+    const signature = await connection.sendRawTransaction(new Uint8Array(serializedTransaction), {
+      skipPreflight: false,
+      preflightCommitment: 'confirmed',
+    });
+
+    return signature;
+  } catch (error) {
+    throw new Error(`Kit sign and send transaction failed: ${error instanceof Error ? error.message : error}`);
+  }
 }
