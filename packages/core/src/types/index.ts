@@ -163,6 +163,13 @@ export {
   export interface DualArchitectureOptions {
     preferKitArchitecture?: boolean;
     fallbackToLegacy?: boolean;
+    /**
+     * Specify which account to use for signing operations (for multi-account wallets)
+     * - PublicKey: web3.js style public key
+     * - string: Kit/Address style or base58 encoded public key
+     * - undefined: defaults to first account (index 0)
+     */
+    account?: PublicKey | string;
   }
 
   // Interface for wallet signing capabilities
@@ -172,12 +179,6 @@ export {
     canSignMessage: boolean;
     supportedTransactionVersions?: Set<number>;
     supportsKitArchitecture?: boolean;
-  }
-
-  // Options for dual architecture operations
-  export interface DualArchitectureOptions {
-    preferKitArchitecture?: boolean;
-    fallbackToLegacy?: boolean;
   }
 
 /**

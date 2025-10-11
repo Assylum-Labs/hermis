@@ -98,14 +98,14 @@ function App() {
   const { currentNetwork, changeNetwork, isChangingNetwork } = useNetwork();
   
   // React hooks from the headless SDK
-  const { 
-    wallet, 
-    wallets, 
-    publicKey, 
-    connecting, 
-    connected, 
-    select, 
-    connect, 
+  const {
+    wallet,
+    wallets,
+    publicKey,
+    connecting,
+    connected,
+    select,
+    connect,
     disconnect,
     signIn,
     signMessage
@@ -113,7 +113,6 @@ function App() {
   const { connection } = useConnection();
   const { installed, loadable, notDetected } = useWalletAdapters();
   const balance = useSolanaBalance(publicKey);
-
   // Local component state
   const [clickedWalletName, setClickedWalletName] = useState<string | null>(null);
   const [eventLogs, setEventLogs] = useState<LogEntry[]>([]);
@@ -175,11 +174,14 @@ function App() {
   useEffect(() => {
     if(!wallet?.adapter) return
     setClickedWalletName(wallet?.adapter.name)
-  
+
     return () => {}
   }, [connected, wallet])
-  
-  
+
+  // Note: Account is automatically provided by the wallet when connected
+  // Account switching happens in wallet extension (e.g., Phantom UI)
+
+
 
   // Helper function to get readable wallet state
   const getReadyStateLabel = (readyState: WalletReadyState) => {
@@ -389,10 +391,13 @@ function App() {
           
           <dt>Connected:</dt>
           <dd>{adapter.connected ? 'Yes' : 'No'}</dd>
-          
-          <dt>Public Key:</dt>
-          <dd>{adapter.publicKey ? adapter.publicKey.toBase58() : 'Not available'}</dd>
-          
+
+          <dt>Active Account:</dt>
+          <dd className="active-account">{adapter.publicKey ? adapter.publicKey.toBase58() : 'Not available'}</dd>
+
+          <dt>Account Status:</dt>
+          <dd>{adapter.publicKey ? 'Connected (switch accounts in wallet extension)' : 'Not connected'}</dd>
+
           <dt>URL:</dt>
           <dd><a href={adapter.url} target="_blank">{adapter.url || 'Not available'}</a></dd>
           
@@ -424,6 +429,9 @@ function App() {
   const handleTransactionSent = (signature: string) => {
     addLogEntry(`Transaction sent with signature: ${signature}`, 'success');
   };
+
+  // Note: Account changes are now detected automatically via wallet events
+  // No manual handler needed - see StandardWalletAdapter event listener
 
   // Handler for dual architecture method results
   // const handleMethodResult = (method: string, _result: string, architecture: string) => {
