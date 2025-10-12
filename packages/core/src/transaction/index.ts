@@ -130,7 +130,7 @@ import {
   SolanaSignTransactionFeature,
   SolanaSignTransactionMethod,
   StandardWalletAccount
-} from '@hermis/solana-headless-adapter-base';
+} from '../types/wallet-standard-types.js';
 
 // Note: Compatibility functions would be imported from @solana/compat when available
 // For now, we'll implement placeholder conversion functions

@@ -9,7 +9,7 @@ import {
   WalletAdapter,
   WalletError,
   EventEmitter
-} from '@hermis/solana-headless-adapter-base';
+} from '@solana/wallet-adapter-base';
 
 import {
   Connection,

@@ -151,8 +151,11 @@ export {
   }
 
 
-  // Import TypedStandardWallet from adapter-base
-  import { TypedStandardWallet } from '@hermis/solana-headless-adapter-base';
+  // Import TypedStandardWallet from local wallet-standard-types
+  import { TypedStandardWallet } from './wallet-standard-types.js';
+
+  // Export all wallet-standard types
+  export * from './wallet-standard-types.js';
 
   // Types for dual architecture support
   export type LegacyWallet = Keypair | Adapter | TypedStandardWallet;

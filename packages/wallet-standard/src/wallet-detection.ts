@@ -4,7 +4,7 @@ import type {
   WalletEventsWindow,
   WindowAppReadyEvent,
 } from "@wallet-standard/base";
-import { Adapter } from "@hermis/solana-headless-adapter-base";
+import { Adapter } from "@solana/wallet-adapter-base";
 import { StandardWalletAdapter } from "./wallet-adapter.js";
 import {
   isWalletAdapterCompatibleStandardWallet,

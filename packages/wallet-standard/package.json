@@ -27,8 +27,8 @@
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2",
   "dependencies": {
-    "@hermis/solana-headless-adapter-base": "workspace:*",
     "@hermis/solana-headless-core": "workspace:*",
+    "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/web3.js": "^1.98.0",
     "@solana-mobile/wallet-adapter-mobile": "^2.0.0",
     "@wallet-standard/base": "^1.1.0"

@@ -1,4 +1,4 @@
-import { WalletAdapterNetwork, Adapter, WalletReadyState } from '@hermis/solana-headless-adapter-base';
+import { WalletAdapterNetwork, Adapter, WalletReadyState } from '@solana/wallet-adapter-base';
 import { Environment, EnvironmentConfig } from './types.js';
 import { SolanaMobileWalletAdapterWalletName } from './constants.js';
 

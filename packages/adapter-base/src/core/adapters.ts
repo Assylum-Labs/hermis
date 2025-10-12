@@ -1,4 +1,5 @@
-import { Adapter, WalletName, WalletReadyState, PublicKey } from '@hermis/solana-headless-core';
+import { Adapter, WalletName, WalletReadyState } from '../types/index.js';
+import { PublicKey } from '@solana/web3.js';
 import { WalletProvider } from '../types.js';
 import { SolanaMobileWalletAdapterWalletName } from '../utils/environment.js';
 import { getDetectedWalletAdapters, initializeWalletDetection } from '@hermis/wallet-standard-base';

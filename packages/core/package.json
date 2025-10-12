@@ -23,13 +23,13 @@
     "access": "public"
   },
   "dependencies": {
-    "@hermis/solana-headless-adapter-base": "workspace:*",
     "@noble/ed25519": "^2.2.3",
     "@noble/hashes": "^2.0.1",
     "@solana/kit": "^3.0.2",
     "@solana/spl-token": "^0.4.13",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/web3.js": "^1.98.0",
+    "@wallet-standard/base": "^1.1.0",
     "bs58": "^6.0.0",
     "buffer": "^6.0.3",
     "tweetnacl": "^1.0.3"

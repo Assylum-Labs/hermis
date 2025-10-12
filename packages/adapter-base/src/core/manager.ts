@@ -1,8 +1,10 @@
-import { Adapter, WalletName, WalletReadyState, PublicKey, EventEmitter, WalletAdapterEvents, TransactionSignature, signTransaction, Transaction, signAllTransactions, signMessage } from '@hermis/solana-headless-core';
+import { Adapter, WalletName, WalletReadyState, EventEmitter, WalletAdapterEvents } from '../types/index.js';
+import { PublicKey, Transaction, TransactionSignature } from '@solana/web3.js';
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
 import { WalletConnectionManager } from '../types.js';
 import { getDetectedWalletAdapters, initializeWalletDetection } from '@hermis/wallet-standard-base';
+import { signTransaction, signAllTransactions, signMessage } from '@hermis/solana-headless-core';
 
 /**
  * Create a simple wallet connection manager
