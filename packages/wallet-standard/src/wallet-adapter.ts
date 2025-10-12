@@ -21,6 +21,9 @@ import {
   TransactionVersion,
 } from '@solana/web3.js';
 
+import type { DualConnection, DualTransaction } from '@hermis/solana-headless-core';
+import { getLatestBlockhash, sendRawTransaction } from '@hermis/solana-headless-core';
+
 // Removed coreSignMessage import to avoid circular dependency
 // The centralized signMessage is for external use, not internal adapter implementation
 
@@ -54,20 +57,32 @@ import {
 
 import bs58 from 'bs58';
 
-import { signMessage as coreSignMessage } from '@hermis/solana-headless-core';
+import {
+  signMessage as coreSignMessage,
+  signTransaction as coreSignTransaction,
+  sendTransaction as coreSendTransaction,
+  signAndSendTransaction as coreSignAndSendTransaction
+} from '@hermis/solana-headless-core';
 
 type IStandardWalletAdapter =
   Pick<WalletAdapter, 'name' | 'url' | 'icon' | 'publicKey' | 'connecting' | 'on' | 'off' | 'emit'> &
   Pick<MessageSignerWalletAdapter, 'signMessage'> &
-  Pick<SignerWalletAdapter, 'signTransaction' | 'signAllTransactions'> &
+  Omit<Pick<SignerWalletAdapter, 'signTransaction' | 'signAllTransactions'>, 'signTransaction' | 'signAllTransactions'> &
   Pick<SignInMessageSignerWalletAdapter, 'signIn'> & {
 
     connected: boolean;
     connect(): Promise<void>;
     disconnect(): Promise<void>;
+    signTransaction<T extends DualTransaction>(transaction: T): Promise<T>;
+    signAllTransactions<T extends DualTransaction>(transactions: T[]): Promise<T[]>;
     sendTransaction(
-      transaction: Transaction | VersionedTransaction,
-      connection: Connection,
+      transaction: DualTransaction,
+      connection?: DualConnection,
+      options?: SendOptions
+    ): Promise<TransactionSignature>;
+    signAndSendTransaction(
+      transaction: DualTransaction,
+      connection: DualConnection,
       options?: SendOptions
     ): Promise<TransactionSignature>;
   };
@@ -380,8 +395,8 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   }
 
   async sendTransaction(
-    transaction: Transaction | VersionedTransaction,
-    connection?: Connection,
+    transaction: DualTransaction,
+    connection?: DualConnection,
     options: SendOptions = {}
   ): Promise<TransactionSignature> {
     if (!this.connected) {
@@ -393,9 +408,41 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
     }
 
     try {
-      // Path 1: If connection is provided, use traditional sign + send approach
+      // Path 1: If connection is provided, delegate to core for sign + send
       if (connection) {
-        return await this._sendTransactionWithConnection(transaction, connection, options);
+        // Delegate to core implementation which will:
+        // 1. Detect that this._wallet is a Standard Wallet
+        // 2. Get the account and set feePayer
+        // 3. Sign the transaction using the wallet's signTransaction feature
+        // 4. Send the signed transaction via connection helper (supports both connection types)
+        // Note: We pass the chain from current cluster for Standard Wallet operations
+        const dualOptions = {
+          chain: this._currentCluster || 'solana:mainnet'
+        };
+
+        // Set recent blockhash if not already set (for legacy Transaction)
+        if (transaction instanceof Transaction && !transaction.recentBlockhash) {
+          const { blockhash } = await getLatestBlockhash(connection, options.preflightCommitment);
+          transaction.recentBlockhash = blockhash;
+        }
+
+        // Sign the transaction using core (which handles Standard Wallet)
+        const signedTransaction = await coreSignTransaction(transaction, this._wallet, dualOptions);
+
+        // Send the signed transaction using helper (supports both connection types)
+        let rawTransaction: Uint8Array;
+        if (signedTransaction instanceof Transaction) {
+          rawTransaction = signedTransaction.serialize();
+        } else if (signedTransaction instanceof VersionedTransaction) {
+          rawTransaction = signedTransaction.serialize();
+        } else if (typeof (signedTransaction as any).serialize === 'function') {
+          // Kit TransactionMessage or other signable transaction
+          rawTransaction = (signedTransaction as any).serialize();
+        } else {
+          throw new Error('Signed transaction does not have a serialize method');
+        }
+
+        return await sendRawTransaction(connection, rawTransaction, options);
       }
 
       // Path 2: If no connection, use wallet's signAndSendTransaction feature
@@ -409,55 +456,10 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   }
 
   /**
-   * Send transaction using connection (sign then send)
-   */
-  private async _sendTransactionWithConnection(
-    transaction: Transaction | VersionedTransaction,
-    connection: Connection,
-    options: SendOptions
-  ): Promise<TransactionSignature> {
-    try {
-      // Validate that wallet supports signing
-      if (!(SolanaSignTransactionMethod in this._wallet.features)) {
-        throw new Error('Wallet does not support signing transactions');
-      }
-
-      // Get the account to use
-      const signingAccount = this._findAccount();
-      const accountPublicKey = new PublicKey(signingAccount.publicKey);
-
-      // Prepare the transaction
-      if (transaction instanceof Transaction) {
-        if (!transaction.feePayer) {
-          transaction.feePayer = accountPublicKey;
-        }
-
-        if (!transaction.recentBlockhash) {
-          const { blockhash } = await connection.getLatestBlockhash(options.preflightCommitment);
-          transaction.recentBlockhash = blockhash;
-        }
-      }
-
-      // Sign the transaction
-      const signedTransaction = await this.signTransaction(transaction);
-
-      // Serialize the signed transaction
-      const rawTransaction = signedTransaction instanceof Transaction
-        ? signedTransaction.serialize()
-        : signedTransaction.serialize();
-
-      // Send the transaction
-      return await connection.sendRawTransaction(rawTransaction, options);
-    } catch (error: any) {
-      throw new Error(`Failed to send transaction with connection: ${error.message || error}`);
-    }
-  }
-
-  /**
    * Send transaction using wallet's signAndSendTransaction feature
    */
   private async _sendTransactionWithWallet(
-    transaction: Transaction | VersionedTransaction,
+    transaction: DualTransaction,
     options: SendOptions
   ): Promise<TransactionSignature> {
     try {
@@ -486,9 +488,16 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
       // Serialize transaction for wallet
       let transactionBytes: Uint8Array;
       try {
-        transactionBytes = transaction instanceof Transaction
-          ? transaction.serialize({ verifySignatures: false })
-          : transaction.serialize();
+        if (transaction instanceof Transaction) {
+          transactionBytes = transaction.serialize({ verifySignatures: false });
+        } else if (transaction instanceof VersionedTransaction) {
+          transactionBytes = transaction.serialize();
+        } else if (typeof (transaction as any).serialize === 'function') {
+          // Kit TransactionMessage or other signable transaction
+          transactionBytes = (transaction as any).serialize();
+        } else {
+          throw new Error('Transaction does not have a serialize method');
+        }
       } catch (error) {
         throw new Error(`Failed to serialize transaction: ${error instanceof Error ? error.message : error}`);
       }
@@ -525,156 +534,46 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   }
 
   async signAndSendTransaction(
-    transaction: Transaction | VersionedTransaction,
-    connection: Connection,
+    transaction: DualTransaction,
+    connection: DualConnection,
     options: SendOptions = {}
   ): Promise<TransactionSignature> {
     if (!this.connected) throw new Error('Wallet not connected');
 
     try {
-      // Get the account to use
-      const signingAccount = this._findAccount();
-      const accountPublicKey = new PublicKey(signingAccount.publicKey);
+      // Delegate to core implementation which will:
+      // 1. Detect that this._wallet is a Standard Wallet
+      // 2. Try to use the wallet's signAndSendTransaction feature if available
+      // 3. Otherwise, fall back to sign then send separately
+      // 4. Handle setting feePayer, getting blockhash (using helper for dual connection support), serialization, and sending
+      // Note: We pass the chain from current cluster for Standard Wallet operations
+      const dualOptions = {
+        chain: this._currentCluster || 'solana:mainnet'
+      };
 
-      // If this wallet supports signAndSendTransaction, use it
-      if (SolanaSignAndSendTransactionMethod in this._wallet.features) {
-        const feature = this._wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
-        if (!feature || typeof feature.signAndSendTransaction !== 'function') {
-          throw new Error('Wallet has invalid signAndSendTransaction feature');
-        }
-
-        // Prepare the transaction (get latest blockhash etc)
-        if (transaction instanceof Transaction) {
-          transaction.feePayer = accountPublicKey;
-          const { blockhash } = await connection.getLatestBlockhash(options.preflightCommitment);
-          transaction.recentBlockhash = blockhash;
-        }
-
-        // Get transaction bytes
-        let transactionBytes: Uint8Array;
-        try {
-          transactionBytes = transaction instanceof Transaction
-            ? transaction.serialize({ verifySignatures: false })
-            : transaction.serialize();
-        } catch (error) {
-          console.error('Error serializing transaction', error);
-          throw new Error('Failed to serialize transaction');
-        }
-
-        // Call wallet's signAndSendTransaction with the specified account
-        const result = await feature.signAndSendTransaction({
-          transaction: transactionBytes,
-          chain: 'solana:mainnet',
-          account: signingAccount,
-          options
-        });
-
-        if (!result || !result.length || !result[0].signature) {
-          throw new Error('No signature returned from signAndSendTransaction');
-        }
-
-        let signatureBase58: string;
-        try {
-
-          signatureBase58 = bs58.encode(result[0].signature);
-        } catch (error) {
-          console.error('Error encoding signature to base58', error);
-          throw new Error('Failed to encode transaction signature');
-        }
-        return signatureBase58;
-      }
-      // Otherwise, sign the transaction and send it
-      else if (SolanaSignTransactionMethod in this._wallet.features) {
-        // Sign the transaction
-        const signedTransaction = await this.signTransaction(transaction);
-
-        // Send the signed transaction
-        const rawTransaction = signedTransaction instanceof Transaction
-          ? signedTransaction.serialize()
-          : signedTransaction.serialize();
-
-        // Send the transaction
-        return await connection.sendRawTransaction(rawTransaction, options);
-      } else {
-        throw new Error('Wallet does not support sending transactions');
-      }
+      return await coreSignAndSendTransaction(connection, transaction, this._wallet, dualOptions);
     } catch (error: any) {
-      console.error('Error in sendTransaction', error);
+      console.error('Error in signAndSendTransaction', error);
       this._eventEmitter.emit('error', error);
       throw error;
     }
   }
 
-  async signTransaction<T extends Transaction | VersionedTransaction>(
+  async signTransaction<T extends DualTransaction>(
     transaction: T
   ): Promise<T> {
     if (!this.connected) throw new Error('Wallet not connected');
 
     try {
-      if (!(SolanaSignTransactionMethod in this._wallet.features)) {
-        throw new Error('Wallet does not support signing transactions');
-      }
-
-      const feature = this._wallet.features[SolanaSignTransactionMethod] as SolanaSignTransactionFeature;
-      if (!feature || typeof feature.signTransaction !== 'function') {
-        throw new Error('Wallet has invalid signTransaction feature');
-      }
-
-      // Get the account to use for signing
-      const signingAccount = this._findAccount();
-      const accountPublicKey = new PublicKey(signingAccount.publicKey);
-
-      // Ensure transaction has feePayer set
-      if (transaction instanceof Transaction && !transaction.feePayer) {
-        transaction.feePayer = accountPublicKey;
-      }
-
-      // Serialize the transaction
-      let transactionBytes: Uint8Array;
-      try {
-        transactionBytes = transaction instanceof Transaction
-          ? transaction.serialize({ verifySignatures: false })
-          : transaction.serialize();
-      } catch (error) {
-        console.error('Error serializing transaction for signing', error);
-        throw new Error('Failed to serialize transaction for signing');
-      }
-
-      console.log("DEBUG transactionBytes", transactionBytes);
-      console.log("DEBUG signingAccount", signingAccount);
-
-      // Send to wallet for signing
-      const result = await feature.signTransaction({
-        transaction: transactionBytes,
-        account: signingAccount
-      });
-
-      console.log("DEBUG result", result);
-
-      if (!result) {
-      // if (!result || !result.signedTransaction) {
-        throw new Error('No signed transaction returned from wallet');
-      }
-
-      // Deserialize the signed transaction
-      try {
-        const signedTransaction = result[0]!.signedTransaction;
-        // console.log("DEBUG signedTransaction", signedTransaction);
-
-                // return (
-                //   transaction instanceof Transaction
-                //         ? VersionedTransaction.deserialize(serializedTransaction)
-                //         : Transaction.from(serializedTransaction)
-                // ) as T;
-        if (transaction instanceof Transaction) {
-          return Transaction.from(signedTransaction) as T;
-        } else {
-          return VersionedTransaction.deserialize(signedTransaction) as T;
-        }
-      } catch (error) {
-        console.error('Error deserializing signed transaction', error);
-        throw new Error('Failed to deserialize signed transaction');
-      }
+      // Delegate to core implementation which handles Standard Wallet detection and signing
+      // The core function will:
+      // 1. Detect that this._wallet is a Standard Wallet (has "features" property)
+      // 2. Get the account from this._wallet.accounts[0]
+      // 3. Set feePayer if needed
+      // 4. Serialize the transaction
+      // 5. Call the wallet's signTransaction feature
+      // 6. Deserialize and return the signed transaction
+      return await coreSignTransaction(transaction, this._wallet) as T;
     } catch (error: any) {
       console.error('Error in signTransaction', error);
       this._eventEmitter.emit('error', error);
@@ -682,7 +581,7 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
     }
   }
 
-  async signAllTransactions<T extends Transaction | VersionedTransaction>(
+  async signAllTransactions<T extends DualTransaction>(
     transactions: T[]
   ): Promise<T[]> {
     if (!this.connected) throw new Error('Wallet not connected');

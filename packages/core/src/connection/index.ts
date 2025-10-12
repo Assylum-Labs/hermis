@@ -1,5 +1,6 @@
 import { Connection, ConnectionConfig, Commitment } from '@solana/web3.js';
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { createSolanaRpc, type Rpc } from '@solana/kit';
 
 // Network endpoints mapping
 const NETWORK_ENDPOINTS: Record<WalletAdapterNetwork, string> = {
@@ -58,3 +59,29 @@ export function createConnection(
   // Create and return the connection
   return new Connection(endpoint, connectionConfig);
 }
+
+/**
+ * Creates a new Kit Rpc connection for the specified network or RPC URL
+ * @param networkOrUrl The Solana network or RPC URL to connect to
+ * @returns A Kit Rpc instance
+ */
+export function createKitRpc(
+  networkOrUrl: WalletAdapterNetwork | string
+): ReturnType<typeof createSolanaRpc> {
+  let endpoint: string;
+
+  // Determine if the input is a network enum or direct URL
+  if (Object.values(WalletAdapterNetwork).includes(networkOrUrl as WalletAdapterNetwork)) {
+    // It's a network enum
+    endpoint = NETWORK_ENDPOINTS[networkOrUrl as WalletAdapterNetwork];
+  } else {
+    // It's a direct URL
+    endpoint = networkOrUrl as string;
+  }
+
+  // Create and return the Kit Rpc
+  return createSolanaRpc(endpoint);
+}
+
+// Export connection helper utilities
+export * from './helpers.js';

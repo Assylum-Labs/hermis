@@ -56,7 +56,10 @@ import {
 
 // Kit types are imported directly in transaction/index.ts where they're used
 // This avoids export conflicts at the package level
-  
+
+// Import Kit RPC types for dual connection support
+import type { Rpc, RpcSubscriptions } from '@solana/kit';
+
   import {
     Adapter,
     WalletAdapterNetwork,
@@ -159,6 +162,31 @@ export {
   export type LegacyTransaction = Transaction | VersionedTransaction;
   export type DualTransaction = LegacyTransaction | object; // TransactionMessage is an object
 
+  // Connection types for dual architecture support
+  export type LegacyConnection = Connection;
+  export type KitConnection = Rpc<any>; // Using any for generic parameter as Kit Rpc needs a transport type
+  export type DualConnection = LegacyConnection | KitConnection;
+
+  /**
+   * Helper to detect if a connection is a legacy Connection from @solana/web3.js
+   */
+  export function isLegacyConnection(connection: DualConnection): connection is LegacyConnection {
+    return (
+      connection !== null &&
+      typeof connection === 'object' &&
+      'rpcEndpoint' in connection &&
+      'commitment' in connection &&
+      '_rpcRequest' in connection
+    );
+  }
+
+  /**
+   * Helper to detect if a connection is a Kit Rpc from @solana/kit
+   */
+  export function isKitConnection(connection: DualConnection): connection is KitConnection {
+    return !isLegacyConnection(connection);
+  }
+
   // Options for dual architecture operations
   export interface DualArchitectureOptions {
     preferKitArchitecture?: boolean;
@@ -170,6 +198,12 @@ export {
      * - undefined: defaults to first account (index 0)
      */
     account?: PublicKey | string;
+    /**
+     * Specify the Solana chain/cluster for wallet standard operations
+     * - Examples: 'solana:mainnet', 'solana:devnet', 'solana:testnet', 'solana:mainnet-beta'
+     * - undefined: defaults to 'solana:mainnet'
+     */
+    chain?: string;
   }
 
   // Interface for wallet signing capabilities

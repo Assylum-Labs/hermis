@@ -66,10 +66,17 @@ import {
   DualArchitectureOptions,
   DualWallet,
   LegacyWallet,
-  KitWallet
+  KitWallet,
+  DualConnection,
+  isLegacyConnection
 } from '../types/index.js';
 import { generateNonce, generateSignInMessage } from '../utils/index.js';
-import { createConnection } from '../connection/index.js';
+import {
+  createConnection,
+  getLatestBlockhash,
+  sendRawTransaction as sendRawTransactionHelper,
+  sendTransactionHelper
+} from '../connection/index.js';
 
 // Import required packages for CryptoKeyPair conversion
 import * as ed25519 from '@noble/ed25519';
@@ -339,7 +346,50 @@ async function signTransactionLegacy<T extends Transaction | VersionedTransactio
       throw new Error('Wallet has invalid signTransaction feature');
     }
 
-    return transaction
+    // Get the account to use for signing
+    const account = wallet.accounts[0] as StandardWalletAccount;
+    if (!account) {
+      throw new Error('No account found in wallet');
+    }
+
+    const accountPublicKey = new PublicKey(account.publicKey);
+
+    // Ensure transaction has feePayer set
+    if (!isVersionedTransaction(transaction) && !(transaction as Transaction).feePayer) {
+      (transaction as Transaction).feePayer = accountPublicKey;
+    }
+
+    // Serialize the transaction
+    let transactionBytes: Uint8Array;
+    try {
+      transactionBytes = isVersionedTransaction(transaction)
+        ? (transaction as VersionedTransaction).serialize()
+        : (transaction as Transaction).serialize({ verifySignatures: false });
+    } catch (error) {
+      throw new Error(`Failed to serialize transaction for signing: ${error instanceof Error ? error.message : error}`);
+    }
+
+    // Call wallet's signTransaction feature
+    const result = await feature.signTransaction({
+      transaction: transactionBytes,
+      account: account
+    });
+
+    if (!result || !result[0] || !result[0].signedTransaction) {
+      throw new Error('No signed transaction returned from wallet');
+    }
+
+    // Deserialize the signed transaction
+    try {
+      const signedTransactionBytes = result[0].signedTransaction;
+      if (isVersionedTransaction(transaction)) {
+        return VersionedTransaction.deserialize(signedTransactionBytes) as T;
+      } else {
+        return Transaction.from(signedTransactionBytes) as T;
+      }
+    } catch (error) {
+      throw new Error(`Failed to deserialize signed transaction: ${error instanceof Error ? error.message : error}`);
+    }
   } else {
     // It's an Adapter
     if (!wallet.publicKey) {
@@ -835,7 +885,55 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
       throw new Error('Wallet has invalid signTransaction feature');
     }
 
-    return transactions
+    // Sign each transaction using the Standard Wallet feature
+    const signedTransactions: T[] = [];
+    for (const transaction of transactions) {
+      // Get the account to use for signing
+      const account = wallet.accounts[0] as StandardWalletAccount;
+      if (!account) {
+        throw new Error('No account found in wallet');
+      }
+
+      const accountPublicKey = new PublicKey(account.publicKey);
+
+      // Ensure transaction has feePayer set
+      if (!isVersionedTransaction(transaction) && !(transaction as Transaction).feePayer) {
+        (transaction as Transaction).feePayer = accountPublicKey;
+      }
+
+      // Serialize the transaction
+      let transactionBytes: Uint8Array;
+      try {
+        transactionBytes = isVersionedTransaction(transaction)
+          ? (transaction as VersionedTransaction).serialize()
+          : (transaction as Transaction).serialize({ verifySignatures: false });
+      } catch (error) {
+        throw new Error(`Failed to serialize transaction for signing: ${error instanceof Error ? error.message : error}`);
+      }
+
+      // Call wallet's signTransaction feature
+      const result = await feature.signTransaction({
+        transaction: transactionBytes,
+        account: account
+      });
+
+      if (!result || !result[0] || !result[0].signedTransaction) {
+        throw new Error('No signed transaction returned from wallet');
+      }
+
+      // Deserialize the signed transaction
+      try {
+        const signedTransactionBytes = result[0].signedTransaction;
+        if (isVersionedTransaction(transaction)) {
+          signedTransactions.push(VersionedTransaction.deserialize(signedTransactionBytes) as T);
+        } else {
+          signedTransactions.push(Transaction.from(signedTransactionBytes) as T);
+        }
+      } catch (error) {
+        throw new Error(`Failed to deserialize signed transaction: ${error instanceof Error ? error.message : error}`);
+      }
+    }
+    return signedTransactions;
   } else {
     // It's an Adapter
     if (!wallet.publicKey) {
@@ -879,7 +977,7 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
  * @returns A promise that resolves to the transaction signature
  */
 export async function sendTransaction(
-  connectionOrTransaction: Connection | DualTransaction,
+  connectionOrTransaction: DualConnection | DualTransaction,
   transactionOrWallet: DualTransaction | DualWallet,
   walletOrOptions?: DualWallet | DualArchitectureOptions,
   options?: DualArchitectureOptions
@@ -887,14 +985,14 @@ export async function sendTransaction(
 
 /**
  * Sends a transaction to the Solana network (supports both legacy and kit architectures)
- * @param connection The Solana connection to use
+ * @param connection The Solana connection to use (supports both Legacy Connection and Kit Rpc)
  * @param transaction The transaction to send
  * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
  * @param options Optional configuration for dual architecture behavior
  * @returns A promise that resolves to the transaction signature
  */
 export async function sendTransaction(
-  connection: Connection,
+  connection: DualConnection,
   transaction: DualTransaction,
   wallet: DualWallet,
   options?: DualArchitectureOptions
@@ -904,26 +1002,31 @@ export async function sendTransaction(
  * Implementation for sendTransaction with flexible parameter handling
  */
 export async function sendTransaction(
-  connectionOrTransaction: Connection | DualTransaction,
+  connectionOrTransaction: DualConnection | DualTransaction,
   transactionOrWallet?: DualTransaction | DualWallet,
   walletOrOptions?: DualWallet | DualArchitectureOptions,
   options: DualArchitectureOptions = {}
 ): Promise<TransactionSignature> {
-  let connection: Connection;
+  let connection: DualConnection;
   let transaction: DualTransaction;
   let wallet: DualWallet;
   let finalOptions: DualArchitectureOptions;
 
   // Parse parameters based on overload usage
-  if (connectionOrTransaction instanceof Connection) {
+  // Check if first parameter is a connection (either legacy Connection or Kit Rpc)
+  // First check if it looks like a transaction
+  const looksLikeTransaction = typeof connectionOrTransaction === 'object' && connectionOrTransaction !== null &&
+    ('recentBlockhash' in connectionOrTransaction || 'instructions' in connectionOrTransaction || 'message' in connectionOrTransaction);
+
+  if (!looksLikeTransaction) {
     // Standard usage: connection, transaction, wallet, options
-    connection = connectionOrTransaction;
+    connection = connectionOrTransaction as DualConnection;
     transaction = transactionOrWallet as DualTransaction;
     wallet = walletOrOptions as DualWallet;
     finalOptions = options;
   } else {
     // Alternative usage: transaction, wallet, options (creates default connection)
-    transaction = connectionOrTransaction;
+    transaction = connectionOrTransaction as DualTransaction;
     wallet = transactionOrWallet as DualWallet;
     finalOptions = (walletOrOptions as DualArchitectureOptions) || {};
 
@@ -946,7 +1049,7 @@ export async function sendTransaction(
         if (finalOptions.fallbackToLegacy !== false) {
           if (isCryptoKeyPair(wallet)) {
             const legacyKeypair = await convertCryptoKeyPairToKeypair(wallet);
-            return await sendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, legacyKeypair);
+            return await sendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, legacyKeypair, finalOptions);
           } else {
             throw new Error('Cannot convert Address to legacy wallet for sending');
           }
@@ -962,13 +1065,13 @@ export async function sendTransaction(
         // Legacy wallet but kit transaction
         if (finalOptions.preferKitArchitecture === false || finalOptions.fallbackToLegacy !== false) {
           const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
-          return await sendTransactionLegacy(connection, legacyTransaction, wallet);
+          return await sendTransactionLegacy(connection, legacyTransaction, wallet, finalOptions);
         } else {
           throw new Error('Legacy wallet cannot send kit transaction without conversion enabled');
         }
       } else {
         // Both wallet and transaction are legacy architecture
-        return await sendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, wallet);
+        return await sendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, wallet, finalOptions);
       }
     }
 
@@ -983,13 +1086,14 @@ export async function sendTransaction(
  * Legacy implementation for sending transactions
  */
 async function sendTransactionLegacy(
-  connection: Connection, 
-  transaction: Transaction | VersionedTransaction, 
-  wallet: LegacyWallet
+  connection: DualConnection,
+  transaction: Transaction | VersionedTransaction,
+  wallet: LegacyWallet,
+  options: DualArchitectureOptions = {}
 ): Promise<TransactionSignature> {
   // Set recent blockhash if not already set (for regular transactions)
   if (!isVersionedTransaction(transaction) && !(transaction as Transaction).recentBlockhash) {
-    const { blockhash } = await connection.getLatestBlockhash();
+    const { blockhash } = await getLatestBlockhash(connection);
     (transaction as Transaction).recentBlockhash = blockhash;
   }
   
@@ -997,11 +1101,18 @@ async function sendTransactionLegacy(
   if ('secretKey' in wallet) {
     // It's a Keypair
     if (!isVersionedTransaction(transaction)) {
-      return await sendAndConfirmTransaction(connection, transaction as Transaction, [wallet]);
+      // For legacy Connection, use sendAndConfirmTransaction
+      if (isLegacyConnection(connection)) {
+        return await sendAndConfirmTransaction(connection, transaction as Transaction, [wallet]);
+      } else {
+        // For Kit connection, sign and send manually
+        (transaction as Transaction).sign(wallet);
+        return await sendTransactionHelper(connection, transaction);
+      }
     } else {
       // For VersionedTransaction, sign and send manually
       const signedTransaction = await signVersionedTransactionWithKeypair(transaction as VersionedTransaction, wallet);
-      return await connection.sendTransaction(signedTransaction);
+      return await sendTransactionHelper(connection, signedTransaction);
     }
   } else if ("features" in wallet) {
       // It's a Standard Wallet
@@ -1010,13 +1121,44 @@ async function sendTransactionLegacy(
         throw new Error('Wallet has invalid signAndSendTransaction feature');
       }
 
+      // Get the account to use
+      const account = wallet.accounts[0] as StandardWalletAccount;
+      if (!account) {
+        throw new Error('No account found in wallet');
+      }
+
+      const accountPublicKey = new PublicKey(account.publicKey);
+
+      // Ensure transaction has feePayer set
+      if (!isVersionedTransaction(transaction) && !(transaction as Transaction).feePayer) {
+        (transaction as Transaction).feePayer = accountPublicKey;
+      }
+
+      // Serialize the transaction
+      let transactionBytes: Uint8Array;
+      try {
+        transactionBytes = isVersionedTransaction(transaction)
+          ? (transaction as VersionedTransaction).serialize()
+          : (transaction as Transaction).serialize({ verifySignatures: false });
+      } catch (error) {
+        throw new Error(`Failed to serialize transaction for signing: ${error instanceof Error ? error.message : error}`);
+      }
+
+      // Use chain from options, default to 'solana:mainnet'
+      const chain = options.chain || 'solana:mainnet';
+
       const result = await feature.signAndSendTransaction({
-        account: wallet.accounts[0] as StandardWalletAccount,
-        transaction: transaction as any,
-        chain: 'solana:mainnet'
+        account: account,
+        transaction: transactionBytes,
+        chain: chain
       });
 
-      return result[0].signature.toString();
+      if (!result || !result[0] || !result[0].signature) {
+        throw new Error('No signature returned from signAndSendTransaction');
+      }
+
+      // Convert signature bytes to base58 string
+      return bs58.encode(result[0].signature);
   } else {
     // It's an Adapter
     if (!wallet.publicKey) {
@@ -1034,15 +1176,20 @@ async function sendTransactionLegacy(
     
     // Check for versioned transaction support
     if (
-      isVersionedTransaction(transaction) && 
+      isVersionedTransaction(transaction) &&
       wallet.supportedTransactionVersions &&
       !wallet.supportedTransactionVersions.has((transaction as any).version)
     ) {
       throw new Error(`Wallet doesn't support transaction version ${(transaction as any).version}`);
     }
-    
+
     // Send the transaction using the adapter
-    return await wallet.sendTransaction(transaction, connection);
+    // Note: Adapter expects legacy Connection, so only works with legacy connection
+    if (isLegacyConnection(connection)) {
+      return await wallet.sendTransaction(transaction, connection);
+    } else {
+      throw new Error('Adapter requires legacy Connection, not Kit Rpc');
+    }
   }
 }
 
@@ -1275,13 +1422,13 @@ async function signTransactionKit(
 
 /**
  * Kit implementation for transaction sending using @solana/kit
- * @param connection The Solana connection
+ * @param connection The Solana connection (accepts both Legacy and Kit)
  * @param transactionMessage The TransactionMessage to send
  * @param cryptoKeyPair The CryptoKeyPair to sign with
  * @returns The transaction signature
  */
 async function sendTransactionKit(
-  connection: Connection,
+  connection: DualConnection,
   transactionMessage: TransactionMessage,
   cryptoKeyPair: CryptoKeyPair
 ): Promise<TransactionSignature> {
@@ -1296,8 +1443,8 @@ async function sendTransactionKit(
     const transactionEncoder = getTransactionEncoder();
     const serializedTransaction = transactionEncoder.encode(compiledTransaction);
 
-    // Send the raw transaction to the network
-    const signature = await connection.sendRawTransaction(new Uint8Array(serializedTransaction), {
+    // Send the raw transaction to the network using helper (supports both connection types)
+    const signature = await sendRawTransactionHelper(connection, new Uint8Array(serializedTransaction), {
       skipPreflight: false,
       preflightCommitment: 'confirmed',
     });
@@ -1497,12 +1644,12 @@ async function signInLegacy(
  * This is a helper function to demonstrate how to create proper kit transactions
  */
 export async function createKitTransaction(
-  connection: Connection,
+  connection: DualConnection,
   feePayer: Address,
   instructions: any[] = []
 ): Promise<TransactionMessage> {
-  // Get recent blockhash
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  // Get recent blockhash using helper (supports both connection types)
+  const { blockhash, lastValidBlockHeight } = await getLatestBlockhash(connection);
   
   // Create transaction message
   let transactionMessage = createTransactionMessage({ version: 0 });
@@ -1696,7 +1843,7 @@ export async function sendTransactionLegacyCompatible(
   transaction: Transaction | VersionedTransaction,
   wallet: Keypair | Adapter
 ): Promise<TransactionSignature> {
-  return await sendTransactionLegacy(connection, transaction, wallet);
+  return await sendTransactionLegacy(connection, transaction, wallet, {});
 }
 
 /**
@@ -1756,7 +1903,7 @@ export async function signTransactionWithSigner<T extends DualTransaction>(
  * @returns A promise that resolves to the transaction signature
  */
 export async function signAndSendTransaction(
-  connectionOrTransaction: Connection | DualTransaction,
+  connectionOrTransaction: DualConnection | DualTransaction,
   transactionOrWallet: DualTransaction | DualWallet,
   walletOrOptions?: DualWallet | DualArchitectureOptions,
   options?: DualArchitectureOptions
@@ -1764,14 +1911,14 @@ export async function signAndSendTransaction(
 
 /**
  * Signs and sends a transaction in a single operation (supports both legacy and kit architectures)
- * @param connection The Solana connection to use
+ * @param connection The Solana connection to use (supports both Legacy Connection and Kit Rpc)
  * @param transaction The transaction to sign and send
  * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
  * @param options Optional configuration for dual architecture behavior
  * @returns A promise that resolves to the transaction signature
  */
 export async function signAndSendTransaction(
-  connection: Connection,
+  connection: DualConnection,
   transaction: DualTransaction,
   wallet: DualWallet,
   options?: DualArchitectureOptions
@@ -1781,26 +1928,31 @@ export async function signAndSendTransaction(
  * Implementation for signAndSendTransaction with flexible parameter handling
  */
 export async function signAndSendTransaction(
-  connectionOrTransaction: Connection | DualTransaction,
+  connectionOrTransaction: DualConnection | DualTransaction,
   transactionOrWallet?: DualTransaction | DualWallet,
   walletOrOptions?: DualWallet | DualArchitectureOptions,
   options: DualArchitectureOptions = {}
 ): Promise<TransactionSignature> {
-  let connection: Connection;
+  let connection: DualConnection;
   let transaction: DualTransaction;
   let wallet: DualWallet;
   let finalOptions: DualArchitectureOptions;
 
   // Parse parameters based on overload usage
-  if (connectionOrTransaction instanceof Connection) {
+  // Check if first parameter is a connection (either legacy Connection or Kit Rpc)
+  // First check if it looks like a transaction
+  const looksLikeTransaction = typeof connectionOrTransaction === 'object' && connectionOrTransaction !== null &&
+    ('recentBlockhash' in connectionOrTransaction || 'instructions' in connectionOrTransaction || 'message' in connectionOrTransaction);
+
+  if (!looksLikeTransaction) {
     // Standard usage: connection, transaction, wallet, options
-    connection = connectionOrTransaction;
+    connection = connectionOrTransaction as DualConnection;
     transaction = transactionOrWallet as DualTransaction;
     wallet = walletOrOptions as DualWallet;
     finalOptions = options;
   } else {
     // Alternative usage: transaction, wallet, options (creates default connection)
-    transaction = connectionOrTransaction;
+    transaction = connectionOrTransaction as DualTransaction;
     wallet = transactionOrWallet as DualWallet;
     finalOptions = (walletOrOptions as DualArchitectureOptions) || {};
 
@@ -1824,7 +1976,7 @@ export async function signAndSendTransaction(
         if (finalOptions.fallbackToLegacy !== false) {
           if (isCryptoKeyPair(wallet)) {
             const legacyKeypair = await convertCryptoKeyPairToKeypair(wallet);
-            return await signAndSendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, legacyKeypair);
+            return await signAndSendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, legacyKeypair, finalOptions);
           } else {
             throw new Error('Cannot convert Address to legacy wallet for signing and sending');
           }
@@ -1840,13 +1992,13 @@ export async function signAndSendTransaction(
         // Legacy wallet but kit transaction
         if (finalOptions.preferKitArchitecture === false || finalOptions.fallbackToLegacy !== false) {
           const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
-          return await signAndSendTransactionLegacy(connection, legacyTransaction, wallet);
+          return await signAndSendTransactionLegacy(connection, legacyTransaction, wallet, finalOptions);
         } else {
           throw new Error('Legacy wallet cannot sign and send kit transaction without conversion enabled');
         }
       } else {
         // Both wallet and transaction are legacy architecture
-        return await signAndSendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, wallet);
+        return await signAndSendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, wallet, finalOptions);
       }
     }
 
@@ -1861,13 +2013,14 @@ export async function signAndSendTransaction(
  * Legacy implementation for signing and sending transactions
  */
 async function signAndSendTransactionLegacy(
-  connection: Connection,
+  connection: DualConnection,
   transaction: Transaction | VersionedTransaction,
-  wallet: LegacyWallet
+  wallet: LegacyWallet,
+  options: DualArchitectureOptions = {}
 ): Promise<TransactionSignature> {
   // Set recent blockhash if not already set (for regular transactions)
   if (!isVersionedTransaction(transaction) && !(transaction as Transaction).recentBlockhash) {
-    const { blockhash } = await connection.getLatestBlockhash();
+    const { blockhash } = await getLatestBlockhash(connection);
     (transaction as Transaction).recentBlockhash = blockhash;
   }
 
@@ -1875,11 +2028,18 @@ async function signAndSendTransactionLegacy(
   if ('secretKey' in wallet) {
     // It's a Keypair - sign and send in one operation
     if (!isVersionedTransaction(transaction)) {
-      return await sendAndConfirmTransaction(connection, transaction as Transaction, [wallet]);
+      // For legacy Connection, use sendAndConfirmTransaction
+      if (isLegacyConnection(connection)) {
+        return await sendAndConfirmTransaction(connection, transaction as Transaction, [wallet]);
+      } else {
+        // For Kit connection, sign and send manually
+        (transaction as Transaction).sign(wallet);
+        return await sendTransactionHelper(connection, transaction);
+      }
     } else {
       // For VersionedTransaction, sign and send manually
       const signedTransaction = await signVersionedTransactionWithKeypair(transaction as VersionedTransaction, wallet);
-      return await connection.sendTransaction(signedTransaction);
+      return await sendTransactionHelper(connection, signedTransaction);
     }
   } else if ("features" in wallet) {
     // It's a Standard Wallet - use signAndSendTransaction feature
@@ -1888,13 +2048,44 @@ async function signAndSendTransactionLegacy(
       throw new Error('Wallet has invalid signAndSendTransaction feature');
     }
 
+    // Get the account to use
+    const account = wallet.accounts[0] as StandardWalletAccount;
+    if (!account) {
+      throw new Error('No account found in wallet');
+    }
+
+    const accountPublicKey = new PublicKey(account.publicKey);
+
+    // Ensure transaction has feePayer set
+    if (!isVersionedTransaction(transaction) && !(transaction as Transaction).feePayer) {
+      (transaction as Transaction).feePayer = accountPublicKey;
+    }
+
+    // Serialize the transaction
+    let transactionBytes: Uint8Array;
+    try {
+      transactionBytes = isVersionedTransaction(transaction)
+        ? (transaction as VersionedTransaction).serialize()
+        : (transaction as Transaction).serialize({ verifySignatures: false });
+    } catch (error) {
+      throw new Error(`Failed to serialize transaction for signing: ${error instanceof Error ? error.message : error}`);
+    }
+
+    // Use chain from options, default to 'solana:mainnet'
+    const chain = options.chain || 'solana:mainnet';
+
     const result = await feature.signAndSendTransaction({
-      account: wallet.accounts[0] as StandardWalletAccount,
-      transaction: transaction as any,
-      chain: 'solana:mainnet'
+      account: account,
+      transaction: transactionBytes,
+      chain: chain
     });
 
-    return result[0].signature.toString();
+    if (!result || !result[0] || !result[0].signature) {
+      throw new Error('No signature returned from signAndSendTransaction');
+    }
+
+    // Convert signature bytes to base58 string
+    return bs58.encode(result[0].signature);
   } else {
     // It's an Adapter - sign then send separately
     if (!wallet.publicKey) {
@@ -1920,6 +2111,11 @@ async function signAndSendTransactionLegacy(
     }
 
     // Check if adapter supports signAndSendTransaction
+    // Note: Adapter expects legacy Connection, so only works with legacy connection
+    if (!isLegacyConnection(connection)) {
+      throw new Error('Adapter requires legacy Connection, not Kit Rpc');
+    }
+
     if ('signAndSendTransaction' in wallet && typeof wallet.signAndSendTransaction === 'function') {
       return await wallet.signAndSendTransaction(transaction, connection);
     } else if ('signTransaction' in wallet && typeof wallet.signTransaction === 'function') {
@@ -1934,13 +2130,13 @@ async function signAndSendTransactionLegacy(
 
 /**
  * Kit implementation for signing and sending transactions using @solana/kit
- * @param connection The Solana connection
+ * @param connection The Solana connection (accepts both Legacy and Kit)
  * @param transactionMessage The TransactionMessage to sign and send
  * @param cryptoKeyPair The CryptoKeyPair to sign with
  * @returns The transaction signature
  */
 async function signAndSendTransactionKit(
-  connection: Connection,
+  connection: DualConnection,
   transactionMessage: TransactionMessage,
   cryptoKeyPair: CryptoKeyPair
 ): Promise<TransactionSignature> {
@@ -1955,8 +2151,8 @@ async function signAndSendTransactionKit(
     const transactionEncoder = getTransactionEncoder();
     const serializedTransaction = transactionEncoder.encode(compiledTransaction);
 
-    // Send the raw transaction to the network
-    const signature = await connection.sendRawTransaction(new Uint8Array(serializedTransaction), {
+    // Send the raw transaction to the network using helper (supports both connection types)
+    const signature = await sendRawTransactionHelper(connection, new Uint8Array(serializedTransaction), {
       skipPreflight: false,
       preflightCommitment: 'confirmed',
     });
