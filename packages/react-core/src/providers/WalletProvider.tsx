@@ -1,15 +1,15 @@
 import { ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { 
-  Adapter, 
-  PublicKey, 
-  signAllTransactions, 
-  signIn, 
-  signMessage, 
-  signTransaction, 
+import {
+  Adapter,
+  PublicKey,
+  signAllTransactions,
+  signIn,
+  signMessage,
+  signTransaction,
   Transaction,
-  WalletError, 
-  WalletName, 
-  WalletNotReadyError, 
+  WalletError,
+  WalletName,
+  WalletNotReadyError,
   WalletReadyState,
   VersionedTransaction,
   MessageSignerWalletAdapter,
@@ -18,7 +18,10 @@ import {
   SendOptions,
   WalletAdapter,
   TransactionSignature,
-  Connection
+  Connection,
+  DualTransaction,
+  DualConnection,
+  DualArchitectureOptions
 } from '@hermis/solana-headless-core';
 import {
   getIsMobile,
@@ -103,7 +106,9 @@ export function WalletProvider({
   onError,
 }: WalletProviderProps) {
   const { connection } = useConnection();
-  const adaptersWithStandardAdapters = useStandardWalletAdapters(adapters, connection?.rpcEndpoint);
+  // Safely access rpcEndpoint - only exists on legacy Connection, not Kit Rpc
+  const rpcEndpoint = connection && 'rpcEndpoint' in connection ? (connection.rpcEndpoint as string) : undefined;
+  const adaptersWithStandardAdapters = useStandardWalletAdapters(adapters, rpcEndpoint);
 
   const [walletName, setWalletName] = useLocalStorage<WalletName | null>(
     storageKey,
@@ -356,10 +361,10 @@ export function WalletProvider({
       }
 
       setAdapterState(prev => ({ ...prev, connecting: true }));
-      
+
       // Set RPC endpoint for cluster detection if adapter supports it
-      if (connection?.rpcEndpoint && 'setRpcEndpoint' in currentAdapter && typeof currentAdapter.setRpcEndpoint === 'function') {
-        (currentAdapter as any).setRpcEndpoint(connection.rpcEndpoint);
+      if (rpcEndpoint && 'setRpcEndpoint' in currentAdapter && typeof currentAdapter.setRpcEndpoint === 'function') {
+        (currentAdapter as any).setRpcEndpoint(rpcEndpoint);
       }
       
       if (hasUserSelectedAWallet.current) {
@@ -397,8 +402,8 @@ export function WalletProvider({
       return new Promise<WalletAdapter>(async(resolve, reject) => {
         try {
           // Set RPC endpoint for cluster detection if adapter supports it
-          if (connection?.rpcEndpoint && 'setRpcEndpoint' in currentAdapter && typeof currentAdapter.setRpcEndpoint === 'function') {
-            (currentAdapter as any).setRpcEndpoint(connection.rpcEndpoint);
+          if (rpcEndpoint && 'setRpcEndpoint' in currentAdapter && typeof currentAdapter.setRpcEndpoint === 'function') {
+            (currentAdapter as any).setRpcEndpoint(rpcEndpoint);
           }
           
           await currentAdapter.connect();
@@ -466,7 +471,7 @@ export function WalletProvider({
 
   const handleSignAndSendTransaction = useCallback(async (
     transaction: Transaction | VersionedTransaction,
-    connection: any,
+    connection: Connection,
     options?: SendOptions
   ) => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
@@ -486,7 +491,7 @@ export function WalletProvider({
 
   const handleSendTransaction = useCallback(async (
     transaction: Transaction | VersionedTransaction,
-    connection: any,
+    connection: Connection,
     options?: SendOptions
   ) => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
@@ -548,7 +553,7 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  const handleSignIn = useCallback(async (input?: any) => {
+  const handleSignIn = useCallback(async (input?: Record<string, unknown>) => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
     
@@ -573,9 +578,9 @@ export function WalletProvider({
   // EXTENDED METHODS: These now support BOTH web3.js and Kit architectures automatically
   // No more "DualArchitecture" or "Unified" suffixes - just the standard names!
 
-  const handleSignTransactionExtended = useCallback(async <T = any>(
+  const handleSignTransactionExtended = useCallback(async <T extends DualTransaction>(
     transaction: T,
-    options?: any
+    options?: DualArchitectureOptions
   ): Promise<T> => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
@@ -592,10 +597,10 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  const handleSendTransactionExtended = useCallback(async (
-    transaction: any,
-    connection: any,
-    options?: any
+  const handleSendTransactionExtended = useCallback(async <T extends DualTransaction>(
+    transaction: T,
+    connection: DualConnection,
+    options?: DualArchitectureOptions
   ): Promise<string> => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
@@ -612,10 +617,10 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  const handleSignAndSendTransactionExtended = useCallback(async (
-    transaction: any,
-    connection: any,
-    options?: any
+  const handleSignAndSendTransactionExtended = useCallback(async <T extends DualTransaction>(
+    transaction: T,
+    connection: DualConnection,
+    options?: DualArchitectureOptions
   ): Promise<string> => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
@@ -632,9 +637,9 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
-  const handleSignAllTransactionsExtended = useCallback(async <T = any>(
+  const handleSignAllTransactionsExtended = useCallback(async <T extends DualTransaction>(
     transactions: T[],
-    options?: any
+    options?: DualArchitectureOptions
   ): Promise<T[]> => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();

@@ -8,10 +8,11 @@ import {
   getIsMobile,
   signMessage as signMessageCore
 } from '@hermis/solana-headless-react'
-import { 
-  WalletReadyState, 
-  PublicKey, 
-  WalletName, 
+import {
+  WalletReadyState,
+  PublicKey,
+  WalletName,
+  Connection,
 } from '@hermis/solana-headless-core'
 
 import { generateKeyPairSigner } from '@solana/kit';
@@ -110,7 +111,9 @@ function App() {
     signIn,
     signMessage
   } = useWallet();
-  const { connection } = useConnection();
+  const { connection: dualConnection } = useConnection();
+  // Cast to legacy Connection for existing code compatibility
+  const connection = dualConnection as Connection;
   const { installed, loadable, notDetected } = useWalletAdapters();
   const balance = useSolanaBalance(publicKey);
   // Local component state

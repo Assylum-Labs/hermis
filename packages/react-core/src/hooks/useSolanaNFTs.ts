@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { PublicKey } from '@hermis/solana-headless-core';
+import { PublicKey, Connection } from '@hermis/solana-headless-core';
 import { useConnection } from './useConnection.js';
 import { useWallet } from './useWallet.js';
 
@@ -36,7 +36,9 @@ export interface NFTInfo {
  * @returns Object with NFTs and loading state
  */
 export function useSolanaNFTs(owner?: PublicKey) {
-    const { connection } = useConnection();
+    const { connection: dualConnection } = useConnection();
+    // Cast to legacy Connection for existing code compatibility
+    const connection = dualConnection as Connection;
     const { publicKey } = useWallet();
     const [nfts, setNfts] = useState<NFTInfo[]>([]);
     const [loading, setLoading] = useState(false);

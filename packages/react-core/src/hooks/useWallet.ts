@@ -9,7 +9,9 @@ import {
     WalletName,
     WalletReadyState,
     Connection,
-    DualArchitectureOptions
+    DualArchitectureOptions,
+    DualTransaction,
+    DualConnection
 } from '@hermis/solana-headless-core';
 import { createContext, useContext } from 'react';
 
@@ -55,12 +57,12 @@ export interface WalletContextState {
      * const kitTx = await createKitTransaction(...);
      * const signed = await signTransaction(kitTx);
      */
-    signTransaction<T = any>(transaction: T, options?: DualArchitectureOptions): Promise<T>;
+    signTransaction<T extends DualTransaction = DualTransaction>(transaction: T, options?: DualArchitectureOptions): Promise<T>;
 
     /**
      * Send a transaction - EXTENDED to support both web3.js and Kit architectures
-     * @param transactionOrConnection - Transaction or Connection (overloaded)
-     * @param connectionOrOptions - Connection or options depending on first param
+     * @param transaction - The transaction to send (supports both architectures)
+     * @param connection - The Solana connection (Legacy Connection or Kit Rpc)
      * @param options - Optional dual architecture configuration
      * @returns Promise resolving to the transaction signature
      *
@@ -71,16 +73,24 @@ export interface WalletContextState {
      * // Kit usage (NEW!)
      * const signature = await sendTransaction(kitTx, connection);
      */
-    sendTransaction(transaction: any, connection: any, options?: any): Promise<string>;
+    sendTransaction<T extends DualTransaction = DualTransaction>(
+        transaction: T,
+        connection: DualConnection,
+        options?: DualArchitectureOptions
+    ): Promise<string>;
 
     /**
      * Sign and send a transaction - EXTENDED to support both web3.js and Kit architectures
-     * @param transactionOrConnection - Transaction or Connection (overloaded)
-     * @param connectionOrOptions - Connection or options depending on first param
+     * @param transaction - The transaction to sign and send (supports both architectures)
+     * @param connection - The Solana connection (Legacy Connection or Kit Rpc)
      * @param options - Optional dual architecture configuration
      * @returns Promise resolving to the transaction signature
      */
-    signAndSendTransaction(transaction: any, connection: any, options?: any): Promise<string>;
+    signAndSendTransaction<T extends DualTransaction = DualTransaction>(
+        transaction: T,
+        connection: DualConnection,
+        options?: DualArchitectureOptions
+    ): Promise<string>;
 
     /**
      * Sign multiple transactions - EXTENDED to support both web3.js and Kit architectures
@@ -88,7 +98,7 @@ export interface WalletContextState {
      * @param options - Optional dual architecture configuration
      * @returns Promise resolving to array of signed transactions
      */
-    signAllTransactions<T = any>(transactions: T[], options?: DualArchitectureOptions): Promise<T[]>;
+    signAllTransactions<T extends DualTransaction = DualTransaction>(transactions: T[], options?: DualArchitectureOptions): Promise<T[]>;
 
     signMessage: MessageSignerWalletAdapterProps['signMessage'] | undefined;
     signIn: SignInMessageSignerWalletAdapterProps['signIn'] | undefined;

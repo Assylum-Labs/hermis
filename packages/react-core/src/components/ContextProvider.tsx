@@ -1,5 +1,5 @@
 import React, { FC, ReactNode, useMemo } from 'react';
-import { Adapter, ConnectionConfig, WalletAdapterNetwork } from '@hermis/solana-headless-core';
+import { Adapter, ConnectionConfig, WalletAdapterNetwork, WalletError } from '@hermis/solana-headless-core';
 import { WalletProvider as BaseWalletProvider } from '../providers/WalletProvider.js';
 import { ConnectionProvider } from '../providers/ConnectionProvider.js';
 import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
@@ -24,7 +24,7 @@ export interface ContextProviderProps {
   /** Custom storage factory for persisting wallet selection */
   storageFactory?: StorageProviderFactory;
   /** Error handler for wallet errors */
-  onError?: (error: any, adapter?: Adapter) => void;
+  onError?: (error: WalletError, adapter?: Adapter) => void;
 }
 
 /**

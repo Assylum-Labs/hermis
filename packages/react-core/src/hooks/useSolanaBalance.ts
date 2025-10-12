@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { PublicKey, LAMPORTS_PER_SOL } from '@hermis/solana-headless-core';
+import { PublicKey, LAMPORTS_PER_SOL, Connection } from '@hermis/solana-headless-core';
 import { useConnection } from './useConnection.js';
 import { useWallet } from './useWallet.js';
 
@@ -16,7 +16,7 @@ export interface BalanceInfo {
 
 /**
  * Hook for fetching and tracking a wallet's SOL balance
- * 
+ *
  * @param address Optional PublicKey to check balance for (defaults to connected wallet)
  * @param refreshInterval Optional automatic refresh interval in milliseconds
  * @returns Balance information
@@ -25,7 +25,9 @@ export function useSolanaBalance(
     address?: PublicKey | null,
     refreshInterval?: number
 ): BalanceInfo {
-    const { connection } = useConnection();
+    const { connection: dualConnection } = useConnection();
+    // Cast to legacy Connection for existing code compatibility
+    const connection = dualConnection as Connection;
     const { publicKey } = useWallet();
     const [balanceLamports, setBalanceLamports] = useState<number | null>(null);
     const [loading, setLoading] = useState(false);

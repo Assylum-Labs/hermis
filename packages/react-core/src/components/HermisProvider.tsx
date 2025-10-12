@@ -1,5 +1,5 @@
 import { FC, ReactNode, useState, useEffect, useMemo } from 'react';
-import { Adapter, WalletAdapterNetwork } from '@hermis/solana-headless-core';
+import { Adapter, WalletAdapterNetwork, WalletError } from '@hermis/solana-headless-core';
 import { ContextProvider } from './ContextProvider.js';
 import { useStandardWalletAdapters } from '../hooks/useStandardWalletAdapters.js';
 import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
@@ -23,7 +23,7 @@ export interface HermisWalletProviderProps {
   /** Additional wallet adapters to use */
   additionalAdapters?: Adapter[];
   /** Error handler for wallet errors */
-  onError?: (error: any, adapter?: Adapter) => void;
+  onError?: (error: WalletError, adapter?: Adapter) => void;
 }
 
 /**

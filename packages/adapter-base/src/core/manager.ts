@@ -4,7 +4,15 @@ import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
 import { WalletConnectionManager } from '../types.js';
 import { getDetectedWalletAdapters, initializeWalletDetection } from '@hermis/wallet-standard-base';
-import { signTransaction, signAllTransactions, signMessage } from '@hermis/solana-headless-core';
+import {
+    signTransaction,
+    signAllTransactions,
+    signMessage,
+    sendTransaction as sendTransactionCore,
+    DualArchitectureOptions,
+    DualConnection,
+    DualTransaction
+} from '@hermis/solana-headless-core';
 
 /**
  * Create a simple wallet connection manager
@@ -104,6 +112,54 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
                 console.error('Error auto-connecting wallet:', error);
                 return null;
             }
+        },
+
+        /**
+         * Sign a transaction (supports both legacy and Kit architectures)
+         */
+        signTransaction: async <T extends DualTransaction>(
+            transaction: T,
+            options?: DualArchitectureOptions
+        ): Promise<T> => {
+            if (!currentAdapter) throw new Error('No wallet connected');
+            return await signTransaction(transaction, currentAdapter, options);
+        },
+
+        /**
+         * Sign multiple transactions (supports both legacy and Kit architectures)
+         */
+        signAllTransactions: async <T extends DualTransaction>(
+            transactions: T[],
+            options?: DualArchitectureOptions
+        ): Promise<T[]> => {
+            if (!currentAdapter) throw new Error('No wallet connected');
+            return await signAllTransactions(transactions, currentAdapter, options);
+        },
+
+        /**
+         * Send a transaction (supports both legacy and Kit architectures)
+         */
+        sendTransaction: async <T extends DualTransaction>(
+            connection: DualConnection,
+            transaction: T,
+            options?: DualArchitectureOptions
+        ): Promise<string> => {
+            if (!currentAdapter) throw new Error('No wallet connected');
+            return await sendTransactionCore(connection, transaction, currentAdapter, options);
+        },
+
+        /**
+         * Sign and send a transaction in one operation (supports both legacy and Kit architectures)
+         */
+        signAndSendTransaction: async <T extends DualTransaction>(
+            connection: DualConnection,
+            transaction: T,
+            options?: DualArchitectureOptions
+        ): Promise<string> => {
+            if (!currentAdapter) throw new Error('No wallet connected');
+            // For simplicity, we'll sign then send
+            const signed = await signTransaction(transaction, currentAdapter, options);
+            return await sendTransactionCore(connection, signed, currentAdapter, options);
         }
     };
 }
@@ -319,40 +375,61 @@ export class WalletAdapterManager extends EventEmitter {
         this.removeAllListeners();
     }
 
-    public async signTransaction(
-        transaction: Transaction
-    ): Promise<Transaction | null> {
+    /**
+     * Sign a transaction (supports both legacy and Kit architectures)
+     * @param transaction - The transaction to sign (Transaction, VersionedTransaction, or TransactionMessage)
+     * @param options - Optional dual architecture configuration
+     * @returns The signed transaction or null if error occurs
+     */
+    public async signTransaction<T extends DualTransaction>(
+        transaction: T,
+        options?: DualArchitectureOptions
+    ): Promise<T | null> {
         if (!this.selectedAdapter) {
             this.emitSafeError("No Adapter connected")
             return null;
         }
 
         try {
-            return await signTransaction(transaction, this.selectedAdapter)
+            return await signTransaction(transaction, this.selectedAdapter, options)
         } catch (error) {
             this.emitSafeError(error)
             return null
         }
     }
 
-    public async signAllTransaction(
-        transaction: Transaction[]
-    ): Promise<Transaction[] | null> {
+    /**
+     * Sign multiple transactions (supports both legacy and Kit architectures)
+     * @param transactions - Array of transactions to sign (all same architecture)
+     * @param options - Optional dual architecture configuration
+     * @returns Array of signed transactions or null if error occurs
+     */
+    public async signAllTransaction<T extends DualTransaction>(
+        transactions: T[],
+        options?: DualArchitectureOptions
+    ): Promise<T[] | null> {
         if (!this.selectedAdapter) {
             this.emitSafeError("No Adapter connected")
             return null;
         }
 
         try {
-            return await signAllTransactions(transaction, this.selectedAdapter)
+            return await signAllTransactions(transactions, this.selectedAdapter, options)
         } catch (error) {
             this.emitSafeError(error)
             return null
         }
     }
 
+    /**
+     * Sign a message (supports both legacy and Kit architectures)
+     * @param message - The message to sign (string or Uint8Array)
+     * @param options - Optional dual architecture configuration
+     * @returns The signature bytes or null if error occurs
+     */
     public async signMessage(
-        message: string | Uint8Array<ArrayBufferLike>
+        message: string | Uint8Array<ArrayBufferLike>,
+        options?: DualArchitectureOptions
     ): Promise<Uint8Array | null> {
         if (!this.selectedAdapter) {
             this.emitSafeError("No Adapter connected")
@@ -360,7 +437,60 @@ export class WalletAdapterManager extends EventEmitter {
         }
 
         try {
-            return await signMessage(message, this.selectedAdapter)
+            return await signMessage(message, this.selectedAdapter, options)
+        } catch (error) {
+            this.emitSafeError(error)
+            return null
+        }
+    }
+
+    /**
+     * Send a transaction (supports both legacy and Kit architectures)
+     * @param connection - The Solana connection (Legacy Connection or Kit Rpc)
+     * @param transaction - The transaction to send
+     * @param options - Optional dual architecture configuration
+     * @returns The transaction signature or null if error occurs
+     */
+    public async sendTransaction<T extends DualTransaction>(
+        connection: DualConnection,
+        transaction: T,
+        options?: DualArchitectureOptions
+    ): Promise<string | null> {
+        if (!this.selectedAdapter) {
+            this.emitSafeError("No Adapter connected")
+            return null;
+        }
+
+        try {
+            return await sendTransactionCore(connection, transaction, this.selectedAdapter, options)
+        } catch (error) {
+            this.emitSafeError(error)
+            return null
+        }
+    }
+
+    /**
+     * Sign and send a transaction in one operation (supports both legacy and Kit architectures)
+     * @param connection - The Solana connection (Legacy Connection or Kit Rpc)
+     * @param transaction - The transaction to sign and send
+     * @param options - Optional dual architecture configuration
+     * @returns The transaction signature or null if error occurs
+     */
+    public async signAndSendTransaction<T extends DualTransaction>(
+        connection: DualConnection,
+        transaction: T,
+        options?: DualArchitectureOptions
+    ): Promise<string | null> {
+        if (!this.selectedAdapter) {
+            this.emitSafeError("No Adapter connected")
+            return null;
+        }
+
+        try {
+            // Sign the transaction first
+            const signed = await signTransaction(transaction, this.selectedAdapter, options);
+            // Then send it
+            return await sendTransactionCore(connection, signed, this.selectedAdapter, options);
         } catch (error) {
             this.emitSafeError(error)
             return null

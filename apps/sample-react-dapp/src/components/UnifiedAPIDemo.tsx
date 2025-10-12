@@ -9,7 +9,8 @@ import {
   Transaction,
   SystemProgram,
   PublicKey,
-  LAMPORTS_PER_SOL
+  LAMPORTS_PER_SOL,
+  Connection
 } from '@hermis/solana-headless-core';
 import './UnifiedAPIDemo.css';
 
@@ -19,7 +20,8 @@ interface UnifiedAPIDemoProps {
 }
 
 export const UnifiedAPIDemo: React.FC<UnifiedAPIDemoProps> = ({ recipient, amount }) => {
-  const { connection } = useConnection();
+  const { connection: dualConnection } = useConnection();
+  const connection = dualConnection as Connection;
   const { publicKey, wallet, signTransaction, sendTransaction } = useWallet();
   const [isTestingWeb3, setIsTestingWeb3] = useState(false);
   const [isTestingKit, setIsTestingKit] = useState(false);

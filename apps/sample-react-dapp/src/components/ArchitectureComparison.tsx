@@ -10,7 +10,8 @@ import {
   Transaction,
   SystemProgram,
   PublicKey,
-  LAMPORTS_PER_SOL
+  LAMPORTS_PER_SOL,
+  Connection,
 } from '@hermis/solana-headless-core';
 import './ArchitectureComparison.css';
 
@@ -22,7 +23,8 @@ interface ComparisonResult {
 }
 
 export const ArchitectureComparison: React.FC = () => {
-  const { connection } = useConnection();
+  const { connection: dualConnection } = useConnection();
+  const connection = dualConnection as Connection;
   const { publicKey, wallet } = useWallet();
   const [recipient] = useState('So11111111111111111111111111111111111111112'); // Wrapped SOL
   const [isRunning, setIsRunning] = useState(false);

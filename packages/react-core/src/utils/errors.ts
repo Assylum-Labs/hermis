@@ -7,7 +7,7 @@ import { WalletError } from '@hermis/solana-headless-core';
 export class WalletNotSelectedError extends WalletError {
   name = 'WalletNotSelectedError';
   
-  constructor(message = 'No wallet selected', error?: any) {
+  constructor(message = 'No wallet selected', error?: Error) {
     super(message, error);
   }
 }

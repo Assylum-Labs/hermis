@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import {
     VersionedTransactionResponse,
     SignatureStatus,
-    TransactionSignature
+    TransactionSignature,
+    Connection
 } from '@hermis/solana-headless-core';
 import { useConnection } from './useConnection.js';
 
@@ -30,7 +31,9 @@ export function useSolanaTransaction(
     signature?: TransactionSignature,
     autoFetch: boolean = true
 ) {
-    const { connection } = useConnection();
+    const { connection: dualConnection } = useConnection();
+    // Cast to legacy Connection for existing code compatibility
+    const connection = dualConnection as Connection;
     const [txStatus, setTxStatus] = useState<TransactionStatus | null>(null);
     const [loading, setLoading] = useState(false);
 

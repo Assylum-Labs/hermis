@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { PublicKey, TOKEN_PROGRAM_ID } from '@hermis/solana-headless-core';
+import { PublicKey, TOKEN_PROGRAM_ID, Connection } from '@hermis/solana-headless-core';
 import { useConnection } from './useConnection.js';
 import { useWallet } from './useWallet.js';
 
@@ -21,7 +21,9 @@ export interface TokenAccountInfo {
  * @returns Object with token accounts and loading state
  */
 export function useSolanaTokenAccounts(owner?: PublicKey) {
-    const { connection } = useConnection();
+    const { connection: dualConnection } = useConnection();
+    // Cast to legacy Connection for existing code compatibility
+    const connection = dualConnection as Connection;
     const { publicKey } = useWallet();
     const [tokenAccounts, setTokenAccounts] = useState<TokenAccountInfo[]>([]);
     const [loading, setLoading] = useState(false);

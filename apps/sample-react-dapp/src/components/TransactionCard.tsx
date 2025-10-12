@@ -15,7 +15,8 @@ import {
   Transaction,
   SystemProgram,
   PublicKey,
-  LAMPORTS_PER_SOL
+  LAMPORTS_PER_SOL,
+  Connection
 } from '@hermis/solana-headless-core';
 import './TransactionCard.css';
 
@@ -24,7 +25,8 @@ interface TransactionCardProps {
 }
 
 export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionSent }) => {
-  const { connection } = useConnection();
+  const { connection: dualConnection } = useConnection();
+  const connection = dualConnection as Connection;
   const { publicKey, sendTransaction, signTransaction, wallet } = useWallet();
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
