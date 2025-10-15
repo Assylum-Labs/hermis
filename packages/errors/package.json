@@ -1,0 +1,39 @@
+{
+  "name": "@hermis/errors",
+  "version": "1.0.0",
+  "description": "Error handling system for the Hermis Solana Headless SDK",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsup --config tsup.config.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "prepublishOnly": "pnpm run build",
+    "clean": "rm -rf dist"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@hermis/solana-headless-format-config": "^1.0.5",
+    "@types/node": "^22.13.8",
+    "tsup": "^8.0.0"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "keywords": ["solana", "wallet", "errors", "hermis"],
+  "author": "Mctursh",
+  "license": "Apache-2.0",
+  "packageManager": "pnpm@10.5.2"
+}

@@ -588,8 +588,8 @@ export function WalletProvider({
     try {
       // Import the core dual architecture function
       const { signTransaction: signTransactionCore } = await import('@hermis/solana-headless-core');
-
       // Route to core - it automatically detects web3.js vs Kit
+      // return await currentAdapter.signTransaction(transaction as any, currentAdapter, options) as T;
       return await signTransactionCore(transaction as any, currentAdapter, options) as T;
     } catch (error) {
       handleErrorRef.current(error as WalletError, currentAdapter);
@@ -606,11 +606,9 @@ export function WalletProvider({
     if (!currentAdapter) throw new WalletNotSelectedError();
 
     try {
-      // Import the core dual architecture function
-      const { sendTransaction: sendTransactionCore } = await import('@hermis/solana-headless-core');
-
-      // Route to core - it automatically detects web3.js vs Kit
-      return await sendTransactionCore(connection, transaction, currentAdapter, options);
+      // Call adapter's sendTransaction directly - it has signature detection logic
+      // This ensures signed transactions are sent without prompting the wallet again
+      return await currentAdapter.sendTransaction(transaction as any, connection as any, options as any);
     } catch (error) {
       handleErrorRef.current(error as WalletError, currentAdapter);
       throw error;

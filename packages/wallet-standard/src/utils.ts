@@ -480,16 +480,17 @@ export function detectClusterFromEndpoint(endpoint: string): string {
   const url = endpoint.toLowerCase();
   
   if (url.includes('mainnet') || url.includes('api.solana.com')) {
-    return 'mainnet-beta';
+    return 'solana:mainnet-beta';
   } else if (url.includes('devnet')) {
-    return 'devnet';
+    return 'solana:devnet';
   } else if (url.includes('testnet')) {
-    return 'testnet';
+    return 'solana:testnet';
   } else if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    return 'localnet';
+    return 'solana:localnet';
   }
   
-  return 'unknown';
+  return 'solana:mainnet-beta';
+  // return 'unknown';
 }
 
 /**

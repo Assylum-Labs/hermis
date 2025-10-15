@@ -23,6 +23,7 @@
     }
   },
   "dependencies": {
+    "@hermis/errors": "workspace:*",
     "@hermis/solana-headless-core": "workspace:*",
     "@hermis/wallet-standard-base": "workspace:*",
     "@solana/wallet-adapter-base": "^0.9.23",

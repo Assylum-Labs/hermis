@@ -26,6 +26,7 @@
     "dist"
   ],
   "dependencies": {
+    "@hermis/errors": "workspace:*",
     "@hermis/solana-headless-adapter-base": "workspace:*",
     "@hermis/solana-headless-core": "workspace:*",
     "@hermis/wallet-standard-base": "workspace:*",

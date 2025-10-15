@@ -78,6 +78,23 @@ import {
   sendTransactionHelper
 } from '../connection/index.js';
 
+// Import error handling
+import {
+  HermisError,
+  HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+  HERMIS_ERROR__WALLET_CONNECTION__NO_PUBLIC_KEY,
+  HERMIS_ERROR__TRANSACTION__SIGNATURE_FAILED,
+  HERMIS_ERROR__TRANSACTION__SEND_FAILED,
+  HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED,
+  HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+  HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND,
+  HERMIS_ERROR__SIGNING__MESSAGE_FAILED,
+  HERMIS_ERROR__SIGNING__TRANSACTION_FAILED,
+  HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE,
+  HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT,
+  HERMIS_ERROR__INVARIANT__OPERATION_NOT_ALLOWED
+} from '@hermis/errors';
+
 // Import required packages for CryptoKeyPair conversion
 import * as ed25519 from '@noble/ed25519';
 import bs58 from 'bs58';
@@ -129,7 +146,8 @@ import {
   SolanaSignMessageMethod,
   SolanaSignTransactionFeature,
   SolanaSignTransactionMethod,
-  StandardWalletAccount
+  StandardWalletAccount,
+  TypedStandardWallet
 } from '../types/wallet-standard-types.js';
 
 // Note: Compatibility functions would be imported from @solana/compat when available
@@ -166,9 +184,20 @@ function isLegacyWallet(wallet: DualWallet): wallet is LegacyWallet {
 
 /**
  * Helper to detect if a wallet is a kit wallet (CryptoKeyPair, Address, or MessagePartialSigner)
+ * Explicitly checks for the three Kit wallet types instead of using !isLegacyWallet()
  */
 function isKitWallet(wallet: DualWallet): wallet is KitWallet {
-  return !isLegacyWallet(wallet);
+  return (
+    // Check for CryptoKeyPair (has privateKey and publicKey)
+    (typeof wallet === 'object' &&
+     wallet !== null &&
+     'privateKey' in wallet &&
+     'publicKey' in wallet) ||
+    // Check for Address (string)
+    typeof wallet === 'string' ||
+    // Check for MessagePartialSigner (has address and signMessages)
+    isMessagePartialSigner(wallet)
+  );
 }
 
 /**
@@ -201,6 +230,35 @@ function isTransactionMessage(transaction: DualTransaction): transaction is obje
 }
 
 /**
+ * Serialize a DualTransaction for Standard Wallet consumption
+ * Handles Transaction, VersionedTransaction, and Kit TransactionMessage
+ *
+ * This helper provides a single point of serialization logic for Standard Wallets,
+ * properly handling Kit TransactionMessage by compiling and encoding, while maintaining
+ * backward compatibility with legacy Transaction and VersionedTransaction types.
+ *
+ * @param transaction - Any dual transaction type (Transaction, VersionedTransaction, or TransactionMessage)
+ * @returns Serialized transaction bytes ready for Standard Wallet
+ */
+export function serializeTransactionForWallet(transaction: DualTransaction): Uint8Array {
+  // Kit TransactionMessage: compile then encode
+  if (isTransactionMessage(transaction)) {
+    const compiled = compileTransaction(transaction as any);
+    const encoder = getTransactionEncoder();
+    // Convert ReadonlyUint8Array to Uint8Array for compatibility
+    return new Uint8Array(encoder.encode(compiled));
+  }
+
+  // Legacy VersionedTransaction
+  if (isVersionedTransaction(transaction)) {
+    return (transaction as VersionedTransaction).serialize();
+  }
+
+  // Legacy Transaction
+  return (transaction as Transaction).serialize({ verifySignatures: false });
+}
+
+/**
  * Helper to detect if a wallet is a CryptoKeyPair
  */
 function isCryptoKeyPair(wallet: KitWallet): wallet is CryptoKeyPair {
@@ -220,30 +278,116 @@ function isAddress(wallet: KitWallet): wallet is string {
 }
 
 /**
- * Signs a transaction using the specified wallet (supports both legacy and kit architectures)
- * @param transaction The transaction to sign (can be Transaction, VersionedTransaction, or TransactionMessage)
- * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
- * @param options Optional configuration for dual architecture behavior
- * @returns The signed transaction
+ * Helper to detect the Solana chain from a connection's RPC endpoint
+ * Maps known RPC endpoints to their corresponding chain identifiers
+ * @param connection The connection to detect the chain from
+ * @returns The chain identifier (e.g., 'solana:devnet', 'solana:mainnet')
  */
-export async function signTransaction<T extends DualTransaction>(
-  transaction: T,
-  wallet: DualWallet,
-  options?: DualArchitectureOptions
-): Promise<T>;
+function getChainFromConnection(connection: DualConnection): string {
+  // For legacy connections, check the rpcEndpoint property
+  if (isLegacyConnection(connection)) {
+    const endpoint = connection.rpcEndpoint.toLowerCase();
+
+    // Check for devnet
+    if (endpoint.includes('devnet')) {
+      return 'solana:devnet';
+    }
+
+    // Check for testnet
+    if (endpoint.includes('testnet')) {
+      return 'solana:testnet';
+    }
+
+    // Check for mainnet-beta (official endpoint)
+    if (endpoint.includes('mainnet-beta') || endpoint.includes('mainnet')) {
+      return 'solana:mainnet';
+    }
+  }
+
+  // Default to mainnet for unknown endpoints or Kit connections
+  return 'solana:mainnet';
+}
 
 /**
- * Signs a transaction using the specified signer (overload for explicit signer support)
- * @param transaction The transaction to sign
- * @param signer The signer to use (Keypair, MessagePartialSigner, or KeyPairSigner)
- * @param options Optional configuration for dual architecture behavior
- * @returns The signed transaction
+ * Helper to detect if a transaction has valid signatures
+ * Returns false for unsigned or partially signed transactions
+ * @param transaction The transaction to check
+ * @returns true if the transaction has at least one valid signature
  */
-export async function signTransaction<T extends DualTransaction>(
-  transaction: T,
-  signer: Keypair | MessagePartialSigner | KeyPairSigner,
-  options?: DualArchitectureOptions
-): Promise<T>;
+export function isTransactionSigned(transaction: any): boolean {
+  console.log('🔍 [isTransactionSigned] Checking transaction:', transaction);
+
+  // Safety check: only works with objects that have a signatures property
+  if (!transaction || typeof transaction !== 'object' || !('signatures' in transaction)) {
+    console.log('❌ [isTransactionSigned] No signatures property found');
+    return false;
+  }
+
+  const signatures = transaction.signatures;
+  console.log('🔍 [isTransactionSigned] Signatures array:', signatures);
+  console.log('🔍 [isTransactionSigned] Signatures length:', signatures?.length);
+
+  // No signatures array means unsigned
+  if (!signatures || signatures.length === 0) {
+    console.log('❌ [isTransactionSigned] Empty signatures array');
+    return false;
+  }
+
+  // Check if at least one signature is present and non-zero
+  // A zero signature (all bytes are 0) indicates a placeholder, not a real signature
+  const hasValidSig = signatures.some((sig: any, index: number) => {
+    console.log(`🔍 [isTransactionSigned] Checking signature ${index}:`, sig);
+    console.log(`🔍 [isTransactionSigned] Signature type: ${typeof sig}, is Buffer: ${Buffer.isBuffer(sig)}, is Uint8Array: ${sig instanceof Uint8Array}`);
+
+    // Handle both signature formats (Uint8Array or {signature: Uint8Array})
+    const sigBytes = sig.signature !== undefined ? sig.signature : sig;
+    console.log(`🔍 [isTransactionSigned] Extracted sigBytes:`, sigBytes);
+
+    if (!sigBytes || sigBytes.length === 0) {
+      console.log(`❌ [isTransactionSigned] Signature ${index} is empty`);
+      return false;
+    }
+
+    // Check if all bytes are zero (placeholder signature)
+    for (let i = 0; i < sigBytes.length; i++) {
+      if (sigBytes[i] !== 0) {
+        console.log(`✅ [isTransactionSigned] Signature ${index} has non-zero byte at position ${i}`);
+        return true;  // Found a non-zero byte, this is a real signature
+      }
+    }
+    console.log(`❌ [isTransactionSigned] Signature ${index} is all zeros (placeholder)`);
+    return false;  // All bytes are zero, this is a placeholder
+  });
+
+  console.log(`🔍 [isTransactionSigned] Final result: ${hasValidSig}`);
+  return hasValidSig;
+}
+
+// /**
+//  * Signs a transaction using the specified wallet (supports both legacy and kit architectures)
+//  * @param transaction The transaction to sign (can be Transaction, VersionedTransaction, or TransactionMessage)
+//  * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
+//  * @param options Optional configuration for dual architecture behavior
+//  * @returns The signed transaction
+//  */
+// export async function signTransaction<T extends DualTransaction>(
+//   transaction: T,
+//   wallet: DualWallet,
+//   options?: DualArchitectureOptions
+// ): Promise<T>;
+
+// /**
+//  * Signs a transaction using the specified signer (overload for explicit signer support)
+//  * @param transaction The transaction to sign
+//  * @param signer The signer to use (Keypair, MessagePartialSigner, or KeyPairSigner)
+//  * @param options Optional configuration for dual architecture behavior
+//  * @returns The signed transaction
+//  */
+// export async function signTransaction<T extends DualTransaction>(
+//   transaction: T,
+//   signer: Keypair | MessagePartialSigner | KeyPairSigner,
+//   options?: DualArchitectureOptions
+// ): Promise<T>;
 
 /**
  * Implementation for signTransaction with improved signer compatibility
@@ -298,27 +442,22 @@ export async function signTransaction<T extends DualTransaction>(
     }
   }
 
-  // Handle legacy architecture
-  if (isLegacyWallet(walletOrSigner)) {
-    if (isTransactionMessage(transaction)) {
-      // Legacy wallet but kit transaction - convert if possible
-      if (options.preferKitArchitecture === false || options.fallbackToLegacy !== false) {
-        // Convert transaction to legacy format
-        const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
-        const signedLegacy = await signTransactionLegacy(legacyTransaction, walletOrSigner);
-        // Convert back to TransactionMessage if needed
-        // This would need proper implementation using conversion utilities
-        throw new Error('Legacy to kit transaction conversion not yet implemented');
-      } else {
-        throw new Error('Legacy wallet cannot sign kit transaction without conversion enabled');
-      }
+  // Everything else uses legacy implementation (Keypair, Adapter, Standard Wallet)
+  if (isTransactionMessage(transaction)) {
+    // Legacy wallet but kit transaction - convert if possible
+    if (options.preferKitArchitecture === false || options.fallbackToLegacy !== false) {
+      // Convert transaction to legacy format
+      const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
+      return await signTransactionLegacy(legacyTransaction, walletOrSigner) as T;
+      // This would need proper implementation using conversion utilities
+      // throw new Error('Legacy to kit transaction conversion not yet implemented');
     } else {
-      // Both wallet and transaction are legacy architecture
-      return await signTransactionLegacy(transaction as Transaction | VersionedTransaction, walletOrSigner) as T;
+      throw new Error('Legacy wallet cannot sign kit transaction without conversion enabled');
     }
+  } else {
+    // Both wallet and transaction are legacy architecture
+    return await signTransactionLegacy(transaction as Transaction | VersionedTransaction, walletOrSigner) as T;
   }
-
-  throw new Error('Invalid wallet or transaction type');
 }
 
 /**
@@ -343,30 +482,42 @@ async function signTransactionLegacy<T extends Transaction | VersionedTransactio
     // It's a Standard Wallet
     const feature = wallet.features[SolanaSignTransactionMethod] as SolanaSignTransactionFeature;
     if (!feature || typeof feature.signTransaction !== 'function') {
-      throw new Error('Wallet has invalid signTransaction feature');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+        { featureName: 'signTransaction', walletName: wallet.name || 'Unknown wallet' }
+      );
     }
 
     // Get the account to use for signing
     const account = wallet.accounts[0] as StandardWalletAccount;
     if (!account) {
-      throw new Error('No account found in wallet');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND,
+        { walletName: wallet.name || 'Unknown wallet' }
+      );
     }
 
     const accountPublicKey = new PublicKey(account.publicKey);
 
-    // Ensure transaction has feePayer set
-    if (!isVersionedTransaction(transaction) && !(transaction as Transaction).feePayer) {
+    // Ensure transaction has feePayer set (only for legacy Transaction, not Kit TransactionMessage)
+    if (!isVersionedTransaction(transaction) && !isTransactionMessage(transaction) && !(transaction as Transaction).feePayer) {
       (transaction as Transaction).feePayer = accountPublicKey;
     }
 
     // Serialize the transaction
     let transactionBytes: Uint8Array;
     try {
-      transactionBytes = isVersionedTransaction(transaction)
-        ? (transaction as VersionedTransaction).serialize()
-        : (transaction as Transaction).serialize({ verifySignatures: false });
+      transactionBytes = serializeTransactionForWallet(transaction);
     } catch (error) {
-      throw new Error(`Failed to serialize transaction for signing: ${error instanceof Error ? error.message : error}`);
+      throw new HermisError(
+        HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED,
+        {
+          transactionType: isTransactionMessage(transaction) ? 'Kit TransactionMessage' : isVersionedTransaction(transaction) ? 'VersionedTransaction' : 'Transaction',
+          reason: 'Serialization failed for Standard Wallet',
+          originalError: error instanceof Error ? error.message : String(error)
+        },
+        error instanceof Error ? error : undefined
+      );
     }
 
     // Call wallet's signTransaction feature
@@ -393,9 +544,12 @@ async function signTransactionLegacy<T extends Transaction | VersionedTransactio
   } else {
     // It's an Adapter
     if (!wallet.publicKey) {
-      throw new Error('Wallet not connected');
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: wallet.name || 'Unknown wallet' }
+      );
     }
-    
+
     // For versioned transactions, we need to check if the adapter supports it
     if (
       isVersionedTransaction(transaction) && 
@@ -779,7 +933,7 @@ async function convertTransactionMessageToLegacy(transactionMessage: Transaction
  * @returns A promise that resolves to an array of signed transactions
  */
 export async function signAllTransactions<T extends DualTransaction>(
-  transactions: T[], 
+  transactions: T[],
   wallet: DualWallet,
   options: DualArchitectureOptions = {}
 ): Promise<T[]> {
@@ -821,34 +975,31 @@ export async function signAllTransactions<T extends DualTransaction>(
     }
   }
 
-  // Handle legacy architecture
-  if (isLegacyWallet(wallet)) {
-    if (transactions.every(tx => !isTransactionMessage(tx))) {
-      // Both wallet and all transactions are legacy architecture
-      return await signAllTransactionsLegacy(transactions as (Transaction | VersionedTransaction)[], wallet) as T[];
-    } else {
-      // Legacy wallet but some kit transactions - convert if possible
-      if (options.preferKitArchitecture === false || options.fallbackToLegacy !== false) {
-        const signedTransactions: T[] = [];
-        for (const transaction of transactions) {
-          if (isTransactionMessage(transaction)) {
-            const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
-            const signed = await signTransactionLegacy(legacyTransaction, wallet);
-            // Convert back to TransactionMessage if needed
-            throw new Error('Legacy to kit transaction conversion not yet implemented');
-          } else {
-            const signed = await signTransactionLegacy(transaction as Transaction | VersionedTransaction, wallet);
-            signedTransactions.push(signed as T);
-          }
+  // Everything else uses legacy implementation (Keypair, Adapter, Standard Wallet)
+  if (transactions.every(tx => !isTransactionMessage(tx))) {
+    // Both wallet and all transactions are legacy architecture
+    return await signAllTransactionsLegacy(transactions as (Transaction | VersionedTransaction)[], wallet) as T[];
+  } else {
+    // Legacy wallet but some kit transactions - convert if possible
+    if (options.preferKitArchitecture === false || options.fallbackToLegacy !== false) {
+      const signedTransactions: T[] = [];
+      for (const transaction of transactions) {
+        if (isTransactionMessage(transaction)) {
+          const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
+          const signed = await signTransactionLegacy(legacyTransaction, wallet);
+          // Convert back to TransactionMessage if needed
+          // throw new Error('Legacy to kit transaction conversion not yet implemented');
+          signedTransactions.push(signed as T);
+        } else {
+          const signed = await signTransactionLegacy(transaction as Transaction | VersionedTransaction, wallet);
+          signedTransactions.push(signed as T);
         }
-        return signedTransactions;
-      } else {
-        throw new Error('Legacy wallet cannot sign kit transactions without conversion enabled');
       }
+      return signedTransactions;
+    } else {
+      throw new Error('Legacy wallet cannot sign kit transactions without conversion enabled');
     }
   }
-
-  throw new Error('Invalid wallet or transaction types');
 }
 
 /**
@@ -896,17 +1047,15 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
 
       const accountPublicKey = new PublicKey(account.publicKey);
 
-      // Ensure transaction has feePayer set
-      if (!isVersionedTransaction(transaction) && !(transaction as Transaction).feePayer) {
+      // Ensure transaction has feePayer set (only for legacy Transaction, not Kit TransactionMessage)
+      if (!isVersionedTransaction(transaction) && !isTransactionMessage(transaction) && !(transaction as Transaction).feePayer) {
         (transaction as Transaction).feePayer = accountPublicKey;
       }
 
       // Serialize the transaction
       let transactionBytes: Uint8Array;
       try {
-        transactionBytes = isVersionedTransaction(transaction)
-          ? (transaction as VersionedTransaction).serialize()
-          : (transaction as Transaction).serialize({ verifySignatures: false });
+        transactionBytes = serializeTransactionForWallet(transaction);
       } catch (error) {
         throw new Error(`Failed to serialize transaction for signing: ${error instanceof Error ? error.message : error}`);
       }
@@ -937,9 +1086,12 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
   } else {
     // It's an Adapter
     if (!wallet.publicKey) {
-      throw new Error('Wallet not connected');
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: wallet.name || 'Unknown wallet' }
+      );
     }
-    
+
     // Check for versioned transactions and verify support
     for (const transaction of transactions) {
       if (
@@ -1059,23 +1211,19 @@ export async function sendTransaction(
       }
     }
 
-    // Handle legacy architecture
-    if (isLegacyWallet(wallet)) {
-      if (isTransactionMessage(transaction)) {
-        // Legacy wallet but kit transaction
-        if (finalOptions.preferKitArchitecture === false || finalOptions.fallbackToLegacy !== false) {
-          const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
-          return await sendTransactionLegacy(connection, legacyTransaction, wallet, finalOptions);
-        } else {
-          throw new Error('Legacy wallet cannot send kit transaction without conversion enabled');
-        }
+    // Everything else uses legacy implementation (Keypair, Adapter, Standard Wallet)
+    if (isTransactionMessage(transaction)) {
+      // Legacy wallet but kit transaction
+      if (finalOptions.preferKitArchitecture === false || finalOptions.fallbackToLegacy !== false) {
+        const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
+        return await sendTransactionLegacy(connection, legacyTransaction, wallet, finalOptions);
       } else {
-        // Both wallet and transaction are legacy architecture
-        return await sendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, wallet, finalOptions);
+        throw new Error('Legacy wallet cannot send kit transaction without conversion enabled');
       }
+    } else {
+      // Both wallet and transaction are legacy architecture
+      return await sendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, wallet, finalOptions);
     }
-
-    throw new Error('Invalid wallet or transaction type');
   } catch (error) {
     console.error('Failed to send transaction:', error);
     throw error;
@@ -1116,57 +1264,41 @@ async function sendTransactionLegacy(
     }
   } else if ("features" in wallet) {
       // It's a Standard Wallet
-      const feature = wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
-      if (!feature || typeof feature.signAndSendTransaction !== 'function') {
-        throw new Error('Wallet has invalid signAndSendTransaction feature');
-      }
 
-      // Get the account to use
-      const account = wallet.accounts[0] as StandardWalletAccount;
-      if (!account) {
-        throw new Error('No account found in wallet');
-      }
-
-      const accountPublicKey = new PublicKey(account.publicKey);
-
-      // Ensure transaction has feePayer set
-      if (!isVersionedTransaction(transaction) && !(transaction as Transaction).feePayer) {
-        (transaction as Transaction).feePayer = accountPublicKey;
-      }
-
-      // Serialize the transaction
-      let transactionBytes: Uint8Array;
-      try {
-        transactionBytes = isVersionedTransaction(transaction)
+      // Check if transaction is already signed
+      if (isTransactionSigned(transaction)) {
+        // Transaction is already signed - send raw bytes directly (no wallet prompt)
+        const serializedTx = isVersionedTransaction(transaction)
           ? (transaction as VersionedTransaction).serialize()
-          : (transaction as Transaction).serialize({ verifySignatures: false });
-      } catch (error) {
-        throw new Error(`Failed to serialize transaction for signing: ${error instanceof Error ? error.message : error}`);
+          : (transaction as Transaction).serialize();
+
+        return await sendRawTransactionHelper(connection, serializedTx, {
+          skipPreflight: false,
+          preflightCommitment: 'confirmed'
+        });
       }
 
-      // Use chain from options, default to 'solana:mainnet'
-      const chain = options.chain || 'solana:mainnet';
-
-      const result = await feature.signAndSendTransaction({
-        account: account,
-        transaction: transactionBytes,
-        chain: chain
-      });
-
-      if (!result || !result[0] || !result[0].signature) {
-        throw new Error('No signature returned from signAndSendTransaction');
-      }
-
-      // Convert signature bytes to base58 string
-      return bs58.encode(result[0].signature);
+      // Transaction is unsigned - throw error with helpful message
+      throw new HermisError(
+        HERMIS_ERROR__TRANSACTION__SEND_FAILED,
+        {
+          reason: 'Cannot send unsigned transaction with Standard Wallet. Use signAndSendTransaction() instead, or call signTransaction() first.'
+        }
+      );
   } else {
     // It's an Adapter
     if (!wallet.publicKey) {
-      throw new Error('Wallet not connected');
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: wallet.name || 'Unknown wallet' }
+      );
     }
-    
+
     if (!wallet.sendTransaction) {
-      throw new Error('Wallet does not support sending transactions');
+      throw new HermisError(
+        HERMIS_ERROR__INVARIANT__OPERATION_NOT_ALLOWED,
+        { operation: 'sendTransaction', reason: 'Wallet does not support sending transactions' }
+      );
     }
     
     // Set fee payer if not already set (for regular transactions)
@@ -1209,10 +1341,10 @@ export async function signMessage(
   
   try {
     // Convert message to bytes if it's a string
-    const messageBytes = typeof message === 'string' 
-      ? new TextEncoder().encode(message) 
+    const messageBytes = typeof message === 'string'
+      ? new TextEncoder().encode(message)
       : message;
-    
+
     // Handle kit architecture
     if (isKitWallet(wallet)) {
       if (isMessagePartialSigner(wallet)) {
@@ -1230,13 +1362,9 @@ export async function signMessage(
       //   throw new Error('Unsupported kit wallet type');
       // }
     }
-    
-    if (isLegacyWallet(wallet)) {
-      return await signMessageLegacy(messageBytes, wallet);
-    }
-    // Handle legacy architecture
 
-    throw new Error('Invalid wallet type');
+    // Everything else uses legacy implementation (Keypair, Adapter, Standard Wallet)
+    return await signMessageLegacy(messageBytes, wallet as LegacyWallet);
   } catch (error) {
     console.error('Failed to sign message:', error);
     throw error;
@@ -1497,7 +1625,10 @@ async function signMessageLegacy(
     // It's a Standard Wallet
     const feature = wallet._wallet.features[SolanaSignMessageMethod] as SolanaSignMessageFeature;
     if (!feature || typeof feature.signMessage !== 'function') {
-      throw new Error('Wallet has invalid signMessage feature');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+        { featureName: 'signMessage', walletName: wallet._wallet.name || 'Unknown wallet' }
+      );
     }
 
     const result = await feature.signMessage({
@@ -1506,12 +1637,18 @@ async function signMessageLegacy(
     }); 
 
     if (!result || result.length < 1 || !result[0].signature) {
-      throw new Error('No signature returned from signMessage');
+      throw new HermisError(
+        HERMIS_ERROR__SIGNING__MESSAGE_FAILED,
+        { reason: 'No signature returned from signMessage' }
+      );
     }
 
     return result[0].signature;
   } else {
-    throw new Error('Invalid wallet type');
+    throw new HermisError(
+      HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT,
+      { argumentName: 'wallet', expectedType: 'Keypair or Standard Wallet', receivedValue: typeof wallet }
+    );
   }
   // else {
   //   // It's an Adapter
@@ -1587,7 +1724,10 @@ async function signInLegacy(
   ): Promise<SolanaSignInOutput> {
     // Check if wallet is connected
     if (!wallet.publicKey) {
-      throw new Error('Wallet not connected');
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: wallet.name || 'Unknown wallet' }
+      );
     }
     
     // Check if wallet supports signIn directly
@@ -1606,7 +1746,10 @@ async function signInLegacy(
     
     // Check if wallet at least supports signMessage
     if (!('signMessage' in wallet) || typeof wallet.signMessage !== 'function') {
-      throw new Error('Wallet does not support message signing');
+      throw new HermisError(
+        HERMIS_ERROR__SIGNING__MESSAGE_FAILED,
+        { reason: 'Wallet does not support message signing' }
+      );
     }
     
     // Generate the sign-in message
@@ -1894,35 +2037,35 @@ export async function signTransactionWithSigner<T extends DualTransaction>(
   return await signTransaction(transaction, signer as any, options);
 }
 
-/**
- * Signs and sends a transaction in a single operation (supports both legacy and kit architectures)
- * @param connectionOrTransaction The Solana connection to use, or transaction when used with default connection
- * @param transactionOrWallet The transaction to sign and send, or wallet when connection is omitted
- * @param walletOrOptions The wallet to sign with, or options when connection is omitted
- * @param options Optional configuration for dual architecture behavior
- * @returns A promise that resolves to the transaction signature
- */
-export async function signAndSendTransaction(
-  connectionOrTransaction: DualConnection | DualTransaction,
-  transactionOrWallet: DualTransaction | DualWallet,
-  walletOrOptions?: DualWallet | DualArchitectureOptions,
-  options?: DualArchitectureOptions
-): Promise<TransactionSignature>;
+// /**
+//  * Signs and sends a transaction in a single operation (supports both legacy and kit architectures)
+//  * @param connectionOrTransaction The Solana connection to use, or transaction when used with default connection
+//  * @param transactionOrWallet The transaction to sign and send, or wallet when connection is omitted
+//  * @param walletOrOptions The wallet to sign with, or options when connection is omitted
+//  * @param options Optional configuration for dual architecture behavior
+//  * @returns A promise that resolves to the transaction signature
+//  */
+// export async function signAndSendTransaction(
+//   connectionOrTransaction: DualConnection | DualTransaction,
+//   transactionOrWallet: DualTransaction | DualWallet,
+//   walletOrOptions?: DualWallet | DualArchitectureOptions,
+//   options?: DualArchitectureOptions
+// ): Promise<TransactionSignature>;
 
-/**
- * Signs and sends a transaction in a single operation (supports both legacy and kit architectures)
- * @param connection The Solana connection to use (supports both Legacy Connection and Kit Rpc)
- * @param transaction The transaction to sign and send
- * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
- * @param options Optional configuration for dual architecture behavior
- * @returns A promise that resolves to the transaction signature
- */
-export async function signAndSendTransaction(
-  connection: DualConnection,
-  transaction: DualTransaction,
-  wallet: DualWallet,
-  options?: DualArchitectureOptions
-): Promise<TransactionSignature>;
+// /**
+//  * Signs and sends a transaction in a single operation (supports both legacy and kit architectures)
+//  * @param connection The Solana connection to use (supports both Legacy Connection and Kit Rpc)
+//  * @param transaction The transaction to sign and send
+//  * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
+//  * @param options Optional configuration for dual architecture behavior
+//  * @returns A promise that resolves to the transaction signature
+//  */
+// export async function signAndSendTransaction(
+//   connection: DualConnection,
+//   transaction: DualTransaction,
+//   wallet: DualWallet,
+//   options?: DualArchitectureOptions
+// ): Promise<TransactionSignature>;
 
 /**
  * Implementation for signAndSendTransaction with flexible parameter handling
@@ -1986,23 +2129,19 @@ export async function signAndSendTransaction(
       }
     }
 
-    // Handle legacy architecture
-    if (isLegacyWallet(wallet)) {
-      if (isTransactionMessage(transaction)) {
-        // Legacy wallet but kit transaction
-        if (finalOptions.preferKitArchitecture === false || finalOptions.fallbackToLegacy !== false) {
-          const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
-          return await signAndSendTransactionLegacy(connection, legacyTransaction, wallet, finalOptions);
-        } else {
-          throw new Error('Legacy wallet cannot sign and send kit transaction without conversion enabled');
-        }
+    // Everything else uses legacy implementation (Keypair, Adapter, Standard Wallet)
+    if (isTransactionMessage(transaction)) {
+      // Legacy wallet but kit transaction
+      if (finalOptions.preferKitArchitecture === false || finalOptions.fallbackToLegacy !== false) {
+        const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
+        return await signAndSendTransactionLegacy(connection, legacyTransaction, wallet, finalOptions);
       } else {
-        // Both wallet and transaction are legacy architecture
-        return await signAndSendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, wallet, finalOptions);
+        throw new Error('Legacy wallet cannot sign and send kit transaction without conversion enabled');
       }
+    } else {
+      // Both wallet and transaction are legacy architecture
+      return await signAndSendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, wallet, finalOptions);
     }
-
-    throw new Error('Invalid wallet or transaction type');
   } catch (error) {
     console.error('Failed to sign and send transaction:', error);
     throw error;
@@ -2056,24 +2195,32 @@ async function signAndSendTransactionLegacy(
 
     const accountPublicKey = new PublicKey(account.publicKey);
 
-    // Ensure transaction has feePayer set
-    if (!isVersionedTransaction(transaction) && !(transaction as Transaction).feePayer) {
+    // Ensure transaction has feePayer set (only for legacy Transaction, not Kit TransactionMessage)
+    if (!isVersionedTransaction(transaction) && !isTransactionMessage(transaction) && !(transaction as Transaction).feePayer) {
       (transaction as Transaction).feePayer = accountPublicKey;
     }
 
     // Serialize the transaction
     let transactionBytes: Uint8Array;
     try {
-      transactionBytes = isVersionedTransaction(transaction)
-        ? (transaction as VersionedTransaction).serialize()
-        : (transaction as Transaction).serialize({ verifySignatures: false });
+      transactionBytes = serializeTransactionForWallet(transaction);
     } catch (error) {
-      throw new Error(`Failed to serialize transaction for signing: ${error instanceof Error ? error.message : error}`);
+      throw new HermisError(
+        HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED,
+        {
+          transactionType: isTransactionMessage(transaction) ? 'Kit TransactionMessage' : isVersionedTransaction(transaction) ? 'VersionedTransaction' : 'Transaction',
+          reason: 'Serialization failed for Standard Wallet',
+          originalError: error instanceof Error ? error.message : String(error)
+        },
+        error instanceof Error ? error : undefined
+      );
     }
 
-    // Use chain from options, default to 'solana:mainnet'
-    const chain = options.chain || 'solana:mainnet';
+    // Use chain from options, or auto-detect from connection
+    const chain = options.chain || getChainFromConnection(connection);
 
+    console.log("DEBUG chain: ", chain);
+        
     const result = await feature.signAndSendTransaction({
       account: account,
       transaction: transactionBytes,

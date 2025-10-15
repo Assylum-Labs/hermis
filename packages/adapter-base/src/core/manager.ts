@@ -13,6 +13,11 @@ import {
     DualConnection,
     DualTransaction
 } from '@hermis/solana-headless-core';
+import {
+    HermisError,
+    HERMIS_ERROR__WALLET_CONNECTION__NO_WALLET_SELECTED,
+    HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED
+} from '@hermis/errors';
 
 /**
  * Create a simple wallet connection manager
@@ -81,7 +86,12 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
          * Connect to the selected wallet
          */
         connect: async () => {
-            if (!currentAdapter) throw new Error('No wallet selected');
+            if (!currentAdapter) {
+                throw new HermisError(
+                    HERMIS_ERROR__WALLET_CONNECTION__NO_WALLET_SELECTED,
+                    {}
+                );
+            }
 
             if (!currentAdapter.connected) {
                 await currentAdapter.connect();
@@ -121,7 +131,12 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
             transaction: T,
             options?: DualArchitectureOptions
         ): Promise<T> => {
-            if (!currentAdapter) throw new Error('No wallet connected');
+            if (!currentAdapter) {
+                throw new HermisError(
+                    HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+                    { walletName: currentAdapter?.name }
+                );
+            }
             return await signTransaction(transaction, currentAdapter, options);
         },
 
@@ -132,7 +147,12 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
             transactions: T[],
             options?: DualArchitectureOptions
         ): Promise<T[]> => {
-            if (!currentAdapter) throw new Error('No wallet connected');
+            if (!currentAdapter) {
+                throw new HermisError(
+                    HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+                    { walletName: currentAdapter?.name }
+                );
+            }
             return await signAllTransactions(transactions, currentAdapter, options);
         },
 
@@ -144,7 +164,12 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
             transaction: T,
             options?: DualArchitectureOptions
         ): Promise<string> => {
-            if (!currentAdapter) throw new Error('No wallet connected');
+            if (!currentAdapter) {
+                throw new HermisError(
+                    HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+                    { walletName: currentAdapter?.name }
+                );
+            }
             return await sendTransactionCore(connection, transaction, currentAdapter, options);
         },
 
@@ -156,7 +181,12 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
             transaction: T,
             options?: DualArchitectureOptions
         ): Promise<string> => {
-            if (!currentAdapter) throw new Error('No wallet connected');
+            if (!currentAdapter) {
+                throw new HermisError(
+                    HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+                    { walletName: currentAdapter?.name }
+                );
+            }
             // For simplicity, we'll sign then send
             const signed = await signTransaction(transaction, currentAdapter, options);
             return await sendTransactionCore(connection, signed, currentAdapter, options);

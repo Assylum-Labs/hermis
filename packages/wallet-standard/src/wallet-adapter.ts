@@ -22,7 +22,15 @@ import {
 } from '@solana/web3.js';
 
 import type { DualConnection, DualTransaction } from '@hermis/solana-headless-core';
-import { getLatestBlockhash, sendRawTransaction } from '@hermis/solana-headless-core';
+import { getLatestBlockhash, sendRawTransaction, serializeTransactionForWallet, isTransactionSigned } from '@hermis/solana-headless-core';
+import {
+  HermisError,
+  HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+  HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+  HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND,
+  HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED,
+  HERMIS_ERROR__WALLET_CONNECTION__NO_PUBLIC_KEY
+} from '@hermis/errors';
 
 // Removed coreSignMessage import to avoid circular dependency
 // The centralized signMessage is for external use, not internal adapter implementation
@@ -255,7 +263,10 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
    */
   private _findAccount(): StandardWalletAccount {
     if (!this._connectedAccount || this._connectedAccount.length === 0) {
-      throw new Error('No account connected');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND,
+        { walletName: this._wallet.name }
+      );
     }
 
     return this._connectedAccount[0];
@@ -400,25 +411,25 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
     options: SendOptions = {}
   ): Promise<TransactionSignature> {
     if (!this.connected) {
-      throw new Error('Wallet not connected');
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: this._wallet.name }
+      );
     }
 
     if (!this.publicKey) {
-      throw new Error('Wallet public key not available');
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NO_PUBLIC_KEY,
+        { walletName: this._wallet.name }
+      );
     }
 
     try {
       // Path 1: If connection is provided, delegate to core for sign + send
       if (connection) {
-        // Delegate to core implementation which will:
-        // 1. Detect that this._wallet is a Standard Wallet
-        // 2. Get the account and set feePayer
-        // 3. Sign the transaction using the wallet's signTransaction feature
-        // 4. Send the signed transaction via connection helper (supports both connection types)
-        // Note: We pass the chain from current cluster for Standard Wallet operations
-        const dualOptions = {
-          chain: this._currentCluster || 'solana:mainnet'
-        };
+        console.log('🔍 [StandardWalletAdapter.sendTransaction] Received transaction:', transaction);
+        console.log('🔍 [StandardWalletAdapter.sendTransaction] Transaction type:', transaction.constructor.name);
+        // console.log('🔍 [StandardWalletAdapter.sendTransaction] Transaction.signatures:', transaction.signatures);
 
         // Set recent blockhash if not already set (for legacy Transaction)
         if (transaction instanceof Transaction && !transaction.recentBlockhash) {
@@ -426,20 +437,47 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
           transaction.recentBlockhash = blockhash;
         }
 
-        // Sign the transaction using core (which handles Standard Wallet)
-        const signedTransaction = await coreSignTransaction(transaction, this._wallet, dualOptions);
+        // Check if transaction is already signed
+        // Note: Don't use instanceof - it fails with bundling/prototype issues
+        console.log('🔍 [StandardWalletAdapter.sendTransaction] About to check if signed...');
+        const isSigned = isTransactionSigned(transaction as any);
+        console.log(`🔍 [StandardWalletAdapter.sendTransaction] isSigned result: ${isSigned}`);
 
-        // Send the signed transaction using helper (supports both connection types)
         let rawTransaction: Uint8Array;
-        if (signedTransaction instanceof Transaction) {
-          rawTransaction = signedTransaction.serialize();
-        } else if (signedTransaction instanceof VersionedTransaction) {
-          rawTransaction = signedTransaction.serialize();
-        } else if (typeof (signedTransaction as any).serialize === 'function') {
-          // Kit TransactionMessage or other signable transaction
-          rawTransaction = (signedTransaction as any).serialize();
+
+        if (isSigned) {
+          console.log('✅ [StandardWalletAdapter.sendTransaction] Transaction is SIGNED - sending directly without wallet prompt');
+          // Transaction is already signed - serialize and send directly (no wallet prompt)
+          if (transaction instanceof Transaction) {
+            rawTransaction = transaction.serialize();
+          } else if (transaction instanceof VersionedTransaction) {
+            rawTransaction = transaction.serialize();
+          } else if (typeof (transaction as any).serialize === 'function') {
+            rawTransaction = (transaction as any).serialize();
+          } else {
+            throw new Error('Signed transaction does not have a serialize method');
+          }
         } else {
-          throw new Error('Signed transaction does not have a serialize method');
+          console.log('⚠️ [StandardWalletAdapter.sendTransaction] Transaction is UNSIGNED - signing first (will prompt wallet)');
+          // Transaction is unsigned - sign it first using core
+          const dualOptions = {
+            chain: this._currentCluster || 'solana:mainnet'
+          };
+
+          // Sign the transaction using core (which handles Standard Wallet)
+          const signedTransaction = await coreSignTransaction(transaction, this._wallet, dualOptions);
+
+          // Serialize the signed transaction
+          if (signedTransaction instanceof Transaction) {
+            rawTransaction = signedTransaction.serialize();
+          } else if (signedTransaction instanceof VersionedTransaction) {
+            rawTransaction = signedTransaction.serialize();
+          } else if (typeof (signedTransaction as any).serialize === 'function') {
+            // Kit TransactionMessage or other signable transaction
+            rawTransaction = (signedTransaction as any).serialize();
+          } else {
+            throw new Error('Signed transaction does not have a serialize method');
+          }
         }
 
         return await sendRawTransaction(connection, rawTransaction, options);
@@ -465,19 +503,25 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
     try {
       // Validate that wallet supports signAndSendTransaction
       if (!(SolanaSignAndSendTransactionMethod in this._wallet.features)) {
-        throw new Error('Wallet does not support signAndSendTransaction feature');
+        throw new HermisError(
+          HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+          { featureName: 'signAndSendTransaction', walletName: this._wallet.name }
+        );
       }
 
       const feature = this._wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
       if (!feature || typeof feature.signAndSendTransaction !== 'function') {
-        throw new Error('Wallet has invalid signAndSendTransaction feature');
+        throw new HermisError(
+          HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+          { featureName: 'signAndSendTransaction', walletName: this._wallet.name }
+        );
       }
 
       // Get the account to use
       const signingAccount = this._findAccount();
       const accountPublicKey = new PublicKey(signingAccount.publicKey);
 
-      // Prepare the transaction
+      // Prepare the transaction (only set feePayer on legacy Transaction, not Kit TransactionMessage)
       if (transaction instanceof Transaction) {
         if (!transaction.feePayer) {
           transaction.feePayer = accountPublicKey;
@@ -485,21 +529,20 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
         // Note: For wallet-based sending, we don't set blockhash as the wallet should handle this
       }
 
-      // Serialize transaction for wallet
+      // Serialize transaction for wallet (handles Transaction, VersionedTransaction, and Kit TransactionMessage)
       let transactionBytes: Uint8Array;
       try {
-        if (transaction instanceof Transaction) {
-          transactionBytes = transaction.serialize({ verifySignatures: false });
-        } else if (transaction instanceof VersionedTransaction) {
-          transactionBytes = transaction.serialize();
-        } else if (typeof (transaction as any).serialize === 'function') {
-          // Kit TransactionMessage or other signable transaction
-          transactionBytes = (transaction as any).serialize();
-        } else {
-          throw new Error('Transaction does not have a serialize method');
-        }
+        transactionBytes = serializeTransactionForWallet(transaction);
       } catch (error) {
-        throw new Error(`Failed to serialize transaction: ${error instanceof Error ? error.message : error}`);
+        throw new HermisError(
+          HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED,
+          {
+            transactionType: transaction instanceof Transaction ? 'Transaction' : transaction instanceof VersionedTransaction ? 'VersionedTransaction' : 'Kit TransactionMessage',
+            reason: 'Failed to serialize for Standard Wallet',
+            originalError: error instanceof Error ? error.message : String(error)
+          },
+          error instanceof Error ? error : undefined
+        );
       }
 
       // Determine chain based on current cluster or default to mainnet
@@ -538,7 +581,12 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
     connection: DualConnection,
     options: SendOptions = {}
   ): Promise<TransactionSignature> {
-    if (!this.connected) throw new Error('Wallet not connected');
+    if (!this.connected) {
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: this._wallet.name }
+      );
+    }
 
     try {
       // Delegate to core implementation which will:
@@ -562,7 +610,12 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   async signTransaction<T extends DualTransaction>(
     transaction: T
   ): Promise<T> {
-    if (!this.connected) throw new Error('Wallet not connected');
+    if (!this.connected) {
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: this._wallet.name }
+      );
+    }
 
     try {
       // Delegate to core implementation which handles Standard Wallet detection and signing
@@ -584,7 +637,12 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   async signAllTransactions<T extends DualTransaction>(
     transactions: T[]
   ): Promise<T[]> {
-    if (!this.connected) throw new Error('Wallet not connected');
+    if (!this.connected) {
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: this._wallet.name }
+      );
+    }
 
     try {
       // Process each transaction sequentially
@@ -602,7 +660,12 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
 
   async signMessage(message: Uint8Array): Promise<Uint8Array> {
     console.log("DEBUG wallet", this._wallet);
-    if (!this.connected) throw new Error('Wallet not connected');
+    if (!this.connected) {
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: this._wallet.name }
+      );
+    }
 
     try {
       return await coreSignMessage(message, this._wallet);
@@ -636,16 +699,27 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   }
 
   async signIn(input?: any): Promise<any> {
-    if (!this.connected) throw new Error('Wallet not connected');
+    if (!this.connected) {
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
+        { walletName: this._wallet.name }
+      );
+    }
 
     try {
       if (!(SolanaSignInMethod in this._wallet.features)) {
-        throw new Error('Wallet does not support sign in');
+        throw new HermisError(
+          HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+          { featureName: 'signIn', walletName: this._wallet.name }
+        );
       }
 
       const feature = this._wallet.features[SolanaSignInMethod] as SolanaSignInFeature;
       if (!feature || typeof feature.signIn !== 'function') {
-        throw new Error('Wallet has invalid signIn feature');
+        throw new HermisError(
+          HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+          { featureName: 'signIn', walletName: this._wallet.name }
+        );
       }
 
       return await feature.signIn(input);

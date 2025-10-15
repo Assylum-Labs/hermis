@@ -253,6 +253,9 @@ importers:
 
   packages/adapter-base:
     dependencies:
+      '@hermis/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@hermis/solana-headless-core':
         specifier: workspace:*
         version: link:../core
@@ -281,6 +284,9 @@ importers:
 
   packages/core:
     dependencies:
+      '@hermis/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@noble/ed25519':
         specifier: ^2.2.3
         version: 2.3.0
@@ -344,10 +350,25 @@ importers:
         specifier: ^8.0.0
         version: 8.5.0(@swc/core@1.13.5(@swc/helpers@0.5.17))(postcss@8.5.6)(typescript@5.9.2)
 
+  packages/errors:
+    devDependencies:
+      '@hermis/solana-headless-format-config':
+        specifier: ^1.0.5
+        version: 1.0.5
+      '@types/node':
+        specifier: ^22.13.8
+        version: 22.18.1
+      tsup:
+        specifier: ^8.0.0
+        version: 8.5.0(@swc/core@1.13.5(@swc/helpers@0.5.17))(postcss@8.5.6)(typescript@5.9.2)
+
   packages/format-config: {}
 
   packages/react-core:
     dependencies:
+      '@hermis/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@hermis/solana-headless-adapter-base':
         specifier: workspace:*
         version: link:../adapter-base
@@ -376,6 +397,9 @@ importers:
 
   packages/wallet-standard:
     dependencies:
+      '@hermis/errors':
+        specifier: workspace:*
+        version: link:../errors
       '@hermis/solana-headless-core':
         specifier: workspace:*
         version: link:../core
@@ -8755,7 +8779,7 @@ snapshots:
 
   '@types/connect@3.4.38':
     dependencies:
-      '@types/node': 20.19.13
+      '@types/node': 22.18.1
 
   '@types/eslint-scope@3.7.7':
     dependencies:
@@ -8875,7 +8899,7 @@ snapshots:
 
   '@types/ws@7.4.7':
     dependencies:
-      '@types/node': 20.19.13
+      '@types/node': 22.18.1
 
   '@types/ws@8.18.1':
     dependencies:

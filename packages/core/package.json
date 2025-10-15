@@ -23,6 +23,7 @@
     "access": "public"
   },
   "dependencies": {
+    "@hermis/errors": "workspace:*",
     "@noble/ed25519": "^2.2.3",
     "@noble/hashes": "^2.0.1",
     "@solana/kit": "^3.0.2",
