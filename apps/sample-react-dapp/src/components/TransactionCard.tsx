@@ -157,10 +157,9 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
       );
 
       // Use dual architecture signTransaction - this will detect wallet type and route appropriately
-      const signedTransaction = await signTransactionCore(transaction, wallet.adapter);
+      await signTransactionCore(transaction, wallet.adapter);
 
-      console.log('Transaction signed using Kit dual architecture:', signedTransaction);
-      alert('Transaction signed successfully using Kit! Check console for details.');
+      alert('Transaction signed successfully using Kit!');
 
     } catch (err) {
       console.error('Error signing transaction with Kit:', err);

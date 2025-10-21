@@ -46,17 +46,18 @@ export class WalletRegistry {
    */
   register(wallet: TypedStandardWallet): StandardWalletAdapter | null {
     if (this.#disposed) {
-      console.warn('[WalletRegistry] Registry has been disposed');
+      // console.warn('[WalletRegistry] Registry has been disposed');
       return null;
     }
 
     // Log wallet registration attempt
-    console.log(`[WalletRegistry] Attempting to register wallet: ${wallet.name}`);
+    // console.log(`[WalletRegistry] Attempting to register wallet: ${wallet.name}`);
 
     // Check if compatible
     const isCompatible = isWalletAdapterCompatibleStandardWallet(wallet);
+
     if (!isCompatible) {
-      console.warn(`[WalletRegistry] Wallet is not compatible`);
+      // console.warn(`[WalletRegistry] Wallet is not compatible`);
       return null;
     }
 

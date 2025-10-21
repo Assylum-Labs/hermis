@@ -123,9 +123,8 @@ export function createKitSignersFromAdapter(
           throw new HermisError(
             HERMIS_ERROR__INVARIANT__OPERATION_NOT_ALLOWED,
             {
-              argumentName: 'connection',
-              expectedType: 'Connection instance',
-              receivedValue: 'undefined (connection parameter required)'
+              operation: 'signAndSendTransactions',
+              reason: 'Connection parameter required for transaction sending'
             }
           )
         }

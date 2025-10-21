@@ -34,27 +34,6 @@ export function detectMessageModification(
 }
 
 /**
- * Compare two Uint8Arrays for equality
- *
- * @param a - First array
- * @param b - Second array
- * @returns true if arrays are equal, false otherwise
- */
-export function arraysEqual(a: Uint8Array, b: Uint8Array): boolean {
-  if (a.length !== b.length) {
-    return false
-  }
-
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) {
-      return false
-    }
-  }
-
-  return true
-}
-
-/**
  * Update signature dictionary with new signature
  *
  * If message was modified, clears existing signatures (they're now invalid).
@@ -123,26 +102,6 @@ export function publicKeyToString(publicKey: PublicKey | null): string | null {
   } catch (error) {
     console.error('Failed to convert PublicKey to string:', error)
     return null
-  }
-}
-
-/**
- * Validate that an account supports a specific chain
- *
- * @param accountChains - Array of chains supported by the account
- * @param requiredChain - Chain that must be supported
- * @throws Error if chain is not supported
- */
-export function validateChainSupport(
-  accountChains: readonly string[],
-  requiredChain: string
-): void {
-  if (!accountChains.includes(requiredChain)) {
-    throw new HermisError(HERMIS_ERROR__STANDARD_WALLET__CHAIN_NOT_SUPPORTED, {
-      chain: requiredChain,
-      walletName: 'Account',
-      supportedChains: Array.from(accountChains)
-    })
   }
 }
 

@@ -218,9 +218,7 @@ export function WalletProvider({
         }));
         
         changeWallet(newValue);
-        // console.log("selected wallet", wallet);
-        
-        
+
         setTimeout(resolve, 50);
       });
     },
@@ -434,20 +432,12 @@ export function WalletProvider({
           }));
   
           latestAdapterRef.current = currentAdapter
-  
-          // console.log('Publickey', publicKey);
-          // console.log('isConnected', isConnected);
-          // console.log('adapterState', adapterState);
-          // console.log('adapter REf', latestAdapterRef.current);
-          
-          
+
           setTimeout(() => resolve(currentAdapter), 50);
         } catch (error) {
           reject()
-          alert('COnnection interupped or failed')
           await handleDisconnect()
           throw error
-
         }
       })
     } catch (error) {

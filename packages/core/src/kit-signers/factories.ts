@@ -151,14 +151,3 @@ export function createTransactionSendingSignerFromWallet(
   return freezeSigner(signer)
 }
 
-/**
- * Type guard to check if a signing function is available
- *
- * @param signFn - Potential signing function
- * @returns true if function is available, false otherwise
- */
-export function isSigningFunctionAvailable(
-  signFn: unknown
-): signFn is (input: any) => Promise<any> {
-  return typeof signFn === 'function'
-}

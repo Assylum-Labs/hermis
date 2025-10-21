@@ -328,82 +328,43 @@ function getChainFromConnection(connection: DualConnection): string {
  * @returns true if the transaction has at least one valid signature
  */
 export function isTransactionSigned(transaction: any): boolean {
-  console.log('🔍 [isTransactionSigned] Checking transaction:', transaction);
-
   // Safety check: only works with objects that have a signatures property
   if (!transaction || typeof transaction !== 'object' || !('signatures' in transaction)) {
-    console.log('❌ [isTransactionSigned] No signatures property found');
     return false;
   }
 
   const signatures = transaction.signatures;
-  console.log('🔍 [isTransactionSigned] Signatures array:', signatures);
-  console.log('🔍 [isTransactionSigned] Signatures length:', signatures?.length);
 
   // No signatures array means unsigned
   if (!signatures || signatures.length === 0) {
-    console.log('❌ [isTransactionSigned] Empty signatures array');
     return false;
   }
 
   // Check if at least one signature is present and non-zero
   // A zero signature (all bytes are 0) indicates a placeholder, not a real signature
-  const hasValidSig = signatures.some((sig: any, index: number) => {
-    console.log(`🔍 [isTransactionSigned] Checking signature ${index}:`, sig);
-    console.log(`🔍 [isTransactionSigned] Signature type: ${typeof sig}, is Buffer: ${Buffer.isBuffer(sig)}, is Uint8Array: ${sig instanceof Uint8Array}`);
-
+  const hasValidSig = signatures.some((sig: any) => {
     // Handle both signature formats (Uint8Array or {signature: Uint8Array})
     const sigBytes = sig.signature !== undefined ? sig.signature : sig;
-    console.log(`🔍 [isTransactionSigned] Extracted sigBytes:`, sigBytes);
 
     if (!sigBytes || sigBytes.length === 0) {
-      console.log(`❌ [isTransactionSigned] Signature ${index} is empty`);
       return false;
     }
 
     // Check if all bytes are zero (placeholder signature)
     for (let i = 0; i < sigBytes.length; i++) {
       if (sigBytes[i] !== 0) {
-        console.log(`✅ [isTransactionSigned] Signature ${index} has non-zero byte at position ${i}`);
         return true;  // Found a non-zero byte, this is a real signature
       }
     }
-    console.log(`❌ [isTransactionSigned] Signature ${index} is all zeros (placeholder)`);
     return false;  // All bytes are zero, this is a placeholder
   });
 
-  console.log(`🔍 [isTransactionSigned] Final result: ${hasValidSig}`);
   return hasValidSig;
 }
 
-// /**
-//  * Signs a transaction using the specified wallet (supports both legacy and kit architectures)
-//  * @param transaction The transaction to sign (can be Transaction, VersionedTransaction, or TransactionMessage)
-//  * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
-//  * @param options Optional configuration for dual architecture behavior
-//  * @returns The signed transaction
-//  */
-// export async function signTransaction<T extends DualTransaction>(
-//   transaction: T,
-//   wallet: DualWallet,
-//   options?: DualArchitectureOptions
-// ): Promise<T>;
-
-// /**
-//  * Signs a transaction using the specified signer (overload for explicit signer support)
-//  * @param transaction The transaction to sign
-//  * @param signer The signer to use (Keypair, MessagePartialSigner, or KeyPairSigner)
-//  * @param options Optional configuration for dual architecture behavior
-//  * @returns The signed transaction
-//  */
-// export async function signTransaction<T extends DualTransaction>(
-//   transaction: T,
-//   signer: Keypair | MessagePartialSigner | KeyPairSigner,
-//   options?: DualArchitectureOptions
-// ): Promise<T>;
-
 /**
- * Implementation for signTransaction with improved signer compatibility
+ * Signs a transaction with improved signer compatibility
+ * Supports both legacy and kit architectures
  */
 export async function signTransaction<T extends DualTransaction>(
   transaction: T,
@@ -689,12 +650,10 @@ async function convertCryptoKeyPairToMessageSigner(cryptoKeyPair: CryptoKeyPair)
 
     if (privateKeyBytes) {
       // Success! Create a proper kit signer from the extracted bytes
-      console.log("🔓 Successfully extracted private key from CryptoKeyPair");
       return await createKeyPairSignerFromPrivateKeyBytes(privateKeyBytes);
     }
 
     // Strategy 2: Create a bridge signer that uses the CryptoKeyPair directly
-    console.log("🌉 Creating bridge signer for non-extractable CryptoKeyPair");
     return await createBridgeMessageSigner(cryptoKeyPair);
 
   } catch (error) {
@@ -760,18 +719,15 @@ async function attemptPrivateKeyExtraction(cryptoKeyPair: CryptoKeyPair): Promis
   ];
 
   // Try each strategy in order
-  for (const [index, strategy] of strategies.entries()) {
+  for (const strategy of strategies) {
     try {
       const result = await strategy();
-      console.log(`✅ Private key extraction succeeded using strategy ${index + 1}`);
       return result;
     } catch (error) {
-      console.log(`❌ Private key extraction strategy ${index + 1} failed:`, error instanceof Error ? error.message : error);
       continue;
     }
   }
 
-  console.log("🔐 All private key extraction strategies failed (key is not extractable)");
   return null;
 }
 
@@ -835,7 +791,6 @@ async function createBridgeMessageSigner(cryptoKeyPair: CryptoKeyPair): Promise<
     }
   };
 
-  console.log(`🌉 Created bridge signer with address: ${addressString}`);
   return bridgeSigner;
 }
 
@@ -885,78 +840,6 @@ async function extractPrivateKeyBytes(cryptoKeyPair: CryptoKeyPair): Promise<Uin
 }
 
 /**
- * Create an extractable Ed25519 CryptoKeyPair for testing and development
- * This generates keys that can have their private key bytes extracted
- */
-export async function generateExtractableCryptoKeyPair(): Promise<CryptoKeyPair> {
-  try {
-    // Generate an extractable Ed25519 key pair
-    const keyPair = await crypto.subtle.generateKey(
-      {
-        name: "Ed25519",
-        namedCurve: "Ed25519",
-      } as EcKeyGenParams,
-      true, // extractable = true
-      ["sign", "verify"]
-    );
-
-    console.log("🔓 Generated extractable Ed25519 CryptoKeyPair");
-    return keyPair;
-  } catch (error) {
-    // Fallback: generate a key pair using @noble/ed25519 and import it
-    console.log("⚠️  Web Crypto Ed25519 not available, falling back to @noble/ed25519");
-
-    // Generate random private key
-    const privateKeyBytes = ed25519.utils.randomPrivateKey();
-
-    // Derive public key
-    const publicKeyBytes = await ed25519.getPublicKey(privateKeyBytes);
-
-    // Import the private key as extractable CryptoKey
-    const privateKey = await crypto.subtle.importKey(
-      "pkcs8",
-      wrapEd25519PrivateKeyInPKCS8(privateKeyBytes) as BufferSource,
-      { name: "Ed25519" },
-      true, // extractable = true
-      ["sign"]
-    );
-
-    // Import the public key
-    const publicKey = await crypto.subtle.importKey(
-      "raw",
-      publicKeyBytes as BufferSource,
-      { name: "Ed25519" },
-      true, // extractable = true
-      ["verify"]
-    );
-
-    return { privateKey, publicKey };
-  }
-}
-
-/**
- * Wrap an Ed25519 private key in PKCS#8 format for import
- * This is needed when creating extractable keys from raw bytes
- */
-function wrapEd25519PrivateKeyInPKCS8(privateKeyBytes: Uint8Array): Uint8Array {
-  // PKCS#8 wrapper for Ed25519 private keys
-  const pkcs8Header = new Uint8Array([
-    0x30, 0x2e, // SEQUENCE (46 bytes)
-    0x02, 0x01, 0x00, // INTEGER 0 (version)
-    0x30, 0x05, // SEQUENCE (5 bytes)
-    0x06, 0x03, 0x2b, 0x65, 0x70, // OID 1.3.101.112 (Ed25519)
-    0x04, 0x22, // OCTET STRING (34 bytes)
-    0x04, 0x20, // OCTET STRING (32 bytes)
-  ]);
-
-  const pkcs8Key = new Uint8Array(pkcs8Header.length + privateKeyBytes.length);
-  pkcs8Key.set(pkcs8Header);
-  pkcs8Key.set(privateKeyBytes, pkcs8Header.length);
-
-  return pkcs8Key;
-}
-
-/**
  * Convert TransactionMessage to legacy Transaction
  * This converts a kit TransactionMessage to a @solana/web3.js Transaction
  */
@@ -966,8 +849,6 @@ async function convertTransactionMessageToLegacy(transactionMessage: Transaction
     const transaction = new Transaction();
 
     // Extract transaction properties - skip compilation for legacy conversion
-    // const compiledTransaction = compileTransaction(transactionMessage);
-
     // Convert kit instructions to legacy format
     if ('instructions' in transactionMessage && Array.isArray(transactionMessage.instructions)) {
       for (const instruction of transactionMessage.instructions) {
@@ -1511,8 +1392,6 @@ export async function signMessage(
   wallet: DualWallet,
   options: DualArchitectureOptions = {}
 ): Promise<Uint8Array> {
-  console.log("DEBUG: Sign Message with message", message);
-  
   try {
     // Convert message to bytes if it's a string
     const messageBytes = typeof message === 'string'
@@ -2065,111 +1944,6 @@ export async function generateKitKeypair(): Promise<{ keypair: CryptoKeyPair; ad
 }
 
 /**
- * Comprehensive kit message signing function that handles the complete flow
- * @param message The message to sign (string or Uint8Array)
- * @param cryptoKeyPair The CryptoKeyPair to sign with
- * @returns Promise<{ signature: Uint8Array, address: Address }>
- */
-export async function signMessageWithKitCryptoKeyPair(
-  message: string | Uint8Array,
-  cryptoKeyPair: CryptoKeyPair
-): Promise<{ signature: Uint8Array; address: Address }> {
-  try {
-    // Convert message to bytes if it's a string
-    const messageBytes = typeof message === 'string'
-      ? new TextEncoder().encode(message)
-      : message;
-
-    // Convert CryptoKeyPair to MessagePartialSigner
-    const messageSigner = await convertCryptoKeyPairToMessageSigner(cryptoKeyPair);
-
-    // Sign the message using kit implementation
-    const signature = await signMessageKit(messageBytes, messageSigner);
-
-    return {
-      signature,
-      address: messageSigner.address
-    };
-  } catch (error) {
-    throw wrapError(error, HERMIS_ERROR__SIGNING__MESSAGE_FAILED, {
-      reason: 'Kit message signing with CryptoKeyPair failed'
-    });
-  }
-}
-
-/**
- * Convenience function to sign a message with a generated kit keypair
- * @param message The message to sign
- * @returns Promise<{ signature: Uint8Array, address: Address, keypair: CryptoKeyPair }>
- */
-export async function signMessageWithGeneratedKitKeypair(
-  message: string | Uint8Array
-): Promise<{ signature: Uint8Array; address: Address; keypair: CryptoKeyPair }> {
-  try {
-    // Generate a new kit keypair
-    const { keypair, address, signer } = await generateKitKeypair();
-
-    // Convert message to bytes if it's a string
-    const messageBytes = typeof message === 'string'
-      ? new TextEncoder().encode(message)
-      : message;
-
-    // Sign the message
-    const signature = await signMessageKit(messageBytes, signer);
-
-    return {
-      signature,
-      address,
-      keypair
-    };
-  } catch (error) {
-    throw wrapError(error, HERMIS_ERROR__SIGNING__MESSAGE_FAILED, {
-      reason: 'Kit message signing with generated keypair failed'
-    });
-  }
-}
-
-/**
- * Test function to verify kit message signing is working correctly
- * This function demonstrates the complete kit message signing flow
- */
-export async function testKitMessageSigning(): Promise<void> {
-  try {
-    console.log("🧪 Testing Kit Message Signing Implementation...");
-
-    // Test 1: Sign with generated keypair
-    console.log("Test 1: Signing with generated kit keypair");
-    const testMessage1 = "Hello, Solana Kit Message Signing!";
-    const result1 = await signMessageWithGeneratedKitKeypair(testMessage1);
-    console.log("✅ Generated keypair signing successful");
-    console.log(`   Address: ${result1.address}`);
-    console.log(`   Signature length: ${result1.signature.length} bytes`);
-
-    // Test 2: Sign with existing CryptoKeyPair
-    console.log("Test 2: Signing with existing CryptoKeyPair");
-    const { keypair } = await generateKitKeypair();
-    const testMessage2 = new TextEncoder().encode("Test message with bytes");
-    const result2 = await signMessageWithKitCryptoKeyPair(testMessage2, keypair);
-    console.log("✅ CryptoKeyPair signing successful");
-    console.log(`   Address: ${result2.address}`);
-    console.log(`   Signature length: ${result2.signature.length} bytes`);
-
-    // Test 3: Verify the dual architecture signMessage function works with kit
-    console.log("Test 3: Testing dual architecture signMessage function");
-    const testMessage3 = "Testing dual architecture with kit wallet";
-    const dualSignature = await signMessage(testMessage3, keypair);
-    console.log("✅ Dual architecture kit signing successful");
-    console.log(`   Signature length: ${dualSignature.length} bytes`);
-
-    console.log("🎉 All kit message signing tests passed!");
-
-  } catch (error) {
-    console.error("❌ Kit message signing test failed:", error);
-    throw error;
-  }
-}
-
-/**
  * Utility to check if a wallet supports kit architecture
  */
 export function supportsKitArchitecture(wallet: DualWallet): boolean {
@@ -2181,38 +1955,6 @@ export function supportsKitArchitecture(wallet: DualWallet): boolean {
  */
 export function isKitTransaction(transaction: DualTransaction): boolean {
   return isTransactionMessage(transaction);
-}
-
-/**
- * Legacy-compatible signing function that maintains backward compatibility
- * This function will work with existing code while supporting kit architecture when available
- */
-export async function signTransactionLegacyCompatible<T extends Transaction | VersionedTransaction>(
-  transaction: T, 
-  wallet: Keypair | Adapter
-): Promise<T> {
-  return await signTransactionLegacy(transaction, wallet);
-}
-
-/**
- * Legacy-compatible batch signing function
- */
-export async function signAllTransactionsLegacyCompatible<T extends Transaction | VersionedTransaction>(
-  transactions: T[], 
-  wallet: Keypair | Adapter
-): Promise<T[]> {
-  return await signAllTransactionsLegacy(transactions, wallet);
-}
-
-/**
- * Legacy-compatible send transaction function
- */
-export async function sendTransactionLegacyCompatible(
-  connection: Connection,
-  transaction: Transaction | VersionedTransaction,
-  wallet: Keypair | Adapter
-): Promise<TransactionSignature> {
-  return await sendTransactionLegacy(connection, transaction, wallet, {});
 }
 
 /**
@@ -2262,36 +2004,6 @@ export async function signTransactionWithSigner<T extends DualTransaction>(
 ): Promise<T> {
   return await signTransaction(transaction, signer as any, options);
 }
-
-// /**
-//  * Signs and sends a transaction in a single operation (supports both legacy and kit architectures)
-//  * @param connectionOrTransaction The Solana connection to use, or transaction when used with default connection
-//  * @param transactionOrWallet The transaction to sign and send, or wallet when connection is omitted
-//  * @param walletOrOptions The wallet to sign with, or options when connection is omitted
-//  * @param options Optional configuration for dual architecture behavior
-//  * @returns A promise that resolves to the transaction signature
-//  */
-// export async function signAndSendTransaction(
-//   connectionOrTransaction: DualConnection | DualTransaction,
-//   transactionOrWallet: DualTransaction | DualWallet,
-//   walletOrOptions?: DualWallet | DualArchitectureOptions,
-//   options?: DualArchitectureOptions
-// ): Promise<TransactionSignature>;
-
-// /**
-//  * Signs and sends a transaction in a single operation (supports both legacy and kit architectures)
-//  * @param connection The Solana connection to use (supports both Legacy Connection and Kit Rpc)
-//  * @param transaction The transaction to sign and send
-//  * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
-//  * @param options Optional configuration for dual architecture behavior
-//  * @returns A promise that resolves to the transaction signature
-//  */
-// export async function signAndSendTransaction(
-//   connection: DualConnection,
-//   transaction: DualTransaction,
-//   wallet: DualWallet,
-//   options?: DualArchitectureOptions
-// ): Promise<TransactionSignature>;
 
 /**
  * Implementation for signAndSendTransaction with flexible parameter handling
@@ -2517,8 +2229,6 @@ async function signAndSendTransactionLegacy(
 
     // Use chain from options, or auto-detect from connection
     const chain = options.chain || getChainFromConnection(connection);
-
-    console.log("DEBUG chain: ", chain);
 
     let result;
     try {

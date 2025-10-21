@@ -57,7 +57,7 @@ export function useSolanaTransaction(
                         maxSupportedTransactionVersion: 0
                     });
                 } catch (e) {
-                    console.log('Transaction details not available yet');
+                    // Transaction details not yet available, will retry
                 }
             }
 

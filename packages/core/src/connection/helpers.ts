@@ -103,7 +103,15 @@ export async function sendTransactionHelper(
     const bytes = transaction.serialize();
     return await sendRawTransaction(connection, bytes, options);
   } else {
-    // Legacy accepts transaction objects directly
-    return await (connection as any).sendTransaction(transaction, options);
+    // Legacy connection: use sendRawTransaction for already-signed transactions
+    // This avoids signature conflicts when the transaction is already signed
+    if (typeof transaction.serialize !== 'function') {
+      throw new HermisError(HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED, {
+        transactionType: typeof transaction,
+        reason: 'Transaction must have a serialize() method'
+      });
+    }
+    const bytes = transaction.serialize();
+    return await (connection as any).sendRawTransaction(bytes, options);
   }
 }

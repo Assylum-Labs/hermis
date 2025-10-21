@@ -41,8 +41,6 @@ export {
   signTransactionWithSigner,
   createRPCConnection,
   sendTransactionWithRPC,
-  signMessageWithKitCryptoKeyPair,
-  signMessageWithGeneratedKitKeypair,
   supportsKitArchitecture,
   isKitTransaction
 } from '@hermis/solana-headless-core';
