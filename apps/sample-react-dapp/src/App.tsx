@@ -15,6 +15,10 @@ import {
   WalletName,
   Connection,
 } from '@hermis/solana-headless-core'
+import {
+  isHermisError,
+  HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_SIGNATURE,
+} from '@hermis/errors'
 
 import { generateKeyPairSigner } from '@solana/kit';
 
@@ -324,7 +328,13 @@ function HomePage() {
     } catch (error) {
       console.error('Sign message error:', error);
       addLogEntry(`Sign message error: ${(error as Error).message}`, 'error');
-      await disconnect();
+
+      // Only disconnect on actual connection errors, not user rejections
+      if (!isHermisError(error, HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_SIGNATURE)) {
+        // This is a real error, not a user rejection - might be connection issue
+        // For now, we'll just log it and not disconnect
+        // await disconnect();
+      }
     }
   };
 

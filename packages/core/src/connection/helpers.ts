@@ -8,6 +8,7 @@
 
 import type { DualConnection, Commitment } from '../types/index.js';
 import { isKitConnection } from '../types/index.js';
+import { HermisError, HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED } from '@hermis/errors';
 
 /**
  * Get the latest blockhash from a connection (Legacy or Kit)
@@ -94,7 +95,10 @@ export async function sendTransactionHelper(
   if (isKitConnection(connection)) {
     // Kit requires serialized bytes
     if (typeof transaction.serialize !== 'function') {
-      throw new Error('Transaction must have a serialize() method for Kit connections');
+      throw new HermisError(HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED, {
+        transactionType: typeof transaction,
+        reason: 'Transaction must have a serialize() method for Kit connections'
+      });
     }
     const bytes = transaction.serialize();
     return await sendRawTransaction(connection, bytes, options);

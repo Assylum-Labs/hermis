@@ -45,6 +45,9 @@ export type { HermisErrorContext, DefaultHermisErrorContext } from './context.js
 // Export error class and utilities
 export { HermisError, isHermisError, createHermisError, wrapError } from './error.js';
 
+// Export utility functions
+export { isUserRejection } from './utils.js';
+
 // Export message formatting utilities (useful for custom error handling)
 export { formatErrorMessage, getErrorMessageTemplate, formatContext } from './message-formatter.js';
 

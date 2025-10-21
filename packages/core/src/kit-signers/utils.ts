@@ -7,6 +7,7 @@
 import { address, type Address } from '@solana/kit'
 import type { PublicKey } from '../types/index.js'
 import type { SignableMessage, SignatureDictionary } from './types.js'
+import { HermisError, HERMIS_ERROR__STANDARD_WALLET__CHAIN_NOT_SUPPORTED } from '@hermis/errors'
 
 /**
  * Detect if a message was modified during signing
@@ -137,10 +138,11 @@ export function validateChainSupport(
   requiredChain: string
 ): void {
   if (!accountChains.includes(requiredChain)) {
-    throw new Error(
-      `Chain "${requiredChain}" is not supported by this account. ` +
-      `Supported chains: ${accountChains.join(', ')}`
-    )
+    throw new HermisError(HERMIS_ERROR__STANDARD_WALLET__CHAIN_NOT_SUPPORTED, {
+      chain: requiredChain,
+      walletName: 'Account',
+      supportedChains: Array.from(accountChains)
+    })
   }
 }
 

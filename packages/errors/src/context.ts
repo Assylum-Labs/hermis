@@ -29,6 +29,9 @@ import type {
   HERMIS_ERROR__TRANSACTION__CONFIRMATION_FAILED,
   HERMIS_ERROR__TRANSACTION__SIMULATION_FAILED,
   HERMIS_ERROR__TRANSACTION__INVALID_TYPE,
+  HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED,
+  HERMIS_ERROR__TRANSACTION__DESERIALIZATION_FAILED,
+  HERMIS_ERROR__TRANSACTION__BATCH_SIGNING_NOT_IMPLEMENTED,
   HERMIS_ERROR__NETWORK__RPC_REQUEST_FAILED,
   HERMIS_ERROR__NETWORK__CONNECTION_FAILED,
   HERMIS_ERROR__NETWORK__BLOCKHASH_UNAVAILABLE,
@@ -41,21 +44,38 @@ import type {
   HERMIS_ERROR__SIGNING__ALL_TRANSACTIONS_FAILED,
   HERMIS_ERROR__SIGNING__INVALID_SIGNATURE,
   HERMIS_ERROR__SIGNING__VERIFICATION_FAILED,
+  HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED,
+  HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE,
+  HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND,
   HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
   HERMIS_ERROR__STANDARD_WALLET__METHOD_NOT_IMPLEMENTED,
   HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND,
   HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_CHANGE_FAILED,
   HERMIS_ERROR__STANDARD_WALLET__CHAIN_NOT_SUPPORTED,
+  HERMIS_ERROR__STANDARD_WALLET__DETECTION_FAILED,
+  HERMIS_ERROR__STANDARD_WALLET__REGISTRATION_FAILED,
+  HERMIS_ERROR__STANDARD_WALLET__CLUSTER_MISMATCH,
+  HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_VALIDATION_FAILED,
   HERMIS_ERROR__KIT__RPC_CONNECTION_FAILED,
   HERMIS_ERROR__KIT__MESSAGE_COMPILATION_FAILED,
   HERMIS_ERROR__KIT__ENCODER_NOT_AVAILABLE,
   HERMIS_ERROR__KIT__DECODER_NOT_AVAILABLE,
   HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE,
+  HERMIS_ERROR__KIT__CANNOT_SIGN_WITH_ADDRESS,
+  HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED,
+  HERMIS_ERROR__KIT__INVALID_WALLET_TYPE,
+  HERMIS_ERROR__KIT__REQUIRES_CONNECTION,
   HERMIS_ERROR__CONFIG__INVALID_CONFIGURATION,
   HERMIS_ERROR__CONFIG__MISSING_REQUIRED,
   HERMIS_ERROR__CONFIG__INVALID_RPC_ENDPOINT,
   HERMIS_ERROR__CONFIG__INVALID_ADAPTER,
   HERMIS_ERROR__CONFIG__STORAGE_INIT_FAILED,
+  HERMIS_ERROR__STORAGE__INDEXEDDB_FAILED,
+  HERMIS_ERROR__STORAGE__LOCALSTORAGE_FAILED,
+  HERMIS_ERROR__STORAGE__READ_FAILED,
+  HERMIS_ERROR__STORAGE__WRITE_FAILED,
+  HERMIS_ERROR__REACT__CONTEXT_NOT_FOUND,
+  HERMIS_ERROR__REACT__INVALID_PROVIDER_CONFIG,
   HERMIS_ERROR__INVARIANT__UNEXPECTED_STATE,
   HERMIS_ERROR__INVARIANT__NULL_VALUE,
   HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT,
@@ -119,7 +139,7 @@ export type HermisErrorContext = {
   };
 
   [HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_TRANSACTION]: {
-    walletName: string;
+    walletName?: string;
     transactionSignature?: string;
   };
 
@@ -193,6 +213,20 @@ export type HermisErrorContext = {
   [HERMIS_ERROR__TRANSACTION__INVALID_TYPE]: {
     receivedType: string;
     expectedTypes: string[];
+  };
+
+  [HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED]: {
+    walletName: string;
+    version: string | number;
+  };
+
+  [HERMIS_ERROR__TRANSACTION__DESERIALIZATION_FAILED]: {
+    reason?: string;
+    originalError?: string;
+  };
+
+  [HERMIS_ERROR__TRANSACTION__BATCH_SIGNING_NOT_IMPLEMENTED]: {
+    walletType: string;
   };
 
   // ============================================
@@ -269,6 +303,17 @@ export type HermisErrorContext = {
     reason?: string;
   };
 
+  [HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED]: {
+    reason?: string;
+    originalError?: string;
+  };
+
+  [HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE]: Record<string, never>;
+
+  [HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND]: {
+    address: string;
+  };
+
   // ============================================
   // 6000-6999: Standard Wallet Errors
   // ============================================
@@ -300,6 +345,28 @@ export type HermisErrorContext = {
     supportedChains?: string[];
   };
 
+  [HERMIS_ERROR__STANDARD_WALLET__DETECTION_FAILED]: {
+    walletName: string;
+    reason?: string;
+    originalError?: string;
+  };
+
+  [HERMIS_ERROR__STANDARD_WALLET__REGISTRATION_FAILED]: {
+    walletName: string;
+    reason?: string;
+    originalError?: string;
+  };
+
+  [HERMIS_ERROR__STANDARD_WALLET__CLUSTER_MISMATCH]: {
+    walletCluster: string;
+    transactionCluster: string;
+  };
+
+  [HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_VALIDATION_FAILED]: {
+    address: string;
+    reason?: string;
+  };
+
   // ============================================
   // 7000-7999: Kit Architecture Errors
   // ============================================
@@ -325,6 +392,24 @@ export type HermisErrorContext = {
   [HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE]: {
     feature: string;
     suggestion?: string;
+  };
+
+  [HERMIS_ERROR__KIT__CANNOT_SIGN_WITH_ADDRESS]: Record<string, never>;
+
+  [HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED]: {
+    sourceType: string;
+    targetType: string;
+    reason?: string;
+  };
+
+  [HERMIS_ERROR__KIT__INVALID_WALLET_TYPE]: {
+    walletType: string;
+    operation: string;
+    expectedTypes: string[];
+  };
+
+  [HERMIS_ERROR__KIT__REQUIRES_CONNECTION]: {
+    operation: string;
   };
 
   // ============================================
@@ -354,6 +439,42 @@ export type HermisErrorContext = {
     storageKey: string;
     reason?: string;
     originalError?: string;
+  };
+
+  [HERMIS_ERROR__STORAGE__INDEXEDDB_FAILED]: {
+    operation: string;
+    key: string;
+    reason?: string;
+    originalError?: string;
+  };
+
+  [HERMIS_ERROR__STORAGE__LOCALSTORAGE_FAILED]: {
+    operation: string;
+    key: string;
+    reason?: string;
+    originalError?: string;
+  };
+
+  [HERMIS_ERROR__STORAGE__READ_FAILED]: {
+    key: string;
+    reason?: string;
+    originalError?: string;
+  };
+
+  [HERMIS_ERROR__STORAGE__WRITE_FAILED]: {
+    key: string;
+    reason?: string;
+    originalError?: string;
+  };
+
+  [HERMIS_ERROR__REACT__CONTEXT_NOT_FOUND]: {
+    hookName: string;
+    providerName: string;
+  };
+
+  [HERMIS_ERROR__REACT__INVALID_PROVIDER_CONFIG]: {
+    providerName: string;
+    reason?: string;
   };
 
   // ============================================

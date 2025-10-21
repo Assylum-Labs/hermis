@@ -1,4 +1,5 @@
 import { Connection, WalletAdapterNetwork, DualConnection } from '@hermis/solana-headless-core';
+import { HermisError, HERMIS_ERROR__REACT__CONTEXT_NOT_FOUND } from '@hermis/errors';
 import { createContext, useContext } from 'react';
 
 /**
@@ -34,7 +35,10 @@ export const ConnectionContext = createContext<ConnectionContextState>({} as Con
 export function useConnection(): ConnectionContextState {
     const connectionContext = useContext(ConnectionContext);
     if (connectionContext === undefined) {
-        throw new Error("useConnection must be used within an ConnectionProvider");
+        throw new HermisError(
+            HERMIS_ERROR__REACT__CONTEXT_NOT_FOUND,
+            { hookName: 'useConnection', providerName: 'ConnectionProvider' }
+        );
     }
     return connectionContext;
 }

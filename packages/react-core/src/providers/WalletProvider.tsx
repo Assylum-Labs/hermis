@@ -23,6 +23,7 @@ import {
   DualConnection,
   DualArchitectureOptions
 } from '@hermis/solana-headless-core';
+import { HermisError, HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND } from '@hermis/errors';
 import {
   getIsMobile,
   SolanaMobileWalletAdapterWalletName,
@@ -521,9 +522,12 @@ export function WalletProvider({
   const handleSignTransaction = useCallback(async <T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
-    
+
     if (!supportsSignTransaction(currentAdapter)) {
-      throw new Error('Wallet does not support transaction signing');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+        { featureName: 'signTransaction', walletName: (currentAdapter as any).name || 'Unknown wallet' }
+      );
     }
     
     try {
@@ -537,9 +541,12 @@ export function WalletProvider({
   const handleSignAllTransactions = useCallback(async <T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
-    
+
     if (!supportsSignAllTransactions(currentAdapter)) {
-      throw new Error('Wallet does not support signing multiple transactions');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+        { featureName: 'signAllTransactions', walletName: (currentAdapter as any).name || 'Unknown wallet' }
+      );
     }
     
     try {
@@ -553,9 +560,12 @@ export function WalletProvider({
   const handleSignMessage = useCallback(async (message: Uint8Array) => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
-    
+
     if (!supportsSignMessage(currentAdapter)) {
-      throw new Error('Wallet does not support message signing');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+        { featureName: 'signMessage', walletName: (currentAdapter as any).name || 'Unknown wallet' }
+      );
     }
     
     try {
@@ -569,9 +579,12 @@ export function WalletProvider({
   const handleSignIn = useCallback(async (input?: Record<string, unknown>) => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
     if (!currentAdapter) throw new WalletNotSelectedError();
-    
+
     if (!supportsSignIn(currentAdapter)) {
-      throw new Error('Wallet does not support sign in');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+        { featureName: 'signIn', walletName: (currentAdapter as any).name || 'Unknown wallet' }
+      );
     }
     
     try {

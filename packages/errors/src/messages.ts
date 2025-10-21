@@ -30,6 +30,9 @@ import {
   HERMIS_ERROR__TRANSACTION__CONFIRMATION_FAILED,
   HERMIS_ERROR__TRANSACTION__SIMULATION_FAILED,
   HERMIS_ERROR__TRANSACTION__INVALID_TYPE,
+  HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED,
+  HERMIS_ERROR__TRANSACTION__DESERIALIZATION_FAILED,
+  HERMIS_ERROR__TRANSACTION__BATCH_SIGNING_NOT_IMPLEMENTED,
   HERMIS_ERROR__NETWORK__RPC_REQUEST_FAILED,
   HERMIS_ERROR__NETWORK__CONNECTION_FAILED,
   HERMIS_ERROR__NETWORK__BLOCKHASH_UNAVAILABLE,
@@ -42,21 +45,38 @@ import {
   HERMIS_ERROR__SIGNING__ALL_TRANSACTIONS_FAILED,
   HERMIS_ERROR__SIGNING__INVALID_SIGNATURE,
   HERMIS_ERROR__SIGNING__VERIFICATION_FAILED,
+  HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED,
+  HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE,
+  HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND,
   HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
   HERMIS_ERROR__STANDARD_WALLET__METHOD_NOT_IMPLEMENTED,
   HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND,
   HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_CHANGE_FAILED,
   HERMIS_ERROR__STANDARD_WALLET__CHAIN_NOT_SUPPORTED,
+  HERMIS_ERROR__STANDARD_WALLET__DETECTION_FAILED,
+  HERMIS_ERROR__STANDARD_WALLET__REGISTRATION_FAILED,
+  HERMIS_ERROR__STANDARD_WALLET__CLUSTER_MISMATCH,
+  HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_VALIDATION_FAILED,
   HERMIS_ERROR__KIT__RPC_CONNECTION_FAILED,
   HERMIS_ERROR__KIT__MESSAGE_COMPILATION_FAILED,
   HERMIS_ERROR__KIT__ENCODER_NOT_AVAILABLE,
   HERMIS_ERROR__KIT__DECODER_NOT_AVAILABLE,
   HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE,
+  HERMIS_ERROR__KIT__CANNOT_SIGN_WITH_ADDRESS,
+  HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED,
+  HERMIS_ERROR__KIT__INVALID_WALLET_TYPE,
+  HERMIS_ERROR__KIT__REQUIRES_CONNECTION,
   HERMIS_ERROR__CONFIG__INVALID_CONFIGURATION,
   HERMIS_ERROR__CONFIG__MISSING_REQUIRED,
   HERMIS_ERROR__CONFIG__INVALID_RPC_ENDPOINT,
   HERMIS_ERROR__CONFIG__INVALID_ADAPTER,
   HERMIS_ERROR__CONFIG__STORAGE_INIT_FAILED,
+  HERMIS_ERROR__STORAGE__INDEXEDDB_FAILED,
+  HERMIS_ERROR__STORAGE__LOCALSTORAGE_FAILED,
+  HERMIS_ERROR__STORAGE__READ_FAILED,
+  HERMIS_ERROR__STORAGE__WRITE_FAILED,
+  HERMIS_ERROR__REACT__CONTEXT_NOT_FOUND,
+  HERMIS_ERROR__REACT__INVALID_PROVIDER_CONFIG,
   HERMIS_ERROR__INVARIANT__UNEXPECTED_STATE,
   HERMIS_ERROR__INVARIANT__NULL_VALUE,
   HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT,
@@ -146,6 +166,15 @@ export const HERMIS_ERROR_MESSAGES: Record<HermisErrorCode, string> = {
   [HERMIS_ERROR__TRANSACTION__INVALID_TYPE]:
     'Invalid transaction type. Received: $receivedType. Expected one of: $expectedTypes.',
 
+  [HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED]:
+    'Wallet "$walletName" does not support transaction version $version.',
+
+  [HERMIS_ERROR__TRANSACTION__DESERIALIZATION_FAILED]:
+    'Failed to deserialize transaction. $reason',
+
+  [HERMIS_ERROR__TRANSACTION__BATCH_SIGNING_NOT_IMPLEMENTED]:
+    'Batch transaction signing is not yet implemented for $walletType wallets.',
+
   // ============================================
   // 4000-4999: Network/RPC Errors
   // ============================================
@@ -188,6 +217,15 @@ export const HERMIS_ERROR_MESSAGES: Record<HermisErrorCode, string> = {
   [HERMIS_ERROR__SIGNING__VERIFICATION_FAILED]:
     'Signature verification failed for public key "$publicKey". $reason',
 
+  [HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED]:
+    'Failed to convert CryptoKeyPair to Keypair. $reason',
+
+  [HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE]:
+    'Cannot sign with Address type - private key is required. Use a wallet adapter or keypair instead.',
+
+  [HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND]:
+    'No signature found for signer address "$address".',
+
   // ============================================
   // 6000-6999: Standard Wallet Errors
   // ============================================
@@ -205,6 +243,18 @@ export const HERMIS_ERROR_MESSAGES: Record<HermisErrorCode, string> = {
 
   [HERMIS_ERROR__STANDARD_WALLET__CHAIN_NOT_SUPPORTED]:
     'Chain "$chain" is not supported by standard wallet "$walletName".',
+
+  [HERMIS_ERROR__STANDARD_WALLET__DETECTION_FAILED]:
+    'Failed to detect wallet "$walletName". $reason',
+
+  [HERMIS_ERROR__STANDARD_WALLET__REGISTRATION_FAILED]:
+    'Failed to register wallet "$walletName". $reason',
+
+  [HERMIS_ERROR__STANDARD_WALLET__CLUSTER_MISMATCH]:
+    'Cluster mismatch: wallet is connected to "$walletCluster" but transaction is for "$transactionCluster".',
+
+  [HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_VALIDATION_FAILED]:
+    'Account validation failed for "$address". $reason',
 
   // ============================================
   // 7000-7999: Kit Architecture Errors
@@ -224,6 +274,18 @@ export const HERMIS_ERROR_MESSAGES: Record<HermisErrorCode, string> = {
   [HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE]:
     'Feature "$feature" is not compatible with legacy mode. $suggestion',
 
+  [HERMIS_ERROR__KIT__CANNOT_SIGN_WITH_ADDRESS]:
+    'Cannot sign with Address type in Kit architecture. Use a CryptoKeyPair or wallet adapter.',
+
+  [HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED]:
+    'Failed to convert Kit $sourceType to legacy $targetType. $reason',
+
+  [HERMIS_ERROR__KIT__INVALID_WALLET_TYPE]:
+    'Invalid wallet type "$walletType" for operation "$operation". Expected one of: $expectedTypes.',
+
+  [HERMIS_ERROR__KIT__REQUIRES_CONNECTION]:
+    'Operation "$operation" requires a connection parameter when using Kit architecture.',
+
   // ============================================
   // 8000-8999: Configuration Errors
   // ============================================
@@ -241,6 +303,24 @@ export const HERMIS_ERROR_MESSAGES: Record<HermisErrorCode, string> = {
 
   [HERMIS_ERROR__CONFIG__STORAGE_INIT_FAILED]:
     'Failed to initialize storage for key "$storageKey". $reason',
+
+  [HERMIS_ERROR__STORAGE__INDEXEDDB_FAILED]:
+    'IndexedDB operation "$operation" failed for key "$key". $reason',
+
+  [HERMIS_ERROR__STORAGE__LOCALSTORAGE_FAILED]:
+    'LocalStorage operation "$operation" failed for key "$key". $reason',
+
+  [HERMIS_ERROR__STORAGE__READ_FAILED]:
+    'Failed to read from storage key "$key". $reason',
+
+  [HERMIS_ERROR__STORAGE__WRITE_FAILED]:
+    'Failed to write to storage key "$key". $reason',
+
+  [HERMIS_ERROR__REACT__CONTEXT_NOT_FOUND]:
+    'Hook "$hookName" must be used within a "$providerName" provider.',
+
+  [HERMIS_ERROR__REACT__INVALID_PROVIDER_CONFIG]:
+    'Invalid configuration for "$providerName" provider. $reason',
 
   // ============================================
   // 9000-9999: Invariant Violations

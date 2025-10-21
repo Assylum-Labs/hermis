@@ -96,6 +96,15 @@ export const HERMIS_ERROR__TRANSACTION__SIMULATION_FAILED = 3008 as const;
 /** Invalid transaction type */
 export const HERMIS_ERROR__TRANSACTION__INVALID_TYPE = 3009 as const;
 
+/** Wallet doesn't support transaction version */
+export const HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED = 3010 as const;
+
+/** Transaction deserialization failed */
+export const HERMIS_ERROR__TRANSACTION__DESERIALIZATION_FAILED = 3011 as const;
+
+/** Batch transaction signing not yet implemented */
+export const HERMIS_ERROR__TRANSACTION__BATCH_SIGNING_NOT_IMPLEMENTED = 3012 as const;
+
 // ============================================
 // 4000-4999: Network/RPC Errors
 // ============================================
@@ -140,6 +149,15 @@ export const HERMIS_ERROR__SIGNING__INVALID_SIGNATURE = 5003 as const;
 /** Signature verification failed */
 export const HERMIS_ERROR__SIGNING__VERIFICATION_FAILED = 5004 as const;
 
+/** CryptoKeyPair to Keypair conversion failed */
+export const HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED = 5010 as const;
+
+/** Cannot sign with Address (no private key available) */
+export const HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE = 5011 as const;
+
+/** No signature found for signer address */
+export const HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND = 5012 as const;
+
 // ============================================
 // 6000-6999: Standard Wallet Errors
 // ============================================
@@ -158,6 +176,18 @@ export const HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_CHANGE_FAILED = 6003 as cons
 
 /** Standard wallet chain not supported */
 export const HERMIS_ERROR__STANDARD_WALLET__CHAIN_NOT_SUPPORTED = 6004 as const;
+
+/** Wallet detection failed */
+export const HERMIS_ERROR__STANDARD_WALLET__DETECTION_FAILED = 6010 as const;
+
+/** Wallet registration failed */
+export const HERMIS_ERROR__STANDARD_WALLET__REGISTRATION_FAILED = 6011 as const;
+
+/** Cluster mismatch between wallet and transaction */
+export const HERMIS_ERROR__STANDARD_WALLET__CLUSTER_MISMATCH = 6012 as const;
+
+/** Account validation failed */
+export const HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_VALIDATION_FAILED = 6013 as const;
 
 // ============================================
 // 7000-7999: Kit Architecture Errors
@@ -178,6 +208,18 @@ export const HERMIS_ERROR__KIT__DECODER_NOT_AVAILABLE = 7003 as const;
 /** Kit feature not supported in legacy mode */
 export const HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE = 7004 as const;
 
+/** Cannot sign with Address type */
+export const HERMIS_ERROR__KIT__CANNOT_SIGN_WITH_ADDRESS = 7010 as const;
+
+/** Kit to legacy conversion failed */
+export const HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED = 7011 as const;
+
+/** Invalid wallet type for operation */
+export const HERMIS_ERROR__KIT__INVALID_WALLET_TYPE = 7012 as const;
+
+/** Kit operation requires connection parameter */
+export const HERMIS_ERROR__KIT__REQUIRES_CONNECTION = 7013 as const;
+
 // ============================================
 // 8000-8999: Configuration Errors
 // ============================================
@@ -196,6 +238,24 @@ export const HERMIS_ERROR__CONFIG__INVALID_ADAPTER = 8003 as const;
 
 /** Storage utility initialization failed */
 export const HERMIS_ERROR__CONFIG__STORAGE_INIT_FAILED = 8004 as const;
+
+/** IndexedDB operation failed */
+export const HERMIS_ERROR__STORAGE__INDEXEDDB_FAILED = 8010 as const;
+
+/** LocalStorage operation failed */
+export const HERMIS_ERROR__STORAGE__LOCALSTORAGE_FAILED = 8011 as const;
+
+/** Storage read operation failed */
+export const HERMIS_ERROR__STORAGE__READ_FAILED = 8012 as const;
+
+/** Storage write operation failed */
+export const HERMIS_ERROR__STORAGE__WRITE_FAILED = 8013 as const;
+
+/** React hook used outside of provider context */
+export const HERMIS_ERROR__REACT__CONTEXT_NOT_FOUND = 8020 as const;
+
+/** Invalid React provider configuration */
+export const HERMIS_ERROR__REACT__INVALID_PROVIDER_CONFIG = 8021 as const;
 
 // ============================================
 // 9000-9999: Invariant Violations
@@ -247,6 +307,9 @@ export type HermisErrorCode =
   | typeof HERMIS_ERROR__TRANSACTION__CONFIRMATION_FAILED
   | typeof HERMIS_ERROR__TRANSACTION__SIMULATION_FAILED
   | typeof HERMIS_ERROR__TRANSACTION__INVALID_TYPE
+  | typeof HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED
+  | typeof HERMIS_ERROR__TRANSACTION__DESERIALIZATION_FAILED
+  | typeof HERMIS_ERROR__TRANSACTION__BATCH_SIGNING_NOT_IMPLEMENTED
   // Network/RPC Errors
   | typeof HERMIS_ERROR__NETWORK__RPC_REQUEST_FAILED
   | typeof HERMIS_ERROR__NETWORK__CONNECTION_FAILED
@@ -261,24 +324,41 @@ export type HermisErrorCode =
   | typeof HERMIS_ERROR__SIGNING__ALL_TRANSACTIONS_FAILED
   | typeof HERMIS_ERROR__SIGNING__INVALID_SIGNATURE
   | typeof HERMIS_ERROR__SIGNING__VERIFICATION_FAILED
+  | typeof HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED
+  | typeof HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE
+  | typeof HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND
   // Standard Wallet Errors
   | typeof HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND
   | typeof HERMIS_ERROR__STANDARD_WALLET__METHOD_NOT_IMPLEMENTED
   | typeof HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND
   | typeof HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_CHANGE_FAILED
   | typeof HERMIS_ERROR__STANDARD_WALLET__CHAIN_NOT_SUPPORTED
+  | typeof HERMIS_ERROR__STANDARD_WALLET__DETECTION_FAILED
+  | typeof HERMIS_ERROR__STANDARD_WALLET__REGISTRATION_FAILED
+  | typeof HERMIS_ERROR__STANDARD_WALLET__CLUSTER_MISMATCH
+  | typeof HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_VALIDATION_FAILED
   // Kit Architecture Errors
   | typeof HERMIS_ERROR__KIT__RPC_CONNECTION_FAILED
   | typeof HERMIS_ERROR__KIT__MESSAGE_COMPILATION_FAILED
   | typeof HERMIS_ERROR__KIT__ENCODER_NOT_AVAILABLE
   | typeof HERMIS_ERROR__KIT__DECODER_NOT_AVAILABLE
   | typeof HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE
+  | typeof HERMIS_ERROR__KIT__CANNOT_SIGN_WITH_ADDRESS
+  | typeof HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED
+  | typeof HERMIS_ERROR__KIT__INVALID_WALLET_TYPE
+  | typeof HERMIS_ERROR__KIT__REQUIRES_CONNECTION
   // Configuration Errors
   | typeof HERMIS_ERROR__CONFIG__INVALID_CONFIGURATION
   | typeof HERMIS_ERROR__CONFIG__MISSING_REQUIRED
   | typeof HERMIS_ERROR__CONFIG__INVALID_RPC_ENDPOINT
   | typeof HERMIS_ERROR__CONFIG__INVALID_ADAPTER
   | typeof HERMIS_ERROR__CONFIG__STORAGE_INIT_FAILED
+  | typeof HERMIS_ERROR__STORAGE__INDEXEDDB_FAILED
+  | typeof HERMIS_ERROR__STORAGE__LOCALSTORAGE_FAILED
+  | typeof HERMIS_ERROR__STORAGE__READ_FAILED
+  | typeof HERMIS_ERROR__STORAGE__WRITE_FAILED
+  | typeof HERMIS_ERROR__REACT__CONTEXT_NOT_FOUND
+  | typeof HERMIS_ERROR__REACT__INVALID_PROVIDER_CONFIG
   // Invariant Violations
   | typeof HERMIS_ERROR__INVARIANT__UNEXPECTED_STATE
   | typeof HERMIS_ERROR__INVARIANT__NULL_VALUE

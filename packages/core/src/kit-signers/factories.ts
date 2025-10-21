@@ -15,6 +15,11 @@ import type {
   SignatureBytes,
 } from './types.js'
 import { updateSignatureDictionary, freezeSigner } from './utils.js'
+import {
+  HermisError,
+  HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_TRANSACTION,
+  HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT
+} from '@hermis/errors'
 
 /**
  * Create a MessageModifyingSigner from a wallet's sign message function
@@ -46,10 +51,11 @@ export function createMessageSignerFromWallet(
     ): Promise<readonly SignableMessage[]> {
       // Most wallets only support signing one message at a time
       if (messages.length !== 1) {
-        throw new Error(
-          `Wallet signers only support signing one message at a time. ` +
-          `Received ${messages.length} messages.`
-        )
+        throw new HermisError(HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT, {
+          argumentName: 'messages',
+          receivedValue: `array of ${messages.length} messages`,
+          expectedType: 'single message (array of length 1)'
+        })
       }
 
       const [message] = messages
@@ -57,7 +63,7 @@ export function createMessageSignerFromWallet(
 
       // Handle abort signal if provided
       if (config?.abortSignal?.aborted) {
-        throw new Error('Message signing aborted')
+        throw new HermisError(HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_TRANSACTION, {})
       }
 
       // Sign the message
@@ -116,17 +122,18 @@ export function createTransactionSendingSignerFromWallet(
     ): Promise<readonly SignatureBytes[]> {
       // Most wallets only support signing one transaction at a time
       if (transactions.length !== 1) {
-        throw new Error(
-          `Wallet signers only support signing one transaction at a time. ` +
-          `Received ${transactions.length} transactions.`
-        )
+        throw new HermisError(HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT, {
+          argumentName: 'transactions',
+          receivedValue: `array of ${transactions.length} transactions`,
+          expectedType: 'single transaction (array of length 1)'
+        })
       }
 
       const [transaction] = transactions
 
       // Handle abort signal if provided
       if (config?.abortSignal?.aborted) {
-        throw new Error('Transaction signing aborted')
+        throw new HermisError(HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_TRANSACTION, {})
       }
 
       // Send the transaction and get signature

@@ -81,16 +81,29 @@ import {
 // Import error handling
 import {
   HermisError,
+  wrapError,
+  isUserRejection,
   HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
   HERMIS_ERROR__WALLET_CONNECTION__NO_PUBLIC_KEY,
+  HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_SIGNATURE,
+  HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_TRANSACTION,
   HERMIS_ERROR__TRANSACTION__SIGNATURE_FAILED,
   HERMIS_ERROR__TRANSACTION__SEND_FAILED,
   HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED,
+  HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED,
+  HERMIS_ERROR__TRANSACTION__DESERIALIZATION_FAILED,
+  HERMIS_ERROR__TRANSACTION__BATCH_SIGNING_NOT_IMPLEMENTED,
+  HERMIS_ERROR__TRANSACTION__COMPILATION_FAILED,
   HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
   HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND,
   HERMIS_ERROR__SIGNING__MESSAGE_FAILED,
   HERMIS_ERROR__SIGNING__TRANSACTION_FAILED,
+  HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED,
+  HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE,
+  HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND,
   HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE,
+  HERMIS_ERROR__KIT__INVALID_WALLET_TYPE,
+  HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED,
   HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT,
   HERMIS_ERROR__INVARIANT__OPERATION_NOT_ALLOWED
 } from '@hermis/errors';
@@ -410,7 +423,10 @@ export async function signTransaction<T extends DualTransaction>(
           walletOrSigner
         ) as T;
       } else {
-        throw new Error('Kit signer cannot sign legacy transaction without fallback enabled');
+        throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+          feature: 'Kit signer signing legacy transaction',
+          suggestion: 'Enable fallbackToLegacy option'
+        });
       }
     }
   }
@@ -424,7 +440,7 @@ export async function signTransaction<T extends DualTransaction>(
         return await signTransactionKit(transaction as TransactionMessage, walletOrSigner) as T;
       } else {
         // Address without private key - cannot sign
-        throw new Error('Cannot sign transaction with Address - private key required');
+        throw new HermisError(HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE, {});
       }
     } else {
       // Kit wallet but legacy transaction - convert if possible
@@ -434,10 +450,17 @@ export async function signTransaction<T extends DualTransaction>(
           const legacyKeypair = await convertCryptoKeyPairToKeypair(walletOrSigner);
           return await signTransactionLegacy(transaction as Transaction | VersionedTransaction, legacyKeypair) as T;
         } else {
-          throw new Error('Cannot convert Address to legacy wallet for signing');
+          throw new HermisError(HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED, {
+            sourceType: 'Address',
+            targetType: 'LegacyWallet',
+            reason: 'Address type cannot be converted to legacy wallet for signing'
+          });
         }
       } else {
-        throw new Error('Kit wallet cannot sign legacy transaction without fallback enabled');
+        throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+          feature: 'Kit wallet signing legacy transaction',
+          suggestion: 'Enable fallbackToLegacy option'
+        });
       }
     }
   }
@@ -452,7 +475,10 @@ export async function signTransaction<T extends DualTransaction>(
       // This would need proper implementation using conversion utilities
       // throw new Error('Legacy to kit transaction conversion not yet implemented');
     } else {
-      throw new Error('Legacy wallet cannot sign kit transaction without conversion enabled');
+      throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+        feature: 'Legacy wallet signing Kit transaction',
+        suggestion: 'Enable conversion or use a Kit-compatible wallet'
+      });
     }
   } else {
     // Both wallet and transaction are legacy architecture
@@ -521,13 +547,31 @@ async function signTransactionLegacy<T extends Transaction | VersionedTransactio
     }
 
     // Call wallet's signTransaction feature
-    const result = await feature.signTransaction({
-      transaction: transactionBytes,
-      account: account
-    });
+    let result;
+    try {
+      result = await feature.signTransaction({
+        transaction: transactionBytes,
+        account: account
+      });
+    } catch (error) {
+      // Check if user rejected the transaction
+      if (isUserRejection(error)) {
+        throw new HermisError(
+          HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_TRANSACTION,
+          { walletName: wallet.name || 'Unknown wallet' }
+        );
+      }
+
+      // For other errors, wrap with generic signing error
+      throw wrapError(error, HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+        reason: 'Failed to sign transaction with Standard Wallet'
+      });
+    }
 
     if (!result || !result[0] || !result[0].signedTransaction) {
-      throw new Error('No signed transaction returned from wallet');
+      throw new HermisError(HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+        reason: 'No signed transaction returned from wallet'
+      });
     }
 
     // Deserialize the signed transaction
@@ -539,7 +583,9 @@ async function signTransactionLegacy<T extends Transaction | VersionedTransactio
         return Transaction.from(signedTransactionBytes) as T;
       }
     } catch (error) {
-      throw new Error(`Failed to deserialize signed transaction: ${error instanceof Error ? error.message : error}`);
+      throw wrapError(error, HERMIS_ERROR__TRANSACTION__DESERIALIZATION_FAILED, {
+        reason: 'Failed to deserialize signed transaction'
+      });
     }
   } else {
     // It's an Adapter
@@ -556,14 +602,19 @@ async function signTransactionLegacy<T extends Transaction | VersionedTransactio
       wallet.supportedTransactionVersions &&
       !wallet.supportedTransactionVersions.has((transaction as any).version)
     ) {
-      throw new Error(`Wallet doesn't support transaction version ${(transaction as any).version}`);
+      throw new HermisError(HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED, {
+        walletName: wallet.name || 'Unknown wallet',
+        version: String((transaction as any).version)
+      });
     }
     
     // Check if this adapter supports signing directly
     if ('signTransaction' in wallet && typeof wallet.signTransaction === 'function') {
       return await wallet.signTransaction(transaction);
     } else {
-      throw new Error('Wallet adapter does not support direct transaction signing');
+      throw new HermisError(HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+        reason: 'Wallet adapter does not support direct transaction signing'
+      });
     }
   }
 }
@@ -578,7 +629,9 @@ async function convertCryptoKeyPairToKeypair(cryptoKeyPair: CryptoKeyPair): Prom
     const privateKeyBytes = await attemptPrivateKeyExtraction(cryptoKeyPair);
 
     if (!privateKeyBytes) {
-      throw new Error('Cannot extract private key from CryptoKeyPair - key is not extractable');
+      throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+        reason: 'Cannot extract private key from CryptoKeyPair - key is not extractable'
+      });
     }
 
     // Create a Keypair from the private key bytes
@@ -593,7 +646,9 @@ async function convertCryptoKeyPairToKeypair(cryptoKeyPair: CryptoKeyPair): Prom
     // Create and return the Keypair
     return Keypair.fromSecretKey(secretKeyBytes);
   } catch (error) {
-    throw new Error(`Failed to convert CryptoKeyPair to Keypair: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+      reason: 'Failed to convert CryptoKeyPair to Keypair'
+    });
   }
 }
 
@@ -610,17 +665,23 @@ async function convertCryptoKeyPairToMessageSigner(cryptoKeyPair: CryptoKeyPair)
   try {
     // Validate input CryptoKeyPair
     if (!cryptoKeyPair || !cryptoKeyPair.privateKey || !cryptoKeyPair.publicKey) {
-      throw new Error("Invalid CryptoKeyPair: missing private or public key");
+      throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+        reason: 'Invalid CryptoKeyPair: missing private or public key'
+      });
     }
 
     // Check key algorithm
     if (cryptoKeyPair.privateKey.algorithm.name !== "Ed25519") {
-      throw new Error(`Unsupported key algorithm: ${cryptoKeyPair.privateKey.algorithm.name}. Only Ed25519 is supported.`);
+      throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+        reason: `Unsupported key algorithm: ${cryptoKeyPair.privateKey.algorithm.name}. Only Ed25519 is supported.`
+      });
     }
 
     // Check key usage
     if (!cryptoKeyPair.privateKey.usages.includes("sign")) {
-      throw new Error("Private key does not support signing");
+      throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+        reason: 'Private key does not support signing'
+      });
     }
 
     // Strategy 1: Try to extract private key bytes using multiple methods
@@ -637,7 +698,9 @@ async function convertCryptoKeyPairToMessageSigner(cryptoKeyPair: CryptoKeyPair)
     return await createBridgeMessageSigner(cryptoKeyPair);
 
   } catch (error) {
-    throw new Error(`Failed to convert CryptoKeyPair to MessageSigner: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+      reason: 'Failed to convert CryptoKeyPair to MessageSigner'
+    });
   }
 }
 
@@ -665,7 +728,9 @@ async function attemptPrivateKeyExtraction(cryptoKeyPair: CryptoKeyPair): Promis
           return privateKeyBytes;
         }
       }
-      throw new Error("Invalid PKCS#8 format for Ed25519 key");
+      throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+        reason: 'Invalid PKCS#8 format for Ed25519 key'
+      });
     },
 
     // Strategy 3: Try JWK export and decode
@@ -673,7 +738,9 @@ async function attemptPrivateKeyExtraction(cryptoKeyPair: CryptoKeyPair): Promis
       const jwk = await crypto.subtle.exportKey("jwk", cryptoKeyPair.privateKey);
 
       if (!jwk.d) {
-        throw new Error("JWK does not contain private key component 'd'");
+        throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+          reason: "JWK does not contain private key component 'd'"
+        });
       }
 
       // Decode base64url to get raw bytes
@@ -683,7 +750,9 @@ async function attemptPrivateKeyExtraction(cryptoKeyPair: CryptoKeyPair): Promis
       const privateKeyBytes = Uint8Array.from(atob(base64 + padding), c => c.charCodeAt(0));
 
       if (privateKeyBytes.length !== 32) {
-        throw new Error(`Invalid Ed25519 private key length: ${privateKeyBytes.length}`);
+        throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+          reason: `Invalid Ed25519 private key length: ${privateKeyBytes.length}`
+        });
       }
 
       return privateKeyBytes;
@@ -736,7 +805,9 @@ async function createBridgeMessageSigner(cryptoKeyPair: CryptoKeyPair): Promise<
             // It's raw message bytes
             messageBytes = message;
           } else {
-            throw new Error("Unsupported message format for bridge signer");
+            throw new HermisError(HERMIS_ERROR__SIGNING__MESSAGE_FAILED, {
+              reason: 'Unsupported message format for bridge signer'
+            });
           }
 
           // Sign the message using the CryptoKeyPair directly
@@ -757,7 +828,9 @@ async function createBridgeMessageSigner(cryptoKeyPair: CryptoKeyPair): Promise<
 
         return signatureDictionaries;
       } catch (error) {
-        throw new Error(`Bridge signer failed to sign messages: ${error instanceof Error ? error.message : error}`);
+        throw wrapError(error, HERMIS_ERROR__SIGNING__MESSAGE_FAILED, {
+          reason: 'Bridge signer failed to sign messages'
+        });
       }
     }
   };
@@ -773,7 +846,9 @@ async function createBridgeMessageSigner(cryptoKeyPair: CryptoKeyPair): Promise<
 async function createMessageSignerFromPrivateKeyBytes(privateKeyBytes: Uint8Array): Promise<MessagePartialSigner> {
   try {
     if (privateKeyBytes.length !== 32) {
-      throw new Error(`Invalid private key length: expected 32 bytes, got ${privateKeyBytes.length}`);
+      throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+        reason: `Invalid private key length: expected 32 bytes, got ${privateKeyBytes.length}`
+      });
     }
 
     // Create a new CryptoKeyPair from the private key bytes
@@ -786,7 +861,9 @@ async function createMessageSignerFromPrivateKeyBytes(privateKeyBytes: Uint8Arra
 
     return keypairSigner;
   } catch (error) {
-    throw new Error(`Failed to create MessageSigner from private key bytes: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+      reason: 'Failed to create MessageSigner from private key bytes'
+    });
   }
 }
 
@@ -799,7 +876,9 @@ async function extractPrivateKeyBytes(cryptoKeyPair: CryptoKeyPair): Promise<Uin
   const privateKeyBytes = await attemptPrivateKeyExtraction(cryptoKeyPair);
 
   if (!privateKeyBytes) {
-    throw new Error("Failed to extract private key bytes: key is not extractable");
+    throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+      reason: 'Failed to extract private key bytes: key is not extractable'
+    });
   }
 
   return privateKeyBytes;
@@ -947,7 +1026,11 @@ async function convertTransactionMessageToLegacy(transactionMessage: Transaction
 
     return transaction;
   } catch (error) {
-    throw new Error(`Failed to convert TransactionMessage to Transaction: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED, {
+      sourceType: 'TransactionMessage',
+      targetType: 'Transaction',
+      reason: 'Failed to convert TransactionMessage to Transaction'
+    });
   }
 }
 
@@ -969,10 +1052,12 @@ export async function signAllTransactions<T extends DualTransaction>(
       // Both wallet and all transactions are kit architecture
       if (isCryptoKeyPair(wallet)) {
         // Kit batch signing requires proper transaction message formatting
-        throw new Error('Kit batch transaction signing not yet implemented');
+        throw new HermisError(HERMIS_ERROR__TRANSACTION__BATCH_SIGNING_NOT_IMPLEMENTED, {
+          walletType: 'Kit'
+        });
       } else {
         // Address without private key - cannot sign
-        throw new Error('Cannot sign transactions with Address - private key required');
+        throw new HermisError(HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE, {});
       }
     } else {
       // Kit wallet but some legacy transactions - convert if possible
@@ -985,7 +1070,10 @@ export async function signAllTransactions<T extends DualTransaction>(
               const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
               const signed = await signTransactionLegacy(legacyTransaction, legacyKeypair);
               // Convert back to TransactionMessage if needed
-              throw new Error('Legacy to kit transaction conversion not yet implemented');
+              throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+                feature: 'Converting signed legacy transaction back to Kit TransactionMessage',
+                suggestion: 'This conversion is not yet implemented'
+              });
             } else {
               const signed = await signTransactionLegacy(transaction as Transaction | VersionedTransaction, legacyKeypair);
               signedTransactions.push(signed as T);
@@ -993,10 +1081,17 @@ export async function signAllTransactions<T extends DualTransaction>(
           }
           return signedTransactions;
         } else {
-          throw new Error('Cannot convert Address to legacy wallet for signing');
+          throw new HermisError(HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED, {
+            sourceType: 'Address',
+            targetType: 'LegacyWallet',
+            reason: 'Address type cannot be converted to legacy wallet for signing'
+          });
         }
       } else {
-        throw new Error('Kit wallet cannot sign legacy transactions without fallback enabled');
+        throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+          feature: 'Kit wallet signing legacy transactions',
+          suggestion: 'Enable fallbackToLegacy option'
+        });
       }
     }
   }
@@ -1023,7 +1118,10 @@ export async function signAllTransactions<T extends DualTransaction>(
       }
       return signedTransactions;
     } else {
-      throw new Error('Legacy wallet cannot sign kit transactions without conversion enabled');
+      throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+        feature: 'Legacy wallet signing Kit transactions',
+        suggestion: 'Enable conversion or use a Kit-compatible wallet'
+      });
     }
   }
 }
@@ -1059,7 +1157,10 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
     // It's a Standard Wallet
     const feature = wallet.features[SolanaSignTransactionMethod] as SolanaSignTransactionFeature;
     if (!feature || typeof feature.signTransaction !== 'function') {
-      throw new Error('Wallet has invalid signTransaction feature');
+      throw new HermisError(HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND, {
+        featureName: 'signTransaction',
+        walletName: 'Standard Wallet'
+      });
     }
 
     // Sign each transaction using the Standard Wallet feature
@@ -1068,7 +1169,9 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
       // Get the account to use for signing
       const account = wallet.accounts[0] as StandardWalletAccount;
       if (!account) {
-        throw new Error('No account found in wallet');
+        throw new HermisError(HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND, {
+          walletName: 'Standard Wallet'
+        });
       }
 
       const accountPublicKey = new PublicKey(account.publicKey);
@@ -1083,17 +1186,38 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
       try {
         transactionBytes = serializeTransactionForWallet(transaction);
       } catch (error) {
-        throw new Error(`Failed to serialize transaction for signing: ${error instanceof Error ? error.message : error}`);
+        throw wrapError(error, HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED, {
+          transactionType: isVersionedTransaction(transaction) ? 'VersionedTransaction' : 'Transaction',
+          reason: 'Failed to serialize transaction for signing'
+        });
       }
 
       // Call wallet's signTransaction feature
-      const result = await feature.signTransaction({
-        transaction: transactionBytes,
-        account: account
-      });
+      let result;
+      try {
+        result = await feature.signTransaction({
+          transaction: transactionBytes,
+          account: account
+        });
+      } catch (error) {
+        // Check if user rejected the transaction
+        if (isUserRejection(error)) {
+          throw new HermisError(
+            HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_TRANSACTION,
+            { walletName: 'Standard Wallet' }
+          );
+        }
+
+        // For other errors, wrap with generic signing error
+        throw wrapError(error, HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+          reason: 'Failed to sign transaction with Standard Wallet'
+        });
+      }
 
       if (!result || !result[0] || !result[0].signedTransaction) {
-        throw new Error('No signed transaction returned from wallet');
+        throw new HermisError(HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+          reason: 'No signed transaction returned from wallet'
+        });
       }
 
       // Deserialize the signed transaction
@@ -1105,7 +1229,9 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
           signedTransactions.push(Transaction.from(signedTransactionBytes) as T);
         }
       } catch (error) {
-        throw new Error(`Failed to deserialize signed transaction: ${error instanceof Error ? error.message : error}`);
+        throw wrapError(error, HERMIS_ERROR__TRANSACTION__DESERIALIZATION_FAILED, {
+          reason: 'Failed to deserialize signed transaction'
+        });
       }
     }
     return signedTransactions;
@@ -1125,7 +1251,10 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
         wallet.supportedTransactionVersions &&
         !wallet.supportedTransactionVersions.has((transaction as any).version)
       ) {
-        throw new Error(`Wallet doesn't support transaction version ${(transaction as any).version}`);
+        throw new HermisError(HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED, {
+        walletName: wallet.name || 'Unknown wallet',
+        version: String((transaction as any).version)
+      });
       }
     }
     
@@ -1141,7 +1270,9 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
       }
       return signedTransactions;
     } else {
-      throw new Error('Wallet adapter does not support transaction signing');
+      throw new HermisError(HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+        reason: 'Wallet adapter does not support transaction signing'
+      });
     }
   }
 }
@@ -1220,7 +1351,7 @@ export async function sendTransaction(
           // Both wallet and transaction are kit architecture - sign and send
           return await sendTransactionKit(connection, transaction as TransactionMessage, wallet);
         } else {
-          throw new Error('Cannot send transaction with Address - private key required');
+          throw new HermisError(HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE, {});
         }
       } else {
         // Kit wallet but legacy transaction
@@ -1229,10 +1360,17 @@ export async function sendTransaction(
             const legacyKeypair = await convertCryptoKeyPairToKeypair(wallet);
             return await sendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, legacyKeypair, finalOptions);
           } else {
-            throw new Error('Cannot convert Address to legacy wallet for sending');
+            throw new HermisError(HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED, {
+              sourceType: 'Address',
+              targetType: 'LegacyWallet',
+              reason: 'Address type cannot be converted to legacy wallet for sending'
+            });
           }
         } else {
-          throw new Error('Kit wallet cannot send legacy transaction without fallback enabled');
+          throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+            feature: 'Kit wallet sending legacy transaction',
+            suggestion: 'Enable fallbackToLegacy option'
+          });
         }
       }
     }
@@ -1244,7 +1382,10 @@ export async function sendTransaction(
         const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
         return await sendTransactionLegacy(connection, legacyTransaction, wallet, finalOptions);
       } else {
-        throw new Error('Legacy wallet cannot send kit transaction without conversion enabled');
+        throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+          feature: 'Legacy wallet sending Kit transaction',
+          suggestion: 'Enable conversion or use a Kit-compatible wallet'
+        });
       }
     } else {
       // Both wallet and transaction are legacy architecture
@@ -1338,7 +1479,10 @@ async function sendTransactionLegacy(
       wallet.supportedTransactionVersions &&
       !wallet.supportedTransactionVersions.has((transaction as any).version)
     ) {
-      throw new Error(`Wallet doesn't support transaction version ${(transaction as any).version}`);
+      throw new HermisError(HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED, {
+        walletName: wallet.name || 'Unknown wallet',
+        version: String((transaction as any).version)
+      });
     }
 
     // Send the transaction using the adapter
@@ -1346,7 +1490,11 @@ async function sendTransactionLegacy(
     if (isLegacyConnection(connection)) {
       return await wallet.sendTransaction(transaction, connection);
     } else {
-      throw new Error('Adapter requires legacy Connection, not Kit Rpc');
+      throw new HermisError(HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT, {
+        argumentName: 'connection',
+        receivedValue: 'Kit Rpc',
+        expectedType: 'Legacy Connection'
+      });
     }
   }
 }
@@ -1382,7 +1530,7 @@ export async function signMessage(
         return await signMessageKit(messageBytes, messageSigner);
       } else if (typeof wallet === 'string') {
         // Address without private key - cannot sign
-        throw new Error('Cannot sign message with Address - private key required');
+        throw new HermisError(HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE, {});
       }
       //  else {
       //   throw new Error('Unsupported kit wallet type');
@@ -1415,12 +1563,16 @@ async function signMessageKit(
     const signature = signatureDictionary[signer.address];
 
     if (!signature) {
-      throw new Error('No signature found for signer address');
+      throw new HermisError(HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND, {
+        address: signer.address || 'unknown'
+      });
     }
 
     return signature;
   } catch (error) {
-    throw new Error(`Kit message signing failed: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__MESSAGE_FAILED, {
+      reason: 'Kit message signing failed'
+    });
   }
 }
 
@@ -1451,7 +1603,9 @@ async function signTransactionWithKitSigner(
     const messageBytes = (transaction as any).messageBytes;
 
     if (!messageBytes) {
-      throw new Error('Failed to get message bytes from compiled transaction');
+      throw new HermisError(HERMIS_ERROR__TRANSACTION__COMPILATION_FAILED, {
+        reason: 'Failed to get message bytes from compiled transaction'
+      });
     }
 
     // Step 2: Sign the messageBytes using the signer's signMessages method
@@ -1463,7 +1617,9 @@ async function signTransactionWithKitSigner(
     const signatureDictionaries = await signer.signMessages([signableMessage]);
 
     if (!signatureDictionaries || signatureDictionaries.length === 0) {
-      throw new Error('No signatures returned from signer');
+      throw new HermisError(HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND, {
+        address: 'unknown'
+      });
     }
 
     // Step 3: Extract the signature from the dictionary
@@ -1471,7 +1627,9 @@ async function signTransactionWithKitSigner(
     const signature = signatureDict[signer.address];
 
     if (!signature) {
-      throw new Error(`No signature found for address ${signer.address}`);
+      throw new HermisError(HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND, {
+        address: signer.address
+      });
     }
 
     // Step 4: Merge signatures into the transaction
@@ -1489,7 +1647,9 @@ async function signTransactionWithKitSigner(
     // Note: This is a Transaction, not a TransactionMessage
     return signedTransaction;
   } catch (error) {
-    throw new Error(`Kit transaction signing with signer failed: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+      reason: 'Kit transaction signing with signer failed'
+    });
   }
 }
 
@@ -1509,7 +1669,9 @@ async function signTransactionLegacyWithKitSigner<T extends Transaction | Versio
     const cryptoKeyPair = (signer as any).keyPair as CryptoKeyPair | undefined;
 
     if (!cryptoKeyPair || !cryptoKeyPair.privateKey) {
-      throw new Error('Signer does not contain a CryptoKeyPair with private key');
+      throw new HermisError(HERMIS_ERROR__SIGNING__KEYPAIR_CONVERSION_FAILED, {
+        reason: 'Signer does not contain a CryptoKeyPair with private key'
+      });
     }
 
     // Serialize the transaction message to bytes
@@ -1549,7 +1711,9 @@ async function signTransactionLegacyWithKitSigner<T extends Transaction | Versio
       return transaction;
     }
   } catch (error) {
-    throw new Error(`Failed to sign legacy transaction with Kit signer: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+      reason: 'Failed to sign legacy transaction with Kit signer'
+    });
   }
 }
 
@@ -1570,7 +1734,9 @@ async function signTransactionKit(
     // Use the direct signer method
     return await signTransactionWithKitSigner(transactionMessage, messageSigner);
   } catch (error) {
-    throw new Error(`Kit transaction signing failed: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+      reason: 'Kit transaction signing failed'
+    });
   }
 }
 
@@ -1605,7 +1771,9 @@ async function sendTransactionKit(
 
     return signature;
   } catch (error) {
-    throw new Error(`Kit transaction sending failed: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__TRANSACTION__SEND_FAILED, {
+      reason: 'Kit transaction sending failed'
+    });
   }
 }
 
@@ -1630,7 +1798,10 @@ async function signVersionedTransactionWithKeypair(
 
     return signedTransaction;
   } catch (error) {
-    throw new Error(`Failed to sign VersionedTransaction with Keypair: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+      transactionType: 'VersionedTransaction',
+      reason: 'Failed to sign VersionedTransaction with Keypair'
+    });
   }
 }
 
@@ -1657,19 +1828,34 @@ async function signMessageLegacy(
       );
     }
 
-    const result = await feature.signMessage({
-      message: messageBytes,
-      account: wallet._connectedAccount![0]
-    }); 
+    try {
+      const result = await feature.signMessage({
+        message: messageBytes,
+        account: wallet._connectedAccount![0]
+      });
 
-    if (!result || result.length < 1 || !result[0].signature) {
-      throw new HermisError(
-        HERMIS_ERROR__SIGNING__MESSAGE_FAILED,
-        { reason: 'No signature returned from signMessage' }
-      );
+      if (!result || result.length < 1 || !result[0].signature) {
+        throw new HermisError(
+          HERMIS_ERROR__SIGNING__MESSAGE_FAILED,
+          { reason: 'No signature returned from signMessage' }
+        );
+      }
+
+      return result[0].signature;
+    } catch (error) {
+      // Check if user rejected the signature
+      if (isUserRejection(error)) {
+        throw new HermisError(
+          HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_SIGNATURE,
+          { walletName: wallet._wallet.name || 'Unknown wallet' }
+        );
+      }
+
+      // For other errors, wrap with generic signing error
+      throw wrapError(error, HERMIS_ERROR__SIGNING__MESSAGE_FAILED, {
+        reason: 'Failed to sign message with Standard Wallet'
+      });
     }
-
-    return result[0].signature;
   } else {
     throw new HermisError(
       HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT,
@@ -1717,10 +1903,13 @@ export async function signIn(
           
           // Sign the message using kit architecture
           // This would need proper kit message signing implementation
-          throw new Error('Kit sign-in not yet implemented');
+          throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+            feature: 'Kit sign-in',
+            suggestion: 'Use legacy sign-in with an Adapter'
+          });
         } else {
           // Address without private key - cannot sign
-          throw new Error('Cannot sign in with Address - private key required');
+          throw new HermisError(HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE, {});
         }
       }
 
@@ -1728,13 +1917,20 @@ export async function signIn(
       if (isLegacyWallet(wallet)) {
         // Only Adapters are supported for sign-in (not raw Keypairs)
         if ('secretKey' in wallet) {
-          throw new Error('Sign-in with raw Keypair is not supported - use an Adapter');
+          throw new HermisError(HERMIS_ERROR__INVARIANT__OPERATION_NOT_ALLOWED, {
+            operation: 'sign-in',
+            reason: 'Sign-in with raw Keypair is not supported - use an Adapter'
+          });
         }
 
         return await signInLegacy(wallet, input);
       }
 
-      throw new Error('Invalid wallet type for sign-in');
+      throw new HermisError(HERMIS_ERROR__KIT__INVALID_WALLET_TYPE, {
+        walletType: typeof wallet,
+        operation: 'sign-in',
+        expectedTypes: ['Adapter', 'StandardWalletAdapter']
+      });
     } catch (error) {
       console.error('Failed to sign in with Solana:', error);
       throw error;
@@ -1895,7 +2091,9 @@ export async function signMessageWithKitCryptoKeyPair(
       address: messageSigner.address
     };
   } catch (error) {
-    throw new Error(`Kit message signing with CryptoKeyPair failed: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__MESSAGE_FAILED, {
+      reason: 'Kit message signing with CryptoKeyPair failed'
+    });
   }
 }
 
@@ -1925,7 +2123,9 @@ export async function signMessageWithGeneratedKitKeypair(
       keypair
     };
   } catch (error) {
-    throw new Error(`Kit message signing with generated keypair failed: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__SIGNING__MESSAGE_FAILED, {
+      reason: 'Kit message signing with generated keypair failed'
+    });
   }
 }
 
@@ -2138,7 +2338,7 @@ export async function signAndSendTransaction(
           // Both wallet and transaction are kit architecture - sign and send directly
           return await signAndSendTransactionKit(connection, transaction as TransactionMessage, wallet);
         } else {
-          throw new Error('Cannot sign and send transaction with Address - private key required');
+          throw new HermisError(HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE, {});
         }
       } else {
         // Kit wallet but legacy transaction
@@ -2147,10 +2347,17 @@ export async function signAndSendTransaction(
             const legacyKeypair = await convertCryptoKeyPairToKeypair(wallet);
             return await signAndSendTransactionLegacy(connection, transaction as Transaction | VersionedTransaction, legacyKeypair, finalOptions);
           } else {
-            throw new Error('Cannot convert Address to legacy wallet for signing and sending');
+            throw new HermisError(HERMIS_ERROR__KIT__LEGACY_CONVERSION_FAILED, {
+              sourceType: 'Address',
+              targetType: 'LegacyWallet',
+              reason: 'Address type cannot be converted to legacy wallet for signing and sending'
+            });
           }
         } else {
-          throw new Error('Kit wallet cannot sign and send legacy transaction without fallback enabled');
+          throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+            feature: 'Kit wallet sign and send legacy transaction',
+            suggestion: 'Enable fallbackToLegacy option'
+          });
         }
       }
     }
@@ -2219,7 +2426,10 @@ export async function signAndSendTransaction(
         const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
         return await signAndSendTransactionLegacy(connection, legacyTransaction, wallet, finalOptions);
       } else {
-        throw new Error('Legacy wallet cannot sign and send kit transaction without conversion enabled');
+        throw new HermisError(HERMIS_ERROR__KIT__LEGACY_MODE_INCOMPATIBLE, {
+          feature: 'Legacy wallet sign and send Kit transaction',
+          suggestion: 'Enable conversion or use a Kit-compatible wallet'
+        });
       }
     } else {
       // Both wallet and transaction are legacy architecture
@@ -2309,15 +2519,33 @@ async function signAndSendTransactionLegacy(
     const chain = options.chain || getChainFromConnection(connection);
 
     console.log("DEBUG chain: ", chain);
-        
-    const result = await feature.signAndSendTransaction({
-      account: account,
-      transaction: transactionBytes,
-      chain: chain
-    });
+
+    let result;
+    try {
+      result = await feature.signAndSendTransaction({
+        account: account,
+        transaction: transactionBytes,
+        chain: chain
+      });
+    } catch (error) {
+      // Check if user rejected the transaction
+      if (isUserRejection(error)) {
+        throw new HermisError(
+          HERMIS_ERROR__WALLET_INTERACTION__USER_REJECTED_TRANSACTION,
+          { walletName: wallet._wallet.name || 'Unknown wallet' }
+        );
+      }
+
+      // For other errors, wrap with generic transaction error
+      throw wrapError(error, HERMIS_ERROR__TRANSACTION__SEND_FAILED, {
+        reason: 'Failed to sign and send transaction with Standard Wallet'
+      });
+    }
 
     if (!result || !result[0] || !result[0].signature) {
-      throw new Error('No signature returned from signAndSendTransaction');
+      throw new HermisError(HERMIS_ERROR__SIGNING__SIGNATURE_NOT_FOUND, {
+        address: accountPublicKey.toBase58()
+      });
     }
 
     // Convert signature bytes to base58 string
@@ -2325,11 +2553,13 @@ async function signAndSendTransactionLegacy(
   } else {
     // It's an Adapter - sign then send separately
     if (!wallet.publicKey) {
-      throw new Error('Wallet not connected');
+      throw new HermisError(HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED, {});
     }
 
     if (!wallet.sendTransaction) {
-      throw new Error('Wallet does not support sending transactions');
+      throw new HermisError(HERMIS_ERROR__TRANSACTION__SEND_FAILED, {
+        reason: 'Wallet does not support sending transactions'
+      });
     }
 
     // Set fee payer if not already set (for regular transactions)
@@ -2343,13 +2573,20 @@ async function signAndSendTransactionLegacy(
       wallet.supportedTransactionVersions &&
       !wallet.supportedTransactionVersions.has((transaction as any).version)
     ) {
-      throw new Error(`Wallet doesn't support transaction version ${(transaction as any).version}`);
+      throw new HermisError(HERMIS_ERROR__TRANSACTION__VERSION_NOT_SUPPORTED, {
+        walletName: wallet.name || 'Unknown wallet',
+        version: String((transaction as any).version)
+      });
     }
 
     // Check if adapter supports signAndSendTransaction
     // Note: Adapter expects legacy Connection, so only works with legacy connection
     if (!isLegacyConnection(connection)) {
-      throw new Error('Adapter requires legacy Connection, not Kit Rpc');
+      throw new HermisError(HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT, {
+        argumentName: 'connection',
+        receivedValue: 'Kit Rpc',
+        expectedType: 'Legacy Connection'
+      });
     }
 
     if ('signAndSendTransaction' in wallet && typeof wallet.signAndSendTransaction === 'function') {
@@ -2359,7 +2596,9 @@ async function signAndSendTransactionLegacy(
       const signedTransaction = await wallet.signTransaction(transaction);
       return await wallet.sendTransaction(signedTransaction, connection);
     } else {
-      throw new Error('Wallet adapter does not support transaction signing or sending');
+      throw new HermisError(HERMIS_ERROR__SIGNING__TRANSACTION_FAILED, {
+        reason: 'Wallet adapter does not support transaction signing or sending'
+      });
     }
   }
 }
@@ -2395,6 +2634,8 @@ async function signAndSendTransactionKit(
 
     return signature;
   } catch (error) {
-    throw new Error(`Kit sign and send transaction failed: ${error instanceof Error ? error.message : error}`);
+    throw wrapError(error, HERMIS_ERROR__TRANSACTION__SEND_FAILED, {
+      reason: 'Kit sign and send transaction failed'
+    });
   }
 }

@@ -5,6 +5,8 @@
  * in the Wallet Standard format.
  */
 
+import { HermisError, HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT } from '@hermis/errors'
+
 /**
  * Solana chain identifiers following the Wallet Standard format
  * Format: solana:<base58-encoded-genesis-hash>
@@ -86,8 +88,13 @@ export function isSolanaChain(chain: string): chain is `solana:${string}` {
  */
 export function validateKnownSolanaChain(chain: string): asserts chain is typeof SOLANA_CHAINS[SolanaNetwork] {
   if (!Object.values(SOLANA_CHAINS).includes(chain as any)) {
-    throw new Error(
-      `Unknown Solana chain: ${chain}. Expected one of: ${Object.values(SOLANA_CHAINS).join(', ')}`
+    throw new HermisError(
+      HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT,
+      {
+        argumentName: 'chain',
+        expectedType: `one of: ${Object.values(SOLANA_CHAINS).join(', ')}`,
+        receivedValue: chain
+      }
     )
   }
 }

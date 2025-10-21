@@ -1,6 +1,7 @@
 import { Adapter, WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { createConnection } from '../connection/index.js';
+import { HermisError, HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED } from '@hermis/errors';
 
 /**
  * Manages wallet connections and interactions
@@ -45,7 +46,7 @@ export class WalletManager {
    */
   async getBalance(): Promise<number> {
     if (!this.wallet || !this.wallet.publicKey) {
-      throw new Error('Wallet not connected');
+      throw new HermisError(HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED, {});
     }
 
     try {
@@ -63,7 +64,7 @@ export class WalletManager {
    */
   getPublicKey(): PublicKey {
     if (!this.wallet || !this.wallet.publicKey) {
-      throw new Error('Wallet not connected');
+      throw new HermisError(HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED, {});
     }
     
     return this.wallet.publicKey;

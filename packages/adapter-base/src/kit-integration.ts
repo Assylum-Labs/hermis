@@ -5,6 +5,7 @@
  * This module bridges the gap between legacy wallet adapters and modern Kit architecture.
  */
 
+import { HermisError, HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND, HERMIS_ERROR__INVARIANT__OPERATION_NOT_ALLOWED } from '@hermis/errors'
 import type { Address } from '@solana/kit'
 import type { WalletAdapter, PublicKey } from '@hermis/solana-headless-core'
 import {
@@ -84,7 +85,10 @@ export function createKitSignersFromAdapter(
         walletAddress,
         async (message: Uint8Array) => {
           if (!('signMessage' in adapter) || typeof adapter.signMessage !== 'function') {
-            throw new Error('Wallet does not support message signing')
+            throw new HermisError(
+              HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+              { featureName: 'signMessage', walletName: adapter.name || 'Unknown wallet' }
+            )
           }
           return await adapter.signMessage(message)
         }
@@ -98,7 +102,10 @@ export function createKitSignersFromAdapter(
         chain,
         async (transaction: any) => {
           if (!('sendTransaction' in adapter) || typeof adapter.sendTransaction !== 'function') {
-            throw new Error('Wallet does not support sending transactions')
+            throw new HermisError(
+              HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+              { featureName: 'sendTransaction', walletName: adapter.name || 'Unknown wallet' }
+            )
           }
 
           // Note: This is a simplified implementation
@@ -113,7 +120,14 @@ export function createKitSignersFromAdapter(
           // return signature
 
           // Placeholder - needs actual connection
-          throw new Error('Transaction sending via Kit signer requires connection parameter')
+          throw new HermisError(
+            HERMIS_ERROR__INVARIANT__OPERATION_NOT_ALLOWED,
+            {
+              argumentName: 'connection',
+              expectedType: 'Connection instance',
+              receivedValue: 'undefined (connection parameter required)'
+            }
+          )
         }
       )
     : null
