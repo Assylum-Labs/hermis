@@ -26,6 +26,10 @@ import {
 import {
   getIsMobile,
   SolanaMobileWalletAdapterWalletName,
+  createKitSignersFromAdapter,
+  getChainId,
+  type KitSigners,
+  type SolanaNetwork,
 } from '@hermis/solana-headless-adapter-base';
 import { useStandardWalletAdapters } from '../hooks/useStandardWalletAdapters.js';
 import { useConnection } from '../hooks/useConnection.js';
@@ -117,7 +121,7 @@ export function WalletProvider({
   );
 
   const latestAdapterRef = useRef<TAdapter | null>(null);
-  
+
   const [adapterState, setAdapterState] = useState<AdapterState>({
     adapter: null,
     connected: false,
@@ -125,6 +129,9 @@ export function WalletProvider({
     disconnecting: false,
     publicKey: null
   });
+
+  // Chain state for Kit integration (defaults to devnet)
+  const [currentChain, setCurrentChain] = useState<`solana:${string}`>(getChainId('devnet'));
 
   const onErrorRef = useRef(onError);
   const isUnloadingRef = useRef(false);
@@ -279,9 +286,15 @@ export function WalletProvider({
   }, [adapters]);
 
   const wallet = useMemo(
-    () => wallets.find((wallet) => wallet.adapter === adapterState.adapter) ?? null, 
+    () => wallets.find((wallet) => wallet.adapter === adapterState.adapter) ?? null,
     [adapterState.adapter, wallets]
   );
+
+  // Compute Kit signers from the current adapter
+  const kitSigners = useMemo<KitSigners>(() => {
+    const currentAdapter = latestAdapterRef.current || adapterState.adapter;
+    return createKitSignersFromAdapter(currentAdapter, currentChain);
+  }, [adapterState.adapter, adapterState.connected, adapterState.publicKey, currentChain]);
 
   useEffect(() => {
     if (walletName === SolanaMobileWalletAdapterWalletName && getIsMobile(adaptersWithStandardAdapters)) {
@@ -575,6 +588,11 @@ export function WalletProvider({
     return feature in currentAdapter;
   }, [adapterState.adapter]);
 
+  // Helper to get chain ID for a network
+  const handleGetChainId = useCallback((network: SolanaNetwork): `solana:${string}` => {
+    return getChainId(network);
+  }, []);
+
   // EXTENDED METHODS: These now support BOTH web3.js and Kit architectures automatically
   // No more "DualArchitecture" or "Unified" suffixes - just the standard names!
 
@@ -664,6 +682,13 @@ export function WalletProvider({
         connecting: latestAdapterRef.current?.connecting || adapterState.connecting,
         connected: latestAdapterRef.current?.connected || adapterState.connected,
         disconnecting: adapterState.disconnecting,
+        // Kit-friendly properties
+        address: kitSigners.address,
+        addressString: kitSigners.addressString,
+        chain: currentChain,
+        messageSigner: kitSigners.messageSigner,
+        transactionSigner: kitSigners.transactionSigner,
+        getChainId: handleGetChainId,
         select: updateWalletNameAsync,
         connect: handleConnect,
         disconnect: handleDisconnect,

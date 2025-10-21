@@ -13,6 +13,8 @@ import {
     DualTransaction,
     DualConnection
 } from '@hermis/solana-headless-core';
+import type { Address } from '@solana/kit';
+import type { MessageModifyingSigner, TransactionSendingSigner } from '@hermis/solana-headless-adapter-base';
 import { createContext, useContext } from 'react';
 
 /**
@@ -37,6 +39,25 @@ export interface WalletContextState {
     connecting: boolean;
     connected: boolean;
     disconnecting: boolean;
+
+    // Kit-friendly properties
+    /** Kit Address type (null if wallet not connected) */
+    address: Address<string> | null;
+
+    /** Plain address string (null if wallet not connected) */
+    addressString: string | null;
+
+    /** Current Solana chain identifier (null if not configured) */
+    chain: `solana:${string}` | null;
+
+    /** Message signer for Kit architecture (null if wallet doesn't support or not connected) */
+    messageSigner: MessageModifyingSigner<string> | null;
+
+    /** Transaction sending signer for Kit architecture (null if wallet doesn't support or not connected) */
+    transactionSigner: TransactionSendingSigner<string> | null;
+
+    /** Get chain ID for a specific network */
+    getChainId(network: 'devnet' | 'mainnet' | 'testnet'): `solana:${string}`;
 
     select(walletName: WalletName | null): Promise<void>;
     connect(): Promise<WalletAdapter>;

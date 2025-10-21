@@ -22,6 +22,8 @@ export * from './components/HermisProvider.js';
 
 export * from './utils/errors.js';
 
+export type { WalletName } from '@hermis/solana-headless-core';
+
 export {
   WalletAdapterNetwork,
   WalletReadyState,

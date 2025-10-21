@@ -101,7 +101,7 @@ export type {
     ConnectionConfig,
     TransactionVersion,
     // VersionedTransaction,
-    
+
     // From wallet-adapter-base
     Adapter,
     // WalletAdapterNetwork,
@@ -123,11 +123,11 @@ export {
     LAMPORTS_PER_SOL,
     TOKEN_PROGRAM_ID,
     MessageSignerWalletAdapter,
-    SignerWalletAdapter, 
-    SignInMessageSignerWalletAdapter, 
-    SupportedTransactionVersions, 
+    SignerWalletAdapter,
+    SignInMessageSignerWalletAdapter,
+    SupportedTransactionVersions,
     WalletAdapter,
-    
+
     WalletNotReadyError,
     WalletError,
     WalletAdapterNetwork,

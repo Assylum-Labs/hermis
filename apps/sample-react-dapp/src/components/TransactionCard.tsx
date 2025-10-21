@@ -27,7 +27,7 @@ interface TransactionCardProps {
 export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionSent }) => {
   const { connection: dualConnection } = useConnection();
   const connection = dualConnection as Connection;
-  const { publicKey, sendTransaction, signTransaction, wallet } = useWallet();
+  const { publicKey, sendTransaction, signTransaction, wallet, signAndSendTransaction } = useWallet();
   const [recipient, setRecipient] = useState('');
   const [amount, setAmount] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -62,7 +62,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
   };
 
   const handleSendTransaction = async () => {
-    if (!publicKey || !connection || !signTransaction || !sendTransaction) return;
+    if (!publicKey || !connection || !signTransaction || !sendTransaction || !signAndSendTransaction) return;
     
     // Validate inputs
     if (!recipient || !amount) {
@@ -78,7 +78,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
     const parsedAmount = parseFloat(amount);
     if (isNaN(parsedAmount) || parsedAmount <= 0) {
       setError('Please enter a valid amount');
-      return;
+    return;
     }
     
     setIsSending(true);
@@ -100,9 +100,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
         })
       );
 
-      const signedTransaction = await signTransaction(transaction);
-
-      const txSignature = await sendTransaction(signedTransaction, connection);
+      const txSignature = await signAndSendTransaction(transaction, connection)
 
       setSignature(txSignature);
       if (onTransactionSent) {

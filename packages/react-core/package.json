@@ -30,6 +30,7 @@
     "@hermis/solana-headless-adapter-base": "workspace:*",
     "@hermis/solana-headless-core": "workspace:*",
     "@hermis/wallet-standard-base": "workspace:*",
+    "@solana/kit": "^3.0.0",
     "react": "^19.0.0"
   },
   "peerDependencies": {

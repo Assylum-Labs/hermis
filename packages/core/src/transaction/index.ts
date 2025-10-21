@@ -895,11 +895,31 @@ async function convertTransactionMessageToLegacy(transactionMessage: Transaction
         // Convert kit instruction to legacy TransactionInstruction
         const legacyInstruction = {
           programId: new PublicKey(instruction.programAddress),
-          keys: instruction.accounts?.map((account: any) => ({
-            pubkey: new PublicKey(account.address),
-            isSigner: account.role?.includes('signer') || false,
-            isWritable: account.role?.includes('writable') || false,
-          })) || [],
+          keys: instruction.accounts?.map((account: any) => {
+            // Handle both numeric roles (Kit standard: 0=readonly, 1=writable, 2=signer, 3=both)
+            // and string/array roles (legacy format)
+            let isSigner = false;
+            let isWritable = false;
+
+            if (typeof account.role === 'number') {
+              // Numeric role (Kit format): bitflags
+              // bit 0 (value 1): writable
+              // bit 1 (value 2): signer
+              // value 3 (1|2): both writable and signer
+              isWritable = (account.role & 1) !== 0;
+              isSigner = (account.role & 2) !== 0;
+            } else if (account.role) {
+              // String/array role (legacy format)
+              isSigner = account.role?.includes?.('signer') || false;
+              isWritable = account.role?.includes?.('writable') || false;
+            }
+
+            return {
+              pubkey: new PublicKey(account.address),
+              isSigner,
+              isWritable,
+            };
+          }) || [],
           data: instruction.data || Buffer.alloc(0),
         };
 
@@ -909,13 +929,19 @@ async function convertTransactionMessageToLegacy(transactionMessage: Transaction
 
     // Set transaction properties if available
     if ('feePayer' in transactionMessage && transactionMessage.feePayer) {
-      transaction.feePayer = new PublicKey(transactionMessage.feePayer);
+      // Handle feePayer - can be a string (address) or an object with address property (TransactionSigner)
+      const feePayerValue = transactionMessage.feePayer as any;
+      const feePayerAddress = typeof feePayerValue === 'string'
+        ? feePayerValue
+        : feePayerValue.address; // Extract address from TransactionSigner
+      transaction.feePayer = new PublicKey(feePayerAddress);
     }
 
-    if ('lifetimeConstraint' in transactionMessage && transactionMessage.lifetimeConstraint) {
-      const lifetime = transactionMessage.lifetimeConstraint as any;
-      if (lifetime.blockhash) {
-        transaction.recentBlockhash = lifetime.blockhash;
+    // Handle lifetime constraint - check for both singular and plural property names
+    const lifetimeConstraint = (transactionMessage as any).lifetimeConstraint || (transactionMessage as any).lifetimeConstraints;
+    if (lifetimeConstraint) {
+      if (lifetimeConstraint.blockhash) {
+        transaction.recentBlockhash = lifetimeConstraint.blockhash;
       }
     }
 
@@ -2131,7 +2157,64 @@ export async function signAndSendTransaction(
 
     // Everything else uses legacy implementation (Keypair, Adapter, Standard Wallet)
     if (isTransactionMessage(transaction)) {
-      // Legacy wallet but kit transaction
+      // Special case: Standard Wallet can accept Kit TransactionMessage directly
+      if ("_connectedAccount" in wallet && "_wallet" in wallet) {
+        // Standard Wallet - serialize Kit TransactionMessage and call wallet's feature
+        // No conversion needed, wallet broadcasts internally
+        const standardWallet = wallet as any;
+        const feature = standardWallet._wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
+        if (!feature || typeof feature.signAndSendTransaction !== 'function') {
+          throw new HermisError(
+            HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+            { featureName: 'signAndSendTransaction', walletName: standardWallet._wallet.name || 'Unknown wallet' }
+          );
+        }
+
+        const account = standardWallet._connectedAccount![0] as StandardWalletAccount;
+        if (!account) {
+          throw new HermisError(
+            HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND,
+            { walletName: standardWallet._wallet.name || 'Unknown wallet' }
+          );
+        }
+
+        // Serialize Kit TransactionMessage (no conversion to legacy!)
+        let transactionBytes: Uint8Array;
+        try {
+          transactionBytes = serializeTransactionForWallet(transaction as TransactionMessage);
+        } catch (error) {
+          throw new HermisError(
+            HERMIS_ERROR__TRANSACTION__SERIALIZATION_FAILED,
+            {
+              transactionType: 'Kit TransactionMessage',
+              reason: 'Serialization failed for Standard Wallet',
+              originalError: error instanceof Error ? error.message : String(error)
+            },
+            error instanceof Error ? error : undefined
+          );
+        }
+
+        // Get chain from options or default to devnet
+        const chain = finalOptions.chain || 'solana:devnet';
+
+        // Call Standard Wallet - it broadcasts internally, doesn't need our connection
+        const result = await feature.signAndSendTransaction({
+          account: account,
+          transaction: transactionBytes,
+          chain: chain
+        });
+
+        if (!result || !result[0] || !result[0].signature) {
+          throw new HermisError(
+            HERMIS_ERROR__TRANSACTION__SEND_FAILED,
+            { reason: 'No signature returned from signAndSendTransaction' }
+          );
+        }
+
+        return bs58.encode(result[0].signature);
+      }
+
+      // For other legacy wallets (Keypair, Adapter): convert to legacy Transaction
       if (finalOptions.preferKitArchitecture === false || finalOptions.fallbackToLegacy !== false) {
         const legacyTransaction = await convertTransactionMessageToLegacy(transaction as TransactionMessage);
         return await signAndSendTransactionLegacy(connection, legacyTransaction, wallet, finalOptions);
@@ -2180,17 +2263,23 @@ async function signAndSendTransactionLegacy(
       const signedTransaction = await signVersionedTransactionWithKeypair(transaction as VersionedTransaction, wallet);
       return await sendTransactionHelper(connection, signedTransaction);
     }
-  } else if ("features" in wallet) {
+  } else if ("_connectedAccount" in wallet && "_wallet" in wallet) {
     // It's a Standard Wallet - use signAndSendTransaction feature
-    const feature = wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
+    const feature = wallet._wallet.features[SolanaSignAndSendTransactionMethod] as SolanaSignAndSendTransactionFeature;
     if (!feature || typeof feature.signAndSendTransaction !== 'function') {
-      throw new Error('Wallet has invalid signAndSendTransaction feature');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND,
+        { featureName: 'signAndSendTransaction', walletName: wallet._wallet.name || 'Unknown wallet' }
+      );
     }
 
     // Get the account to use
-    const account = wallet.accounts[0] as StandardWalletAccount;
+    const account = wallet._connectedAccount![0] as StandardWalletAccount;
     if (!account) {
-      throw new Error('No account found in wallet');
+      throw new HermisError(
+        HERMIS_ERROR__STANDARD_WALLET__ACCOUNT_NOT_FOUND,
+        { walletName: wallet._wallet.name || 'Unknown wallet' }
+      );
     }
 
     const accountPublicKey = new PublicKey(account.publicKey);

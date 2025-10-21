@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { Routes, Route } from 'react-router-dom'
 import './App.css'
 import {
   useWallet,
@@ -18,6 +19,7 @@ import {
 import { generateKeyPairSigner } from '@solana/kit';
 
 // Import the custom components we created
+import { Navigation } from './components/Navigation'
 import { WalletModal } from './components/WalletModal'
 import { TransactionCard } from './components/TransactionCard'
 import { TokenBalances } from './components/TokenBalances'
@@ -27,6 +29,9 @@ import { NetworkSelector } from './components/NetworkSelector'
 // import { ArchitectureComparison } from './components/ArchitectureComparison'
 // import { UnifiedAPIDemo } from './components/UnifiedAPIDemo'
 import { useNetwork } from './context/WalletContextProvider'
+import { KitDemo } from './pages/KitDemo'
+import { KitRpcContext } from './context/KitRpcContext'
+import { createSolanaRpc, createSolanaRpcSubscriptions, devnet } from '@solana/kit'
 // import { Keypair } from '@solana/web3.js';
 
 // Wallet Item Component for the list
@@ -94,10 +99,28 @@ interface LogEntry {
   timestamp: Date;
 }
 
+// Create Kit RPC instances
+const kitRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'))
+const kitRpcSubscriptions = createSolanaRpcSubscriptions(devnet('wss://api.devnet.solana.com'))
+
 function App() {
+  // Main JSX render
+  return (
+    <KitRpcContext.Provider value={{ rpc: kitRpc, rpcSubscriptions: kitRpcSubscriptions }}>
+      <Navigation />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/kit" element={<KitDemo />} />
+      </Routes>
+    </KitRpcContext.Provider>
+  );
+}
+
+// HomePage component - extracted from the original App return
+function HomePage() {
   // Network context
   const { currentNetwork, changeNetwork, isChangingNetwork } = useNetwork();
-  
+
   // React hooks from the headless SDK
   const {
     wallet,
@@ -151,7 +174,7 @@ function App() {
     addLogEntry('Initializing wallet integration...', 'info');
     addLogEntry(`Device environment: ${isMobile ? 'Mobile' : 'Desktop'}`, 'info');
     addLogEntry(`Found ${wallets.length} wallet adapters`, 'success');
-    
+
     wallets.forEach(wallet => {
       addLogEntry(`Available adapter: ${wallet.adapter.name} (${getReadyStateLabel(wallet.readyState)})`, 'info');
     });
@@ -166,11 +189,11 @@ function App() {
 
   // Track previous public key for account changes
   useEffect(() => {
-    if (publicKey && previousPublicKeyRef.current && 
+    if (publicKey && previousPublicKeyRef.current &&
         publicKey.toBase58() !== previousPublicKeyRef.current.toBase58()) {
       addLogEntry(`Account changed from ${previousPublicKeyRef.current.toBase58()} to ${publicKey.toBase58()}`, 'warning');
     }
-    
+
     previousPublicKeyRef.current = publicKey;
   }, [publicKey, addLogEntry]);
 
@@ -210,12 +233,12 @@ function App() {
 
   // Connect to wallet
   const handleConnectWallet = async () => {
-    
+
     if (!clickedWalletName) {
       addLogEntry('No wallet selected', 'warning');
       return;
     }
-    
+
     addLogEntry('Connecting wallet...', 'info');
     try {
       await select(clickedWalletName as WalletName);
@@ -233,7 +256,7 @@ function App() {
       addLogEntry('No wallet selected', 'warning');
       return;
     }
-    
+
     addLogEntry('Connecting wallet and preparing to sign message...', 'info');
     try {
       await select(clickedWalletName as WalletName);
@@ -252,13 +275,13 @@ function App() {
           addLogEntry(`Message signed successfully! Signature: ${signatureBase64}`, 'success');
         }
         return;
-      } 
+      }
     } catch (error) {
       addLogEntry('Wallet does not support signIn', 'info');
       if (error == "Error: Wallet does not support sign in") {
         const selectedAdapter = await connect();
         const isConnected = selectedAdapter.connected
-        
+
         if (isConnected) {
           addLogEntry('Successfully connected to wallet!', 'success');
         } else {
@@ -275,7 +298,7 @@ function App() {
 
   // Sign a message
   const handleSignMessage = async (isConnected?: boolean) => {
-    
+
     const connectStatus = isConnected || connected
 
     if (!connectStatus || !signMessage) {
@@ -285,18 +308,18 @@ function App() {
 
     const message = `Test message for wallet authentication at ${new Date().toISOString()}`;
     addLogEntry(`Signing message: "${message}"`, 'info');
-    
+
     try {
       const messageBytes = new TextEncoder().encode(message);
       const signature = await signMessage(messageBytes);
-      
+
       let signatureBase64: string;
       try {
         signatureBase64 = btoa(String.fromCharCode.apply(null, Array.from(signature)));
       } catch {
         signatureBase64 = Array.from(signature).map(b => b.toString(16).padStart(2, '0')).join('');
       }
-      
+
       addLogEntry(`Message signed successfully! Signature: ${signatureBase64}`, 'success');
     } catch (error) {
       console.error('Sign message error:', error);
@@ -356,10 +379,10 @@ function App() {
   // Get wallet balance from the connection directly
   const getBalance = async () => {
     if (isFetchingBalance || !publicKey) return;
-    
+
     setIsFetchingBalance(true);
     addLogEntry('Fetching wallet balance...', 'info');
-    
+
     try {
       const balanceValue = await connection.getBalance(publicKey);
       const solBalance = balanceValue / 1000000000;
@@ -379,7 +402,7 @@ function App() {
     }
 
     const adapter = wallet.adapter;
-    const supportedTransactionsText = adapter.supportedTransactionVersions 
+    const supportedTransactionsText = adapter.supportedTransactionVersions
       ? Array.from(adapter.supportedTransactionVersions).join(', ')
       : 'Not specified';
 
@@ -388,10 +411,10 @@ function App() {
         <dl>
           <dt>Name:</dt>
           <dd>{adapter.name}</dd>
-          
+
           <dt>Ready State:</dt>
           <dd>{getReadyStateLabel(adapter.readyState)}</dd>
-          
+
           <dt>Connected:</dt>
           <dd>{adapter.connected ? 'Yes' : 'No'}</dd>
 
@@ -403,11 +426,11 @@ function App() {
 
           <dt>URL:</dt>
           <dd><a href={adapter.url} target="_blank">{adapter.url || 'Not available'}</a></dd>
-          
+
           <dt>Supported Transactions:</dt>
           <dd>{supportedTransactionsText}</dd>
         </dl>
-        
+
         <div className="adapter-methods">
           <h3>Available Methods</h3>
           <ul>
@@ -441,7 +464,6 @@ function App() {
   //   addLogEntry(`🔄 ${method} completed using ${architecture} architecture`, 'success');
   // };
 
-  // Main JSX render
   return (
     <div className="container">
       <header>
