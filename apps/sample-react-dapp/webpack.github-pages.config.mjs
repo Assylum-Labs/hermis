@@ -23,9 +23,10 @@ export default {
     extensions: ['.js', '.ts', '.tsx', '.jsx'],
     alias: {
       '@solana/web3': '@solana/web3.js',
-      
+
       './polyfills/index.js': path.resolve(__dirname, '../../packages/core/src/polyfills/index.ts'),
-      
+
+      '@hermis/errors': path.resolve(__dirname, '../../packages/errors/src'),
       '@hermis/solana-headless-react': path.resolve(__dirname, '../../packages/react-core/src'),
       '@hermis/solana-headless-core': path.resolve(__dirname, '../../packages/core/src'),
       '@hermis/solana-headless-adapter-base': path.resolve(__dirname, '../../packages/adapter-base/src')
@@ -34,6 +35,7 @@ export default {
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify'),
       buffer: require.resolve('buffer/index.js'),
+      process: require.resolve('process/browser.js'),
       fs: false,
       path: require.resolve('path-browserify'),
       os: require.resolve('os-browserify/browser'),
@@ -52,6 +54,7 @@ export default {
         test: /\.(ts|tsx)$/,
         include: [
           path.resolve(__dirname, 'src'),
+          path.resolve(__dirname, '../../packages/errors/src'),
           path.resolve(__dirname, '../../packages/react-core/src'),
           path.resolve(__dirname, '../../packages/core/src'),
           path.resolve(__dirname, '../../packages/adapter-base/src')
@@ -71,6 +74,7 @@ export default {
       {
         test: /\.(ts|tsx|js|jsx)$/,
         include: [
+          path.resolve(__dirname, '../../packages/errors/src'),
           path.resolve(__dirname, '../../packages/core/src'),
           path.resolve(__dirname, '../../packages/react-core/src'),
           path.resolve(__dirname, '../../packages/adapter-base/src')
@@ -117,7 +121,7 @@ export default {
     }),
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
-      process: 'process/browser'
+      process: 'process'
     }),
     new webpack.DefinePlugin({
       'global': 'globalThis',
