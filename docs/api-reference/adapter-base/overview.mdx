@@ -1,0 +1,80 @@
+---
+title: 'Adapter Base API Overview'
+description: 'API reference for @hermis/solana-headless-adapter-base'
+---
+
+## Overview
+
+Framework-agnostic wallet adapter management.
+
+## Installation
+
+```bash
+npm install @hermis/solana-headless-adapter-base @hermis/solana-headless-core
+```
+
+## WalletAdapterManager
+
+Main class for managing wallet adapters.
+
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+
+const manager = new WalletAdapterManager(adapters);
+
+// Events
+manager.on('connect', (publicKey) => console.log('Connected'));
+manager.on('disconnect', () => console.log('Disconnected'));
+manager.on('error', (error) => console.error(error));
+
+// Methods
+manager.selectAdapter('Phantom');
+await manager.connect();
+await manager.disconnect();
+```
+
+## Utility Functions
+
+### getStandardWalletAdapters()
+
+Get all standard wallet adapters including custom ones.
+
+```typescript
+import { getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+
+const adapters = getStandardWalletAdapters(customAdapters);
+```
+
+### sortWalletAdapters()
+
+Sort adapters by priority (installed first).
+
+```typescript
+import { sortWalletAdapters } from '@hermis/solana-headless-adapter-base';
+
+const sorted = sortWalletAdapters(adapters);
+```
+
+### getWalletAdapters()
+
+Filter adapters by ready state.
+
+```typescript
+import { getWalletAdapters } from '@hermis/solana-headless-adapter-base';
+
+const installed = getWalletAdapters(adapters, 'Installed');
+const loadable = getWalletAdapters(adapters, 'Loadable');
+```
+
+## Events
+
+- `connect` - Wallet connected
+- `disconnect` - Wallet disconnected
+- `error` - Error occurred
+- `walletChanged` - Selected wallet changed
+
+## Complete API
+
+See detailed documentation:
+- [Base Adapter](/api-reference/adapter-base/base-adapter)
+- [Wallet Connect](/api-reference/adapter-base/wallet-connect)

@@ -1,0 +1,429 @@
+---
+title: 'React Quick Start'
+description: 'Get started with Solana Headless SDK in React applications'
+---
+
+## Overview
+
+This guide will walk you through integrating Solana Headless SDK into a React application. You'll learn how to set up wallet connections, display wallet information, and perform basic Solana operations.
+
+## Prerequisites
+
+<Check>Node.js 16.x or higher</Check>
+<Check>Basic React knowledge</Check>
+<Check>Understanding of React Hooks</Check>
+
+## Installation
+
+Install the React package and its peer dependencies:
+
+<CodeGroup>
+```bash npm
+npm install @hermis/solana-headless-react @hermis/solana-headless-core @solana/web3.js @solana/wallet-adapter-wallets
+```
+
+```bash yarn
+yarn add @hermis/solana-headless-react @hermis/solana-headless-core @solana/web3.js @solana/wallet-adapter-wallets
+```
+
+```bash pnpm
+pnpm add @hermis/solana-headless-react @hermis/solana-headless-core @solana/web3.js @solana/wallet-adapter-wallets
+```
+</CodeGroup>
+
+## Step 1: Set Up the Provider
+
+Wrap your app with the `HermisProvider` to enable wallet functionality throughout your application:
+
+```tsx App.tsx
+import React from 'react';
+import { HermisProvider } from '@hermis/solana-headless-react';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  TrustWalletAdapter,
+  CoinbaseWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
+import Home from './Home';
+
+function App() {
+  // Create wallet adapters
+  const wallets = [
+    new PhantomWalletAdapter(),
+    new SolflareWalletAdapter(),
+    new TrustWalletAdapter(),
+    new CoinbaseWalletAdapter(),
+  ];
+
+  return (
+    <HermisProvider
+      rpcEndpoint="https://api.devnet.solana.com"
+      network={WalletAdapterNetwork.Devnet}
+      autoConnect={true}
+      additionalAdapters={wallets}
+      onError={(error) => console.error('Wallet error:', error)}
+    >
+      <Home />
+    </HermisProvider>
+  );
+}
+
+export default App;
+```
+
+### Provider Options
+
+<ParamField path="rpcEndpoint" type="string" required>
+  The Solana RPC endpoint URL (e.g., `https://api.devnet.solana.com`)
+</ParamField>
+
+<ParamField path="network" type="WalletAdapterNetwork" required>
+  The Solana network: `Mainnet`, `Devnet`, or `Testnet`
+</ParamField>
+
+<ParamField path="autoConnect" type="boolean" default="false">
+  Automatically reconnect to the last used wallet on page load
+</ParamField>
+
+<ParamField path="additionalAdapters" type="Adapter[]">
+  Array of wallet adapters to support
+</ParamField>
+
+<ParamField path="onError" type="(error: Error) => void">
+  Callback function for handling wallet errors
+</ParamField>
+
+## Step 2: Create a Wallet Component
+
+Use the `useWallet` hook to access wallet functionality:
+
+```tsx Home.tsx
+import React from 'react';
+import { useWallet, useSolanaBalance } from '@hermis/solana-headless-react';
+
+function Home() {
+  const {
+    wallet,
+    publicKey,
+    connecting,
+    connected,
+    connect,
+    disconnect,
+    select
+  } = useWallet();
+
+  const { balance, loading } = useSolanaBalance(publicKey);
+
+  const handleConnect = async () => {
+    if (wallet) {
+      await connect();
+    } else {
+      // Select a wallet first if none is selected
+      select('Phantom');
+      await connect();
+    }
+  };
+
+  return (
+    <div className="container">
+      <h1>Solana Wallet Demo</h1>
+
+      {!connected ? (
+        <div>
+          <button
+            onClick={handleConnect}
+            disabled={connecting}
+            className="connect-button"
+          >
+            {connecting ? 'Connecting...' : 'Connect Wallet'}
+          </button>
+        </div>
+      ) : (
+        <div className="wallet-info">
+          <p><strong>Wallet:</strong> {wallet?.adapter.name}</p>
+          <p><strong>Address:</strong> {publicKey?.toBase58()}</p>
+          <p><strong>Balance:</strong> {loading ? 'Loading...' : `${balance} SOL`}</p>
+          <button onClick={disconnect} className="disconnect-button">
+            Disconnect
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default Home;
+```
+
+## Step 3: Send a Transaction
+
+Add transaction functionality using the `sendTransaction` method:
+
+```tsx SendTransaction.tsx
+import React, { useState } from 'react';
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+
+function SendTransaction() {
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+  const [recipient, setRecipient] = useState('');
+  const [amount, setAmount] = useState('0.1');
+  const [sending, setSending] = useState(false);
+  const [signature, setSignature] = useState('');
+
+  const handleSend = async () => {
+    if (!publicKey || !recipient) return;
+
+    setSending(true);
+    setSignature('');
+
+    try {
+      const transaction = new Transaction();
+      const recipientPubKey = new PublicKey(recipient);
+
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: recipientPubKey,
+          lamports: parseFloat(amount) * LAMPORTS_PER_SOL
+        })
+      );
+
+      // Get recent blockhash
+      const { blockhash } = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      // Send transaction
+      const sig = await sendTransaction(transaction, connection);
+      setSignature(sig);
+      console.log('Transaction sent:', sig);
+    } catch (error) {
+      console.error('Error sending transaction:', error);
+      alert('Failed to send transaction');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="send-transaction">
+      <h2>Send SOL</h2>
+      <div className="form">
+        <input
+          type="text"
+          placeholder="Recipient address"
+          value={recipient}
+          onChange={(e) => setRecipient(e.target.value)}
+          className="input"
+        />
+        <input
+          type="number"
+          placeholder="Amount (SOL)"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          step="0.01"
+          min="0"
+          className="input"
+        />
+        <button
+          onClick={handleSend}
+          disabled={!publicKey || !recipient || sending}
+          className="send-button"
+        >
+          {sending ? 'Sending...' : 'Send SOL'}
+        </button>
+      </div>
+      {signature && (
+        <div className="success">
+          <p>Transaction successful!</p>
+          <a
+            href={`https://explorer.solana.com/tx/${signature}?cluster=devnet`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View on Explorer
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default SendTransaction;
+```
+
+## Available Hooks
+
+### useWallet
+
+Primary hook for wallet interactions:
+
+```tsx
+const {
+  wallet,              // Currently selected wallet
+  publicKey,           // Public key of connected wallet
+  connecting,          // Connection status
+  connected,           // Whether wallet is connected
+  disconnecting,       // Disconnection status
+  select,              // Select a wallet by name
+  connect,             // Connect to selected wallet
+  disconnect,          // Disconnect wallet
+  sendTransaction,     // Send a transaction
+  signTransaction,     // Sign a transaction
+  signAllTransactions, // Sign multiple transactions
+  signMessage,         // Sign a message
+} = useWallet();
+```
+
+### useConnection
+
+Access the Solana connection:
+
+```tsx
+const { connection, network } = useConnection();
+
+// Get account info
+const accountInfo = await connection.getAccountInfo(publicKey);
+```
+
+### useSolanaBalance
+
+Fetch and track wallet balance:
+
+```tsx
+const {
+  balance,         // Balance in SOL
+  balanceLamports, // Balance in lamports
+  loading,         // Loading state
+  error,           // Error if occurred
+  refetch          // Manually refetch balance
+} = useSolanaBalance(publicKey, 10000); // 10 second refresh
+```
+
+### useSolanaTokenAccounts
+
+Fetch SPL token accounts:
+
+```tsx
+const {
+  tokenAccounts, // Array of token accounts
+  loading,       // Loading state
+  error,         // Error if occurred
+  refetch        // Manually refetch
+} = useSolanaTokenAccounts(publicKey);
+```
+
+### useSolanaNFTs
+
+Fetch NFTs owned by a wallet:
+
+```tsx
+const {
+  nfts,    // Array of NFTs
+  loading, // Loading state
+  error,   // Error if occurred
+  refetch  // Manually refetch
+} = useSolanaNFTs(publicKey);
+```
+
+## Next.js Integration
+
+For Next.js 13+ with App Router, create a client-side provider:
+
+```tsx app/providers.tsx
+'use client';
+
+import { HermisProvider } from '@hermis/solana-headless-react';
+import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  const wallets = [
+    new PhantomWalletAdapter(),
+    new SolflareWalletAdapter(),
+  ];
+
+  return (
+    <HermisProvider
+      rpcEndpoint="https://api.devnet.solana.com"
+      network={WalletAdapterNetwork.Devnet}
+      autoConnect={true}
+      additionalAdapters={wallets}
+    >
+      {children}
+    </HermisProvider>
+  );
+}
+```
+
+Then use in your layout:
+
+```tsx app/layout.tsx
+import { Providers } from './providers';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Handle Connection States">
+    Always check `connecting`, `connected`, and `disconnecting` states to provide appropriate UI feedback to users.
+  </Accordion>
+
+  <Accordion title="Error Handling">
+    Implement proper error handling for all wallet operations, especially during transactions. Use the `onError` callback in the provider.
+  </Accordion>
+
+  <Accordion title="Mobile Support">
+    Test on mobile devices and handle mobile wallet redirects correctly. Consider using deep links for mobile wallets.
+  </Accordion>
+
+  <Accordion title="Network Selection">
+    Ensure your RPC endpoint matches the intended network. Don't mix mainnet and devnet operations.
+  </Accordion>
+</AccordionGroup>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/react/overview"
+  >
+    Explore the complete React API documentation
+  </Card>
+  <Card
+    title="Cookbook"
+    icon="book-open"
+    href="/cookbook/connect-wallet"
+  >
+    Learn practical patterns and examples
+  </Card>
+  <Card
+    title="Send Transactions"
+    icon="paper-plane"
+    href="/cookbook/send-transaction"
+  >
+    Learn how to send SOL and tokens
+  </Card>
+  <Card
+    title="Sign Messages"
+    icon="signature"
+    href="/cookbook/sign-message"
+  >
+    Implement message signing
+  </Card>
+</CardGroup>

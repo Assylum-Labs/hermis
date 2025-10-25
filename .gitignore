@@ -12,5 +12,6 @@ node_modules/
 
 
 .turbo
+.DS_store
 
 packages/enterprise

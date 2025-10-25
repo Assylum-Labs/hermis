@@ -1,0 +1,224 @@
+---
+title: 'Authentication'
+description: 'Implementing authentication with Solana wallets'
+---
+
+## Overview
+
+Solana wallets can be used for authentication through message signing. This enables passwordless, blockchain-based authentication for your dApps.
+
+## Sign-In With Solana (SIWS)
+
+Sign-In With Solana is a standard for wallet-based authentication:
+
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+
+function SignInButton() {
+  const { signIn, publicKey } = useWallet();
+
+  const handleSignIn = async () => {
+    try {
+      const { account, signedMessage, signature } = await signIn({
+        domain: window.location.host,
+        statement: 'Sign in to MyDApp',
+        uri: window.location.origin,
+      });
+
+      // Send to your backend for verification
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          publicKey: account.address,
+          message: signedMessage,
+          signature,
+        }),
+      });
+
+      const { token } = await response.json();
+      localStorage.setItem('auth-token', token);
+    } catch (error) {
+      console.error('Sign in failed:', error);
+    }
+  };
+
+  return <button onClick={handleSignIn}>Sign In</button>;
+}
+```
+
+## Message Signing
+
+### Basic Message Signing
+
+```typescript
+const { signMessage, publicKey } = useWallet();
+
+const authenticate = async () => {
+  const message = `Sign this message to authenticate:\n\nNonce: ${Date.now()}`;
+  const encodedMessage = new TextEncoder().encode(message);
+
+  const signature = await signMessage(encodedMessage);
+
+  // Send to backend for verification
+  return { publicKey, message, signature };
+};
+```
+
+### Backend Verification
+
+```typescript
+// Backend (Node.js)
+import { PublicKey } from '@solana/web3.js';
+import * as nacl from 'tweetnacl';
+
+function verifySignature(
+  message: string,
+  signature: Uint8Array,
+  publicKey: string
+) {
+  const messageBytes = new TextEncoder().encode(message);
+  const publicKeyBytes = new PublicKey(publicKey).toBytes();
+
+  return nacl.sign.detached.verify(
+    messageBytes,
+    signature,
+    publicKeyBytes
+  );
+}
+
+// API endpoint
+app.post('/api/auth/verify', async (req, res) => {
+  const { message, signature, publicKey } = req.body;
+
+  const isValid = verifySignature(message, signature, publicKey);
+
+  if (isValid) {
+    const token = generateJWT(publicKey);
+    res.json({ token });
+  } else {
+    res.status(401).json({ error: 'Invalid signature' });
+  }
+});
+```
+
+## Session Management
+
+### Creating Sessions
+
+```typescript
+const createSession = async () => {
+  const nonce = crypto.randomUUID();
+  const message = `Sign in to MyDApp\nNonce: ${nonce}`;
+
+  const signature = await signMessage(new TextEncoder().encode(message));
+
+  const response = await fetch('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      publicKey: publicKey?.toBase58(),
+      message,
+      signature,
+    }),
+  });
+
+  const { sessionToken } = await response.json();
+  localStorage.setItem('session', sessionToken);
+
+  return sessionToken;
+};
+```
+
+### Checking Authentication
+
+```typescript
+const useAuth = () => {
+  const { publicKey, connected } = useWallet();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = localStorage.getItem('session');
+
+      if (!token || !connected) {
+        setIsAuthenticated(false);
+        return;
+      }
+
+      // Verify token with backend
+      try {
+        const response = await fetch('/api/auth/verify-session', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setIsAuthenticated(response.ok);
+      } catch {
+        setIsAuthenticated(false);
+      }
+    };
+
+    checkAuth();
+  }, [connected]);
+
+  return { isAuthenticated };
+};
+```
+
+## Protected Routes
+
+### React Router Example
+
+```typescript
+import { Navigate } from 'react-router-dom';
+import { useWallet } from '@hermis/solana-headless-react';
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { connected } = useWallet();
+  const { isAuthenticated } = useAuth();
+
+  if (!connected) {
+    return <Navigate to="/connect" />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/sign-in" />;
+  }
+
+  return <>{children}</>;
+}
+
+// Usage
+<Route path="/dashboard" element={
+  <ProtectedRoute>
+    <Dashboard />
+  </ProtectedRoute>
+} />
+```
+
+## Best Practices
+
+<Check>Always include a nonce to prevent replay attacks</Check>
+<Check>Verify signatures on the backend</Check>
+<Check>Use HTTPS for all authentication requests</Check>
+<Check>Implement session expiration</Check>
+<Check>Clear sessions on wallet disconnect</Check>
+<Check>Never trust client-side verification alone</Check>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card
+    title="Sign Message"
+    icon="signature"
+    href="/cookbook/sign-message"
+  >
+    Message signing examples
+  </Card>
+  <Card
+    title="Connect Wallet"
+    icon="plug"
+    href="/cookbook/connect-wallet"
+  >
+    Wallet connection guide
+  </Card>
+</CardGroup>

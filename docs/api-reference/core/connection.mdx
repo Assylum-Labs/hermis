@@ -1,0 +1,88 @@
+---
+title: 'Connection API'
+description: 'API reference for Solana connection functions'
+---
+
+## createConnection()
+
+Creates a Solana RPC connection.
+
+```typescript
+import { createConnection, WalletAdapterNetwork } from '@hermis/solana-headless-core';
+
+// Connect to devnet
+const connection = createConnection(WalletAdapterNetwork.Devnet);
+
+// Connect to mainnet
+const mainnet = createConnection(WalletAdapterNetwork.Mainnet);
+
+// Custom RPC
+const custom = createConnection('https://my-rpc.com');
+
+// With commitment
+const confirmed = createConnection(WalletAdapterNetwork.Mainnet, 'confirmed');
+
+// With config
+const configured = createConnection(
+  WalletAdapterNetwork.Mainnet,
+  {
+    commitment: 'finalized',
+    confirmTransactionInitialTimeout: 30000
+  }
+);
+```
+
+### Parameters
+
+<ParamField path="network" type="WalletAdapterNetwork | string" required>
+  Network or RPC endpoint URL
+</ParamField>
+
+<ParamField path="commitmentOrConfig" type="Commitment | ConnectionConfig">
+  Commitment level or full connection configuration
+</ParamField>
+
+### Returns
+
+<ResponseField name="connection" type="Connection">
+  Solana Connection instance
+</ResponseField>
+
+## WalletAdapterNetwork
+
+```typescript
+enum WalletAdapterNetwork {
+  Mainnet = 'mainnet-beta',
+  Devnet = 'devnet',
+  Testnet = 'testnet'
+}
+```
+
+## Commitment Levels
+
+<CardGroup cols={3}>
+  <Card title="processed">
+    Fastest, least secure
+  </Card>
+  <Card title="confirmed">
+    Recommended for most uses
+  </Card>
+  <Card title="finalized">
+    Slowest, most secure
+  </Card>
+</CardGroup>
+
+## Usage Example
+
+```typescript
+const connection = createConnection(WalletAdapterNetwork.Devnet);
+
+// Get balance
+const balance = await connection.getBalance(publicKey);
+
+// Get account info
+const info = await connection.getAccountInfo(publicKey);
+
+// Get recent blockhash
+const { blockhash } = await connection.getLatestBlockhash();
+```

@@ -1,0 +1,333 @@
+---
+title: 'Installation'
+description: 'Detailed installation instructions for all Solana Headless SDK packages'
+---
+
+## Package Manager
+
+Solana Headless SDK supports all major Node.js package managers. Choose the one you prefer:
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @hermis/solana-headless-react @solana/web3.js
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @hermis/solana-headless-react @solana/web3.js
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @hermis/solana-headless-react @solana/web3.js
+    ```
+  </Tab>
+</Tabs>
+
+## Available Packages
+
+### Core Package
+
+The foundation of Solana Headless SDK. Framework-agnostic and works anywhere.
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @hermis/solana-headless-core @solana/web3.js
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @hermis/solana-headless-core @solana/web3.js
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @hermis/solana-headless-core @solana/web3.js
+    ```
+  </Tab>
+</Tabs>
+
+**Use when:**
+- Building without a specific framework
+- Need maximum flexibility
+- Creating custom integrations
+
+### Adapter Base
+
+Advanced adapter functionality for creating custom wallet adapters.
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @hermis/solana-headless-adapter-base @solana/web3.js
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @hermis/solana-headless-adapter-base @solana/web3.js
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @hermis/solana-headless-adapter-base @solana/web3.js
+    ```
+  </Tab>
+</Tabs>
+
+**Use when:**
+- Creating custom wallet adapters
+- Extending existing adapters
+- Building wallet integrations
+
+### React Package
+
+React hooks and providers for seamless integration with React applications.
+
+<Tabs>
+  <Tab title="npm">
+    ```bash
+    npm install @hermis/solana-headless-react @solana/web3.js
+    ```
+  </Tab>
+  <Tab title="yarn">
+    ```bash
+    yarn add @hermis/solana-headless-react @solana/web3.js
+    ```
+  </Tab>
+  <Tab title="pnpm">
+    ```bash
+    pnpm add @hermis/solana-headless-react @solana/web3.js
+    ```
+  </Tab>
+</Tabs>
+
+**Use when:**
+- Building React applications
+- Want React-specific hooks and context
+- Need automatic state management
+
+### Vue Package
+
+<Note>
+  Vue support is coming soon! Star our [GitHub repo](https://github.com/Assylum-Labs/hermis) to get notified when it's released.
+</Note>
+
+## Peer Dependencies
+
+All packages require `@solana/web3.js` as a peer dependency:
+
+```bash
+npm install @solana/web3.js
+```
+
+### Version Compatibility
+
+| Hermis Package | Solana Web3.js Version |
+|----------------|------------------------|
+| 1.x.x | ^1.87.0 |
+| 2.x.x | ^1.95.0 |
+
+## Optional Dependencies
+
+Depending on your use case, you might want to install additional packages:
+
+### For Token Operations
+
+```bash
+npm install @solana/spl-token
+```
+
+### For NFT Operations
+
+```bash
+npm install @metaplex-foundation/js
+```
+
+### For Wallet Standard Support
+
+```bash
+npm install @solana/wallet-standard-wallet-adapter-base
+```
+
+## TypeScript Support
+
+All packages include TypeScript definitions out of the box. No additional `@types` packages are needed.
+
+### TypeScript Version
+
+We recommend TypeScript 4.5 or higher for the best experience:
+
+```bash
+npm install --save-dev typescript@^5.0.0
+```
+
+### tsconfig.json
+
+Ensure your `tsconfig.json` includes these settings:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["ES2020", "DOM"],
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  }
+}
+```
+
+## Framework-Specific Setup
+
+### Next.js
+
+For Next.js 13+ with App Router:
+
+```bash
+npm install @hermis/solana-headless-react @solana/web3.js
+```
+
+Create a client component for the provider:
+
+```tsx app/providers.tsx
+'use client';
+
+import { HermisProvider } from '@hermis/solana-headless-react';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <HermisProvider network="mainnet-beta">
+      {children}
+    </HermisProvider>
+  );
+}
+```
+
+### Vite
+
+For Vite projects, install the polyfills:
+
+```bash
+npm install --save-dev @esbuild-plugins/node-globals-polyfill
+```
+
+Update your `vite.config.ts`:
+
+```typescript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill';
+
+export default defineConfig({
+  plugins: [react()],
+  optimizeDeps: {
+    esbuildOptions: {
+      plugins: [NodeGlobalsPolyfillPlugin({ buffer: true })],
+    },
+  },
+});
+```
+
+### Create React App
+
+For Create React App, you may need to configure webpack polyfills:
+
+```bash
+npm install --save-dev react-app-rewired
+```
+
+Create `config-overrides.js`:
+
+```javascript
+const webpack = require('webpack');
+
+module.exports = function override(config) {
+  config.resolve.fallback = {
+    ...config.resolve.fallback,
+    buffer: require.resolve('buffer/'),
+    crypto: require.resolve('crypto-browserify'),
+    stream: require.resolve('stream-browserify'),
+  };
+
+  config.plugins.push(
+    new webpack.ProvidePlugin({
+      Buffer: ['buffer', 'Buffer'],
+    })
+  );
+
+  return config;
+};
+```
+
+## Verifying Installation
+
+After installation, verify everything works:
+
+```typescript
+import { HermisClient } from '@hermis/solana-headless-core';
+import { Connection, clusterApiUrl } from '@solana/web3.js';
+
+const connection = new Connection(clusterApiUrl('devnet'));
+const hermis = new HermisClient({ connection });
+
+console.log('Hermis SDK initialized successfully!');
+```
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Module not found errors">
+    If you see module not found errors, ensure all peer dependencies are installed:
+
+    ```bash
+    npm install @solana/web3.js
+    ```
+  </Accordion>
+
+  <Accordion title="Buffer is not defined">
+    This is common in browser environments. Add buffer polyfill:
+
+    ```bash
+    npm install buffer
+    ```
+
+    Then import at the top of your entry file:
+
+    ```javascript
+    import { Buffer } from 'buffer';
+    window.Buffer = Buffer;
+    ```
+  </Accordion>
+
+  <Accordion title="TypeScript errors">
+    Ensure you're using TypeScript 4.5+ and have `strict` mode enabled in your `tsconfig.json`.
+  </Accordion>
+
+  <Accordion title="Webpack 5 errors">
+    Webpack 5 no longer includes Node.js polyfills by default. You'll need to configure them manually or use a tool like `react-app-rewired`.
+  </Accordion>
+</AccordionGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card
+    title="Getting Started"
+    icon="rocket"
+    href="/getting-started"
+  >
+    Learn how to configure and use the SDK
+  </Card>
+  <Card
+    title="Quick Start - React"
+    icon="react"
+    href="/quickstart/react"
+  >
+    Jump into a React quick start guide
+  </Card>
+</CardGroup>

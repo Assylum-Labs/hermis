@@ -1,0 +1,78 @@
+---
+title: 'Hermis Client API'
+description: 'API reference for the HermisClient class'
+---
+
+## HermisClient
+
+The `HermisClient` provides a high-level interface for wallet management and Solana interactions.
+
+## Constructor
+
+```typescript
+import { HermisClient } from '@hermis/solana-headless-core';
+import { Connection } from '@solana/web3.js';
+
+const client = new HermisClient({
+  connection: connection,
+  autoConnect: false,
+});
+```
+
+### Parameters
+
+<ParamField path="connection" type="Connection" required>
+  Solana RPC connection instance
+</ParamField>
+
+<ParamField path="autoConnect" type="boolean" default="false">
+  Automatically connect to last used wallet
+</ParamField>
+
+## Methods
+
+### connect()
+
+Connects to a wallet adapter.
+
+```typescript
+await client.connect(adapter);
+```
+
+### disconnect()
+
+Disconnects from the current wallet.
+
+```typescript
+await client.disconnect();
+```
+
+### getBalance()
+
+Gets the wallet's SOL balance.
+
+```typescript
+const balance = await client.getBalance();
+```
+
+### getPublicKey()
+
+Gets the connected wallet's public key.
+
+```typescript
+const publicKey = client.getPublicKey();
+```
+
+## Properties
+
+<ResponseField name="publicKey" type="PublicKey | null">
+  The public key of the connected wallet
+</ResponseField>
+
+<ResponseField name="connected" type="boolean">
+  Whether a wallet is currently connected
+</ResponseField>
+
+<ResponseField name="connecting" type="boolean">
+  Whether a connection is in progress
+</ResponseField>

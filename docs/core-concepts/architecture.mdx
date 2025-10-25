@@ -1,0 +1,424 @@
+---
+title: 'Architecture'
+description: 'Understanding the modular architecture of Solana Headless SDK'
+---
+
+## Overview
+
+Solana Headless SDK is built with a modular, layered architecture that provides maximum flexibility while maintaining clean separation of concerns. This design allows you to use only the parts you need and easily extend or customize functionality.
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Application Layer                        │
+│  (Your dApp UI - React, Vue, Vanilla JS, etc.)              │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          │ uses
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│              Framework Integration Layer                     │
+│  ┌────────────────────┐  ┌────────────────────┐            │
+│  │  @hermis/react     │  │  @hermis/vue       │            │
+│  │  - Hooks           │  │  - Composables     │            │
+│  │  - Context         │  │  - Components      │            │
+│  │  - Components      │  │  (Coming Soon)     │            │
+│  └────────────────────┘  └────────────────────┘            │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          │ built on
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│               Adapter Integration Layer                      │
+│          @hermis/solana-headless-adapter-base               │
+│  - WalletAdapterManager                                     │
+│  - Wallet Standard Support                                   │
+│  - Event Management                                          │
+│  - Adapter Utilities                                         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          │ built on
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Core Layer                               │
+│           @hermis/solana-headless-core                      │
+│  - Wallet Management                                         │
+│  - Transaction Signing                                       │
+│  - Connection Management                                     │
+│  - Network Utilities                                         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+                          │ uses
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   External Dependencies                      │
+│  - @solana/web3.js                                          │
+│  - @solana/wallet-adapter-base                              │
+│  - Wallet-specific adapters                                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Layer Breakdown
+
+### 1. Core Layer (`@hermis/solana-headless-core`)
+
+The foundation of the SDK, providing essential wallet and blockchain functionality.
+
+<CardGroup cols=2>
+  <Card title="Responsibilities" icon="cog">
+    - Wallet creation and import
+    - Connection management
+    - Transaction signing
+    - Network configuration
+    - Basic utilities
+  </Card>
+  <Card title="Key Features" icon="star">
+    - Framework-agnostic
+    - Minimal dependencies
+    - Small bundle size
+    - TypeScript-first
+    - No UI dependencies
+  </Card>
+</CardGroup>
+
+**When to use directly:**
+- Building a headless or backend application
+- Maximum control over implementation
+- Custom framework integration
+- Non-browser environments
+
+### 2. Adapter Integration Layer (`@hermis/solana-headless-adapter-base`)
+
+Provides wallet adapter management and Wallet Standard support.
+
+<CardGroup cols=2>
+  <Card title="Responsibilities" icon="plug">
+    - Wallet adapter lifecycle
+    - Wallet Standard integration
+    - Event-driven architecture
+    - Adapter prioritization
+    - State management
+  </Card>
+  <Card title="Key Features" icon="sparkles">
+    - Multi-wallet support
+    - Automatic wallet detection
+    - Event emitters
+    - Adapter sorting
+    - Ready state management
+  </Card>
+</CardGroup>
+
+**When to use directly:**
+- Vanilla JavaScript apps
+- Custom framework integration
+- Need event-driven updates
+- Building custom UI components
+
+### 3. Framework Integration Layer
+
+Framework-specific implementations with hooks, components, and utilities.
+
+#### React (`@hermis/solana-headless-react`)
+
+<Card title="Features" icon="react">
+  - React Hooks (useWallet, useConnection, etc.)
+  - Context Providers
+  - Automatic state management
+  - React 18+ support
+  - TypeScript definitions
+</Card>
+
+**When to use:**
+- Building React applications
+- Want automatic state management
+- Need React hooks
+- Prefer declarative approach
+
+#### Vue (`@hermis/solana-headless-vue`)
+
+<Note>
+  Vue support is under development. Follow our [GitHub](https://github.com/Assylum-Labs/hermis) for updates.
+</Note>
+
+## Design Principles
+
+### 1. Headless-First
+
+<AccordionGroup>
+  <Accordion title="No UI Constraints">
+    Unlike traditional wallet adapters with built-in UI components, Solana Headless SDK provides zero UI. You have complete control over look, feel, and user experience.
+  </Accordion>
+
+  <Accordion title="Bring Your Own UI">
+    Use any UI library or framework:
+    - Tailwind CSS
+    - Material-UI
+    - Ant Design
+    - Custom CSS
+    - Styled Components
+    - CSS Modules
+  </Accordion>
+</AccordionGroup>
+
+### 2. Modular Architecture
+
+Each layer can be used independently or combined as needed:
+
+```typescript
+// Use only core for backend/CLI tools
+import { createWallet } from '@hermis/solana-headless-core';
+
+// Use adapter-base for vanilla JS apps
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+
+// Use React package for React apps
+import { useWallet } from '@hermis/solana-headless-react';
+```
+
+### 3. Type Safety
+
+Full TypeScript support throughout the stack:
+
+```typescript
+import type {
+  WalletAdapter,
+  Connection,
+  Transaction,
+  PublicKey
+} from '@hermis/solana-headless-core';
+
+// Compile-time type checking
+const wallet: WalletAdapter = adapter;
+const pubKey: PublicKey | null = wallet.publicKey;
+```
+
+### 4. Framework Agnostic Core
+
+The core and adapter-base packages work anywhere:
+
+- ✅ React
+- ✅ Vue
+- ✅ Angular
+- ✅ Svelte
+- ✅ Vanilla JavaScript
+- ✅ Node.js (backend)
+- ✅ Electron
+- ✅ React Native
+
+## Data Flow
+
+### Connection Flow
+
+```
+User Action (Connect Button)
+         ↓
+Framework Layer (useWallet hook)
+         ↓
+Adapter Layer (WalletAdapterManager)
+         ↓
+Wallet Adapter (Phantom, Solflare, etc.)
+         ↓
+Browser Extension / Mobile Wallet
+         ↓
+User Approval
+         ↓
+Events propagate back up
+         ↓
+UI Updates
+```
+
+### Transaction Flow
+
+```
+Create Transaction (Application)
+         ↓
+Sign Transaction (Wallet Adapter)
+         ↓
+User Approval (Wallet UI)
+         ↓
+Send to Network (Connection)
+         ↓
+Await Confirmation
+         ↓
+Update Application State
+```
+
+## State Management
+
+### React
+
+State is managed automatically through Context and hooks:
+
+```tsx
+<HermisProvider>
+  {/* Wallet state available to all children */}
+  <YourApp />
+</HermisProvider>
+```
+
+### Vanilla JS
+
+State managed through events:
+
+```javascript
+manager.on('connect', (publicKey) => {
+  // Update your state
+  state.connected = true;
+  state.publicKey = publicKey;
+});
+```
+
+## Extension Points
+
+### Custom Wallet Adapters
+
+Create custom adapters for non-standard wallets:
+
+```typescript
+import { BaseWalletAdapter } from '@hermis/solana-headless-adapter-base';
+
+class CustomWalletAdapter extends BaseWalletAdapter {
+  async connect() {
+    // Custom connection logic
+  }
+
+  async disconnect() {
+    // Custom disconnection logic
+  }
+
+  async signTransaction(transaction) {
+    // Custom signing logic
+  }
+}
+```
+
+### Custom Hooks (React)
+
+Build custom hooks on top of the provided ones:
+
+```typescript
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+
+function useBalance() {
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+
+  // Custom balance fetching logic
+  return balance;
+}
+```
+
+### Middleware Pattern
+
+Intercept and modify transactions:
+
+```typescript
+const signAndSend = async (transaction) => {
+  // Pre-process
+  const modified = await middleware(transaction);
+
+  // Sign and send
+  const signature = await wallet.signAndSendTransaction(modified);
+
+  // Post-process
+  await onTransactionSent(signature);
+
+  return signature;
+};
+```
+
+## Performance Considerations
+
+### Bundle Size
+
+<CardGroup cols={3}>
+  <Card title="Core" icon="box">
+    ~15KB gzipped
+  </Card>
+  <Card title="Adapter Base" icon="plug">
+    ~20KB gzipped
+  </Card>
+  <Card title="React" icon="react">
+    ~25KB gzipped
+  </Card>
+</CardGroup>
+
+### Optimization Strategies
+
+1. **Tree Shaking**: Import only what you need
+   ```typescript
+   import { useWallet } from '@hermis/solana-headless-react';
+   // Not: import * as Hermis from '@hermis/solana-headless-react';
+   ```
+
+2. **Lazy Loading**: Load wallet adapters on demand
+   ```typescript
+   const adapters = await import('@solana/wallet-adapter-wallets');
+   ```
+
+3. **Connection Reuse**: Share connection instances
+   ```typescript
+   const connection = createConnection(network);
+   // Reuse this connection throughout your app
+   ```
+
+## Security Architecture
+
+### Key Management
+
+- Private keys never leave the wallet
+- Signing happens in the wallet extension
+- SDK only receives signatures
+
+### Transaction Verification
+
+```typescript
+// Always verify transaction details before signing
+const verifyTransaction = (tx: Transaction) => {
+  // Check recipient, amount, etc.
+  return isValid;
+};
+```
+
+### Network Security
+
+```typescript
+// Use trusted RPC endpoints
+const connection = createConnection(
+  'https://your-trusted-rpc.com'
+);
+```
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card
+    title="Wallet Management"
+    icon="wallet"
+    href="/core-concepts/wallet-management"
+  >
+    Learn about wallet lifecycle and management
+  </Card>
+  <Card
+    title="Transactions"
+    icon="paper-plane"
+    href="/core-concepts/transactions"
+  >
+    Understand transaction handling
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/core/overview"
+  >
+    Explore the API documentation
+  </Card>
+  <Card
+    title="Examples"
+    icon="flask"
+    href="/examples/vanilla-js"
+  >
+    See complete implementations
+  </Card>
+</CardGroup>

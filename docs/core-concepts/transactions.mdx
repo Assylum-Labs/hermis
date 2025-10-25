@@ -1,0 +1,334 @@
+---
+title: 'Transactions'
+description: 'Understanding transaction handling in Solana Headless SDK'
+---
+
+## Overview
+
+Transactions are the primary way to interact with the Solana blockchain. Solana Headless SDK provides comprehensive tools for creating, signing, and sending transactions with proper error handling and confirmation tracking.
+
+## Transaction Lifecycle
+
+```
+Create → Sign → Send → Confirm → Finalize
+```
+
+<Steps>
+  <Step title="Create">
+    Build a transaction with instructions
+  </Step>
+  <Step title="Sign">
+    Sign with wallet's private key
+  </Step>
+  <Step title="Send">
+    Broadcast to Solana network
+  </Step>
+  <Step title="Confirm">
+    Wait for block confirmation
+  </Step>
+  <Step title="Finalize">
+    Transaction is finalized on chain
+  </Step>
+</Steps>
+
+## Creating Transactions
+
+### Basic Transfer
+
+```typescript
+import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+
+function SendSOL() {
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+
+  const send = async (recipient: string, amount: number) => {
+    const transaction = new Transaction();
+
+    transaction.add(
+      SystemProgram.transfer({
+        fromPubkey: publicKey!,
+        toPubkey: new PublicKey(recipient),
+        lamports: amount * LAMPORTS_PER_SOL
+      })
+    );
+
+    // Set recent blockhash
+    const { blockhash } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = publicKey!;
+
+    // Sign and send
+    const signature = await sendTransaction(transaction, connection);
+    return signature;
+  };
+
+  return <button onClick={() => send('recipient...', 0.1)}>Send 0.1 SOL</button>;
+}
+```
+
+## Signing Transactions
+
+### Sign Only
+
+```typescript
+const { signTransaction } = useWallet();
+
+// Sign without sending
+const signedTx = await signTransaction(transaction);
+
+// Can be sent later or by another service
+const signature = await connection.sendRawTransaction(signedTx.serialize());
+```
+
+### Sign Multiple
+
+```typescript
+const { signAllTransactions } = useWallet();
+
+const transactions = [tx1, tx2, tx3];
+const signedTxs = await signAllTransactions(transactions);
+
+// Send all transactions
+for (const tx of signedTxs) {
+  await connection.sendRawTransaction(tx.serialize());
+}
+```
+
+## Sending Transactions
+
+### With Confirmation
+
+```typescript
+const signature = await sendTransaction(transaction, connection);
+
+// Wait for confirmation
+await connection.confirmTransaction(signature, 'confirmed');
+
+console.log('Transaction confirmed:', signature);
+```
+
+### With Options
+
+```typescript
+const signature = await sendTransaction(
+  transaction,
+  connection,
+  {
+    skipPreflight: false,
+    preflightCommitment: 'confirmed',
+    maxRetries: 3,
+  }
+);
+```
+
+## Transaction Confirmation
+
+### Commitment Levels
+
+<CardGroup cols={3}>
+  <Card title="Processed" icon="1">
+    Fastest - Transaction processed but not confirmed
+  </Card>
+  <Card title="Confirmed" icon="2">
+    Recommended - Confirmed by supermajority
+  </Card>
+  <Card title="Finalized" icon="3">
+    Safest - Finalized by the network
+  </Card>
+</CardGroup>
+
+### Tracking Status
+
+```typescript
+import { useSolanaTransaction } from '@hermis/solana-headless-react';
+
+function TransactionStatus({ signature }: { signature: string }) {
+  const { status, loading } = useSolanaTransaction(signature);
+
+  if (loading) return <div>Checking status...</div>;
+
+  return (
+    <div>
+      <p>Status: {status?.status}</p>
+      <p>Confirmations: {status?.confirmations}</p>
+      {status?.error && <p>Error: {status.error}</p>}
+    </div>
+  );
+}
+```
+
+## SPL Token Transactions
+
+### Transfer Tokens
+
+```typescript
+import { getAssociatedTokenAddress, createTransferInstruction } from '@solana/spl-token';
+
+const transferTokens = async (
+  mintAddress: PublicKey,
+  recipient: PublicKey,
+  amount: number
+) => {
+  // Get token accounts
+  const fromTokenAccount = await getAssociatedTokenAddress(
+    mintAddress,
+    publicKey!
+  );
+
+  const toTokenAccount = await getAssociatedTokenAddress(
+    mintAddress,
+    recipient
+  );
+
+  // Create transaction
+  const transaction = new Transaction();
+
+  transaction.add(
+    createTransferInstruction(
+      fromTokenAccount,
+      toTokenAccount,
+      publicKey!,
+      amount
+    )
+  );
+
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = publicKey!;
+
+  return await sendTransaction(transaction, connection);
+};
+```
+
+## Error Handling
+
+### Common Errors
+
+<AccordionGroup>
+  <Accordion title="Insufficient Funds">
+    Account doesn't have enough SOL for transaction + fees.
+    ```typescript
+    if (error.message.includes('insufficient funds')) {
+      console.error('Not enough SOL');
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Blockhash Not Found">
+    Transaction blockhash expired (valid for ~60 seconds).
+    ```typescript
+    // Get fresh blockhash and retry
+    const { blockhash } = await connection.getLatestBlockhash('finalized');
+    transaction.recentBlockhash = blockhash;
+    ```
+  </Accordion>
+
+  <Accordion title="Transaction Simulation Failed">
+    Transaction would fail on-chain.
+    ```typescript
+    try {
+      await connection.simulateTransaction(transaction);
+    } catch (error) {
+      console.error('Simulation failed:', error.logs);
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="User Rejected">
+    User cancelled in wallet.
+    ```typescript
+    if (error.code === 4001) {
+      console.log('User rejected transaction');
+    }
+    ```
+  </Accordion>
+</AccordionGroup>
+
+### Retry Logic
+
+```typescript
+const sendWithRetry = async (
+  transaction: Transaction,
+  maxRetries = 3
+) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      // Refresh blockhash on retry
+      if (i > 0) {
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+      }
+
+      const signature = await sendTransaction(transaction, connection);
+      await connection.confirmTransaction(signature);
+      return signature;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+};
+```
+
+## Transaction Fees
+
+### Estimating Fees
+
+```typescript
+const estimateFee = async (transaction: Transaction) => {
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = publicKey!;
+
+  const fee = await connection.getFeeForMessage(
+    transaction.compileMessage()
+  );
+
+  return fee.value / LAMPORTS_PER_SOL; // Convert to SOL
+};
+```
+
+### Priority Fees
+
+```typescript
+import { ComputeBudgetProgram } from '@solana/web3.js';
+
+// Add priority fee to transaction
+transaction.add(
+  ComputeBudgetProgram.setComputeUnitPrice({
+    microLamports: 1000, // Priority fee
+  })
+);
+```
+
+## Best Practices
+
+<Check>Always set recent blockhash</Check>
+<Check>Set fee payer explicitly</Check>
+<Check>Wait for confirmation</Check>
+<Check>Handle errors gracefully</Check>
+<Check>Simulate before sending</Check>
+<Check>Check account balances first</Check>
+<Check>Use appropriate commitment levels</Check>
+<Check>Implement retry logic</Check>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card
+    title="Send Transaction"
+    icon="paper-plane"
+    href="/cookbook/send-transaction"
+  >
+    Practical transaction examples
+  </Card>
+  <Card
+    title="Token Operations"
+    icon="coins"
+    href="/cookbook/transfer-tokens"
+  >
+    SPL token transactions
+  </Card>
+</CardGroup>

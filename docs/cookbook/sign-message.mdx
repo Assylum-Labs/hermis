@@ -1,0 +1,145 @@
+---
+title: 'Sign Message'
+description: 'How to sign messages for authentication'
+---
+
+## Basic Message Signing
+
+```tsx
+import { useWallet } from '@hermis/solana-headless-react';
+
+function SignMessage() {
+  const { signMessage, publicKey } = useWallet();
+
+  const handleSign = async () => {
+    const message = `Sign this message to authenticate.\nTimestamp: ${Date.now()}`;
+    const encodedMessage = new TextEncoder().encode(message);
+
+    const signature = await signMessage(encodedMessage);
+
+    console.log('Signature:', signature);
+    return { message, signature, publicKey: publicKey?.toBase58() };
+  };
+
+  return <button onClick={handleSign}>Sign Message</button>;
+}
+```
+
+## Authentication Flow
+
+```tsx
+function AuthComponent() {
+  const { signMessage, publicKey } = useWallet();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const authenticate = async () => {
+    try {
+      const nonce = crypto.randomUUID();
+      const message = `Sign in to MyDApp\nNonce: ${nonce}`;
+      const encodedMessage = new TextEncoder().encode(message);
+
+      const signature = await signMessage(encodedMessage);
+
+      // Send to backend for verification
+      const response = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          publicKey: publicKey?.toBase58(),
+          message,
+          signature: Array.from(signature),
+        }),
+      });
+
+      if (response.ok) {
+        const { token } = await response.json();
+        localStorage.setItem('auth-token', token);
+        setIsAuthenticated(true);
+      }
+    } catch (error) {
+      console.error('Authentication failed:', error);
+    }
+  };
+
+  return (
+    <div>
+      {isAuthenticated ? (
+        <p>Authenticated!</p>
+      ) : (
+        <button onClick={authenticate}>Sign In</button>
+      )}
+    </div>
+  );
+}
+```
+
+## Backend Verification
+
+```typescript
+// Node.js backend
+import { PublicKey } from '@solana/web3.js';
+import * as nacl from 'tweetnacl';
+
+function verifySignature(
+  message: string,
+  signature: number[],
+  publicKeyStr: string
+): boolean {
+  const messageBytes = new TextEncoder().encode(message);
+  const signatureBytes = new Uint8Array(signature);
+  const publicKeyBytes = new PublicKey(publicKeyStr).toBytes();
+
+  return nacl.sign.detached.verify(
+    messageBytes,
+    signatureBytes,
+    publicKeyBytes
+  );
+}
+
+// Express endpoint
+app.post('/api/auth/verify', (req, res) => {
+  const { message, signature, publicKey } = req.body;
+
+  if (verifySignature(message, signature, publicKey)) {
+    const token = generateJWT(publicKey);
+    res.json({ token });
+  } else {
+    res.status(401).json({ error: 'Invalid signature' });
+  }
+});
+```
+
+## Sign-In With Solana (SIWS)
+
+```tsx
+function SignInWithSolana() {
+  const { signIn } = useWallet();
+
+  const handleSignIn = async () => {
+    const { account, signedMessage, signature } = await signIn({
+      domain: window.location.host,
+      statement: 'Sign in to MyDApp',
+      uri: window.location.origin,
+    });
+
+    // Verify on backend
+    const response = await fetch('/api/auth/siws', {
+      method: 'POST',
+      body: JSON.stringify({ account, signedMessage, signature }),
+    });
+
+    const { token } = await response.json();
+    localStorage.setItem('token', token);
+  };
+
+  return <button onClick={handleSignIn}>Sign In</button>;
+}
+```
+
+## Best Practices
+
+<Check>Always include a nonce or timestamp</Check>
+<Check>Verify signatures on the backend</Check>
+<Check>Use HTTPS for authentication</Check>
+<Check>Handle user rejection gracefully</Check>
+<Check>Clear sensitive data after use</Check>

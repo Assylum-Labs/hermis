@@ -1,0 +1,183 @@
+---
+title: 'Transfer Tokens'
+description: 'How to transfer SPL tokens'
+---
+
+## Basic Token Transfer
+
+```tsx
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { getAssociatedTokenAddress, createTransferInstruction, Transaction } from '@solana/spl-token';
+import { PublicKey } from '@solana/web3.js';
+
+function TransferTokens() {
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+
+  const transfer = async (
+    mintAddress: string,
+    recipient: string,
+    amount: number
+  ) => {
+    if (!publicKey) return;
+
+    const mint = new PublicKey(mintAddress);
+    const recipientPubKey = new PublicKey(recipient);
+
+    // Get token accounts
+    const fromTokenAccount = await getAssociatedTokenAddress(
+      mint,
+      publicKey
+    );
+
+    const toTokenAccount = await getAssociatedTokenAddress(
+      mint,
+      recipientPubKey
+    );
+
+    // Create transaction
+    const transaction = new Transaction();
+
+    transaction.add(
+      createTransferInstruction(
+        fromTokenAccount,
+        toTokenAccount,
+        publicKey,
+        amount * Math.pow(10, 9) // With decimals
+      )
+    );
+
+    const { blockhash } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = publicKey;
+
+    const signature = await sendTransaction(transaction, connection);
+    await connection.confirmTransaction(signature);
+
+    return signature;
+  };
+
+  return (
+    <button onClick={() => transfer('mint...', 'recipient...', 100)}>
+      Transfer 100 Tokens
+    </button>
+  );
+}
+```
+
+## With Associated Token Account Creation
+
+```tsx
+import { getOrCreateAssociatedTokenAccount, createTransferInstruction } from '@solana/spl-token';
+
+const transferWithAccountCreation = async (
+  mint: PublicKey,
+  recipient: PublicKey,
+  amount: number
+) => {
+  // Get or create sender's token account
+  const fromAccount = await getOrCreateAssociatedTokenAccount(
+    connection,
+    wallet,
+    mint,
+    publicKey!
+  );
+
+  // Get or create recipient's token account
+  const toAccount = await getOrCreateAssociatedTokenAccount(
+    connection,
+    wallet,
+    mint,
+    recipient
+  );
+
+  // Transfer
+  const transaction = new Transaction();
+
+  transaction.add(
+    createTransferInstruction(
+      fromAccount.address,
+      toAccount.address,
+      publicKey!,
+      amount
+    )
+  );
+
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = publicKey!;
+
+  return await sendTransaction(transaction, connection);
+};
+```
+
+## Complete Component
+
+```tsx
+function TokenTransfer() {
+  const [mint, setMint] = useState('');
+  const [recipient, setRecipient] = useState('');
+  const [amount, setAmount] = useState('');
+  const [sending, setSending] = useState(false);
+  const [signature, setSignature] = useState('');
+
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+
+  const handleTransfer = async () => {
+    setSending(true);
+    try {
+      const sig = await transfer(mint, recipient, parseFloat(amount));
+      setSignature(sig);
+      alert('Transfer successful!');
+    } catch (error) {
+      console.error('Transfer failed:', error);
+      alert(`Error: ${error.message}`);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div>
+      <input
+        placeholder="Token Mint Address"
+        value={mint}
+        onChange={(e) => setMint(e.target.value)}
+      />
+      <input
+        placeholder="Recipient Address"
+        value={recipient}
+        onChange={(e) => setRecipient(e.target.value)}
+      />
+      <input
+        type="number"
+        placeholder="Amount"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+      />
+      <button onClick={handleTransfer} disabled={sending || !publicKey}>
+        {sending ? 'Sending...' : 'Transfer'}
+      </button>
+      {signature && (
+        <p>
+          <a
+            href={`https://explorer.solana.com/tx/${signature}`}
+            target="_blank"
+          >
+            View Transaction
+          </a>
+        </p>
+      )}
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+<Check>Check balance before transferring</Check>
+<Check>Handle associated token account creation</Check>
+<Check>Use proper decimals</Check>
+<Check>Wait for confirmation</Check>
+<Check>Handle errors gracefully</Check>

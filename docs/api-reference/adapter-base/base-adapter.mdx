@@ -1,0 +1,74 @@
+---
+title: 'Base Adapter'
+description: 'Base class for wallet adapters'
+---
+
+## BaseWalletAdapter
+
+Abstract base class for creating custom wallet adapters.
+
+```typescript
+import { BaseWalletAdapter } from '@hermis/solana-headless-adapter-base';
+
+class CustomWalletAdapter extends BaseWalletAdapter {
+  name = 'Custom Wallet';
+  url = 'https://customwallet.com';
+  icon = 'icon-url';
+
+  async connect() {
+    // Implementation
+  }
+
+  async disconnect() {
+    // Implementation
+  }
+
+  async signTransaction(transaction: Transaction) {
+    // Implementation
+  }
+
+  async signAllTransactions(transactions: Transaction[]) {
+    // Implementation
+  }
+
+  async signMessage(message: Uint8Array) {
+    // Implementation
+  }
+}
+```
+
+## Required Properties
+
+<ParamField path="name" type="string" required>
+  Wallet name
+</ParamField>
+
+<ParamField path="url" type="string" required>
+  Wallet website
+</ParamField>
+
+<ParamField path="icon" type="string">
+  Wallet icon URL
+</ParamField>
+
+## Required Methods
+
+<ResponseField name="connect" type="() => Promise<void>">
+  Connect to the wallet
+</ResponseField>
+
+<ResponseField name="disconnect" type="() => Promise<void>">
+  Disconnect from the wallet
+</ResponseField>
+
+<ResponseField name="signTransaction" type="(tx: Transaction) => Promise<Transaction>">
+  Sign a transaction
+</ResponseField>
+
+<ResponseField name="signAllTransactions" type="(txs: Transaction[]) => Promise<Transaction[]>">
+  Sign multiple transactions
+</ResponseField>
+
+<ResponseField name="signMessage" type="(msg: Uint8Array) => Promise<Uint8Array>">
+  Sign a message
+</ResponseField>

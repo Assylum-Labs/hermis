@@ -1,0 +1,327 @@
+---
+title: 'Vanilla JavaScript Example'
+description: 'Complete vanilla JavaScript implementation'
+---
+
+## Overview
+
+This example demonstrates how to use Solana Headless SDK with vanilla JavaScript - no framework required!
+
+## Project Setup
+
+```bash
+mkdir solana-wallet-app
+cd solana-wallet-app
+npm init -y
+npm install @hermis/solana-headless-adapter-base @hermis/solana-headless-core @solana/web3.js @solana/wallet-adapter-wallets
+```
+
+## HTML Structure
+
+```html index.html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Solana Wallet App</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Solana Wallet Integration</h1>
+
+    <!-- Wallet Selection -->
+    <div id="wallet-selector" class="wallet-selector"></div>
+
+    <!-- Wallet Info (hidden by default) -->
+    <div id="wallet-info" class="wallet-info" style="display: none;">
+      <h2>Connected Wallet</h2>
+      <p><strong>Wallet:</strong> <span id="wallet-name"></span></p>
+      <p><strong>Address:</strong> <span id="wallet-address"></span></p>
+      <p><strong>Balance:</strong> <span id="wallet-balance">Loading...</span> SOL</p>
+      <button id="disconnect-btn" class="button button-secondary">Disconnect</button>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
+```
+
+## Styling
+
+```css style.css
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.container {
+  background: white;
+  padding: 40px;
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+}
+
+h1 {
+  color: #333;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.wallet-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wallet-option {
+  display: flex;
+  align-items: center;
+  padding: 15px 20px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.wallet-option:hover {
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.wallet-option.installed {
+  border-color: #14F195;
+  background: #f0fdf4;
+}
+
+.wallet-info {
+  text-align: center;
+}
+
+.wallet-info p {
+  margin: 15px 0;
+  color: #666;
+}
+
+.wallet-info strong {
+  color: #333;
+}
+
+.button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 20px;
+}
+
+.button-secondary {
+  background: #ff4757;
+  color: white;
+}
+
+.button-secondary:hover {
+  background: #ff3838;
+}
+
+#wallet-address {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+}
+```
+
+## JavaScript Implementation
+
+```javascript app.js
+import {
+  WalletAdapterManager,
+  getStandardWalletAdapters,
+  sortWalletAdapters
+} from '@hermis/solana-headless-adapter-base';
+
+import {
+  WalletAdapterNetwork,
+  createConnection
+} from '@hermis/solana-headless-core';
+
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
+import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+
+class WalletApp {
+  constructor() {
+    this.manager = null;
+    this.connection = null;
+    this.init();
+  }
+
+  init() {
+    // Create connection
+    this.connection = createConnection(WalletAdapterNetwork.Devnet);
+
+    // Setup wallet adapters
+    const wallets = [
+      new PhantomWalletAdapter(),
+      new SolflareWalletAdapter(),
+      new BackpackWalletAdapter(),
+    ];
+
+    const adapters = getStandardWalletAdapters(wallets);
+    const sorted = sortWalletAdapters(adapters);
+
+    // Create wallet manager
+    this.manager = new WalletAdapterManager(adapters);
+
+    // Setup event listeners
+    this.setupEventListeners();
+
+    // Render wallet options
+    this.renderWalletOptions(sorted);
+  }
+
+  setupEventListeners() {
+    this.manager.on('connect', async (publicKey) => {
+      console.log('Connected:', publicKey.toBase58());
+      this.showWalletInfo(publicKey.toBase58());
+      await this.updateBalance(publicKey);
+    });
+
+    this.manager.on('disconnect', () => {
+      console.log('Disconnected');
+      this.hideWalletInfo();
+    });
+
+    this.manager.on('error', (error) => {
+      console.error('Error:', error);
+      alert(`Wallet error: ${error.message}`);
+    });
+
+    // Disconnect button
+    document.getElementById('disconnect-btn').onclick = () => {
+      this.manager.disconnect();
+    };
+  }
+
+  renderWalletOptions(adapters) {
+    const container = document.getElementById('wallet-selector');
+
+    adapters.forEach(adapter => {
+      const button = document.createElement('button');
+      button.className = 'wallet-option';
+      button.textContent = adapter.name;
+
+      if (adapter.readyState === 'Installed') {
+        button.classList.add('installed');
+        const badge = document.createElement('span');
+        badge.textContent = ' ✓ Installed';
+        badge.style.color = '#14F195';
+        badge.style.marginLeft = '10px';
+        button.appendChild(badge);
+      }
+
+      button.onclick = async () => {
+        this.manager.selectAdapter(adapter.name);
+        try {
+          await this.manager.connect();
+        } catch (error) {
+          console.error('Connection failed:', error);
+        }
+      };
+
+      container.appendChild(button);
+    });
+  }
+
+  async updateBalance(publicKey) {
+    try {
+      const balance = await this.connection.getBalance(publicKey);
+      const solBalance = balance / LAMPORTS_PER_SOL;
+      document.getElementById('wallet-balance').textContent = solBalance.toFixed(4);
+    } catch (error) {
+      console.error('Failed to get balance:', error);
+      document.getElementById('wallet-balance').textContent = 'Error';
+    }
+  }
+
+  showWalletInfo(address) {
+    const walletInfo = document.getElementById('wallet-info');
+    const walletName = document.getElementById('wallet-name');
+    const walletAddress = document.getElementById('wallet-address');
+
+    walletName.textContent = this.manager.wallet?.adapter.name || 'Unknown';
+    walletAddress.textContent = address;
+    walletInfo.style.display = 'block';
+
+    // Hide selector
+    document.getElementById('wallet-selector').style.display = 'none';
+  }
+
+  hideWalletInfo() {
+    document.getElementById('wallet-info').style.display = 'none';
+    document.getElementById('wallet-selector').style.display = 'flex';
+  }
+}
+
+// Initialize the app
+const app = new WalletApp();
+```
+
+## Build Setup
+
+```json package.json
+{
+  "name": "solana-wallet-app",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
+```
+
+## Running the Example
+
+```bash
+npm run dev
+```
+
+Open http://localhost:5173 in your browser!
+
+## Features Demonstrated
+
+<Check>Wallet detection and prioritization</Check>
+<Check>Multi-wallet support</Check>
+<Check>Balance fetching</Check>
+<Check>Event-driven updates</Check>
+<Check>Error handling</Check>
+<Check>Clean UI/UX</Check>
+
+## Next Steps
+
+- Add transaction sending
+- Implement token transfers
+- Add NFT display
+- Create custom UI components

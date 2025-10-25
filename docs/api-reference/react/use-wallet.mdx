@@ -1,0 +1,79 @@
+---
+title: 'useWallet Hook'
+description: 'Primary hook for wallet interactions'
+---
+
+## useWallet()
+
+Primary hook for accessing wallet state and methods.
+
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+
+const {
+  wallet,
+  publicKey,
+  connected,
+  connecting,
+  disconnecting,
+  select,
+  connect,
+  disconnect,
+  sendTransaction,
+  signTransaction,
+  signAllTransactions,
+  signMessage,
+} = useWallet();
+```
+
+## Properties
+
+<ResponseField name="wallet" type="Wallet | null">
+  Currently selected wallet adapter
+</ResponseField>
+
+<ResponseField name="publicKey" type="PublicKey | null">
+  Public key of connected wallet
+</ResponseField>
+
+<ResponseField name="connected" type="boolean">
+  Whether wallet is connected
+</ResponseField>
+
+<ResponseField name="connecting" type="boolean">
+  Connection in progress
+</ResponseField>
+
+<ResponseField name="disconnecting" type="boolean">
+  Disconnection in progress
+</ResponseField>
+
+## Methods
+
+<ResponseField name="select" type="(walletName: string) => void">
+  Select a wallet by name
+</ResponseField>
+
+<ResponseField name="connect" type="() => Promise<void>">
+  Connect to selected wallet
+</ResponseField>
+
+<ResponseField name="disconnect" type="() => Promise<void>">
+  Disconnect from wallet
+</ResponseField>
+
+<ResponseField name="sendTransaction" type="(transaction: Transaction, connection: Connection) => Promise<string>">
+  Sign and send a transaction
+</ResponseField>
+
+<ResponseField name="signTransaction" type="(transaction: Transaction) => Promise<Transaction>">
+  Sign a transaction without sending
+</ResponseField>
+
+<ResponseField name="signAllTransactions" type="(transactions: Transaction[]) => Promise<Transaction[]>">
+  Sign multiple transactions
+</ResponseField>
+
+<ResponseField name="signMessage" type="(message: Uint8Array) => Promise<Uint8Array>">
+  Sign a message for authentication
+</ResponseField>

@@ -1,0 +1,54 @@
+---
+title: 'Wallet Connect'
+description: 'Wallet connection utilities'
+---
+
+## initAdapters()
+
+Initialize wallet adapters for use.
+
+```typescript
+import { initAdapters } from '@hermis/solana-headless-adapter-base';
+
+const initialized = initAdapters(adapters);
+```
+
+## selectAdapter()
+
+Select a wallet adapter by name.
+
+```typescript
+manager.selectAdapter('Phantom');
+```
+
+## connect()
+
+Connect to the selected wallet.
+
+```typescript
+const adapter = await manager.connect();
+```
+
+## disconnect()
+
+Disconnect from the current wallet.
+
+```typescript
+await manager.disconnect();
+```
+
+## Event Listeners
+
+```typescript
+manager.on('connect', (publicKey) => {
+  console.log('Connected:', publicKey.toBase58());
+});
+
+manager.on('disconnect', () => {
+  console.log('Disconnected');
+});
+
+manager.on('error', (error) => {
+  console.error('Error:', error);
+});
+```

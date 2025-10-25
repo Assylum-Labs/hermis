@@ -1,0 +1,127 @@
+---
+title: 'Core API Overview'
+description: 'Complete API reference for @hermis/solana-headless-core'
+---
+
+## Overview
+
+The `@hermis/solana-headless-core` package provides the fundamental building blocks for Solana wallet and blockchain interactions.
+
+## Installation
+
+```bash
+npm install @hermis/solana-headless-core @solana/web3.js
+```
+
+## Core Modules
+
+<CardGroup cols={2}>
+  <Card title="Connection Management" icon="link" href="/api-reference/core/connection">
+    Create and manage Solana RPC connections
+  </Card>
+  <Card title="Wallet Operations" icon="wallet" href="/api-reference/core/wallet-adapter">
+    Wallet creation, import, and export
+  </Card>
+  <Card title="Hermis Client" icon="code" href="/api-reference/core/hermis-client">
+    High-level client for wallet management
+  </Card>
+</CardGroup>
+
+## Quick Reference
+
+### Connection Functions
+
+```typescript
+import { createConnection, WalletAdapterNetwork } from '@hermis/solana-headless-core';
+
+// Create connection
+const connection = createConnection(WalletAdapterNetwork.Devnet);
+```
+
+### Wallet Functions
+
+```typescript
+import { createWallet, importWallet, exportWallet } from '@hermis/solana-headless-core';
+
+// Create new wallet
+const wallet = createWallet();
+
+// Import wallet
+const imported = importWallet(secretKey);
+
+// Export wallet
+const exported = exportWallet(wallet);
+```
+
+### Transaction Functions
+
+```typescript
+import { signTransaction, sendTransaction, signMessage } from '@hermis/solana-headless-core';
+
+// Sign transaction
+const signed = await signTransaction(transaction, wallet);
+
+// Send transaction
+const signature = await sendTransaction(connection, transaction, wallet);
+
+// Sign message
+const signedMsg = await signMessage(message, adapter);
+```
+
+## Types
+
+### WalletAdapterNetwork
+
+```typescript
+enum WalletAdapterNetwork {
+  Mainnet = 'mainnet-beta',
+  Devnet = 'devnet',
+  Testnet = 'testnet'
+}
+```
+
+### WalletAdapter
+
+```typescript
+interface WalletAdapter {
+  name: string;
+  url: string;
+  icon?: string;
+  readyState: WalletReadyState;
+  publicKey: PublicKey | null;
+  connecting: boolean;
+  connected: boolean;
+  connect(): Promise<void>;
+  disconnect(): Promise<void>;
+  signTransaction(transaction: Transaction): Promise<Transaction>;
+  signAllTransactions(transactions: Transaction[]): Promise<Transaction[]>;
+  signMessage(message: Uint8Array): Promise<Uint8Array>;
+}
+```
+
+## Error Handling
+
+All functions may throw errors. Always wrap in try-catch:
+
+```typescript
+try {
+  const wallet = await connect();
+} catch (error) {
+  if (error.code === 4001) {
+    console.log('User rejected');
+  } else {
+    console.error('Error:', error);
+  }
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Hermis Client" href="/api-reference/core/hermis-client">
+    Detailed client API
+  </Card>
+  <Card title="Wallet Adapter" href="/api-reference/core/wallet-adapter">
+    Wallet adapter interface
+  </Card>
+</CardGroup>

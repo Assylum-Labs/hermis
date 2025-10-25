@@ -1,0 +1,158 @@
+---
+title: 'Mint Token'
+description: 'How to create and mint SPL tokens'
+---
+
+## Create a New Token
+
+```tsx
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { createMint, getOrCreateAssociatedTokenAccount, mintTo } from '@solana/spl-token';
+
+function MintToken() {
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+
+  const createToken = async () => {
+    if (!publicKey) return;
+
+    // Create mint account
+    const mint = await createMint(
+      connection,
+      wallet, // Fee payer
+      publicKey, // Mint authority
+      publicKey, // Freeze authority
+      9 // Decimals
+    );
+
+    console.log('Token created:', mint.toBase58());
+    return mint;
+  };
+
+  const mintTokens = async (mintAddress: PublicKey, amount: number) => {
+    if (!publicKey) return;
+
+    // Get or create token account
+    const tokenAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      wallet,
+      mintAddress,
+      publicKey
+    );
+
+    // Mint tokens
+    const signature = await mintTo(
+      connection,
+      wallet,
+      mintAddress,
+      tokenAccount.address,
+      publicKey, // Mint authority
+      amount * Math.pow(10, 9) // Amount with decimals
+    );
+
+    console.log('Minted:', signature);
+    return signature;
+  };
+
+  return (
+    <div>
+      <button onClick={createToken}>Create Token</button>
+      <button onClick={() => mintTokens(mintAddress, 1000)}>
+        Mint 1000 Tokens
+      </button>
+    </div>
+  );
+}
+```
+
+## Complete Example with UI
+
+```tsx
+function TokenMinter() {
+  const [mint, setMint] = useState<PublicKey | null>(null);
+  const [amount, setAmount] = useState('1000');
+  const [loading, setLoading] = useState(false);
+
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+
+  const handleCreate = async () => {
+    setLoading(true);
+    try {
+      const newMint = await createMint(
+        connection,
+        wallet,
+        publicKey!,
+        publicKey!,
+        9
+      );
+      setMint(newMint);
+      alert(`Token created: ${newMint.toBase58()}`);
+    } catch (error) {
+      console.error('Failed to create token:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMint = async () => {
+    if (!mint || !publicKey) return;
+
+    setLoading(true);
+    try {
+      const tokenAccount = await getOrCreateAssociatedTokenAccount(
+        connection,
+        wallet,
+        mint,
+        publicKey
+      );
+
+      await mintTo(
+        connection,
+        wallet,
+        mint,
+        tokenAccount.address,
+        publicKey,
+        parseInt(amount) * Math.pow(10, 9)
+      );
+
+      alert('Tokens minted successfully!');
+    } catch (error) {
+      console.error('Failed to mint:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      {!mint ? (
+        <button onClick={handleCreate} disabled={loading}>
+          {loading ? 'Creating...' : 'Create New Token'}
+        </button>
+      ) : (
+        <div>
+          <p>Mint: {mint.toBase58()}</p>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount"
+          />
+          <button onClick={handleMint} disabled={loading}>
+            {loading ? 'Minting...' : 'Mint Tokens'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+<Check>Store mint address securely</Check>
+<Check>Set appropriate decimals (usually 9)</Check>
+<Check>Consider freeze authority</Check>
+<Check>Verify mint authority</Check>
+<Check>Handle associated token accounts</Check>

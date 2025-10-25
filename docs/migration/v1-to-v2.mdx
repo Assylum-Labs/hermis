@@ -1,0 +1,262 @@
+---
+title: 'Migrating from v1 to v2'
+description: 'Guide for migrating from Solana Headless SDK v1 to v2'
+---
+
+## Overview
+
+Version 2 of Solana Headless SDK introduces several improvements, new features, and breaking changes. This guide will help you migrate your existing v1 applications to v2.
+
+## Breaking Changes
+
+### 1. Package Names
+
+Package names have been updated to reflect the `@hermis` namespace:
+
+<CodeGroup>
+```bash v1
+npm install @solana-headless/core
+npm install @solana-headless/react
+```
+
+```bash v2
+npm install @hermis/solana-headless-core
+npm install @hermis/solana-headless-react
+```
+</CodeGroup>
+
+### 2. Import Statements
+
+Update all import statements:
+
+<CodeGroup>
+```typescript v1
+import { useWallet } from '@solana-headless/react';
+import { createConnection } from '@solana-headless/core';
+```
+
+```typescript v2
+import { useWallet } from '@hermis/solana-headless-react';
+import { createConnection } from '@hermis/solana-headless-core';
+```
+</CodeGroup>
+
+### 3. Provider Configuration
+
+The provider configuration has been simplified:
+
+<CodeGroup>
+```tsx v1
+<WalletProvider
+  endpoint="https://api.devnet.solana.com"
+  network="devnet"
+  autoConnect={true}
+  wallets={walletAdapters}
+>
+  {children}
+</WalletProvider>
+```
+
+```tsx v2
+<HermisProvider
+  rpcEndpoint="https://api.devnet.solana.com"
+  network={WalletAdapterNetwork.Devnet}
+  autoConnect={true}
+  additionalAdapters={wallets}
+>
+  {children}
+</HermisProvider>
+```
+</CodeGroup>
+
+### 4. Hook Return Values
+
+Some hook return values have been renamed for consistency:
+
+<CodeGroup>
+```typescript v1
+const { wallet, address, isConnected } = useWallet();
+```
+
+```typescript v2
+const { wallet, publicKey, connected } = useWallet();
+```
+</CodeGroup>
+
+## New Features
+
+### 1. Enhanced Error Handling
+
+V2 introduces comprehensive error handling with custom error types:
+
+```typescript
+import { HermisError } from '@hermis/errors';
+
+try {
+  await connect();
+} catch (error) {
+  if (error instanceof HermisError) {
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+  }
+}
+```
+
+### 2. Improved Type Safety
+
+All functions and hooks now have better TypeScript definitions:
+
+```typescript
+import type { WalletAdapter, Connection } from '@hermis/solana-headless-core';
+
+const wallet: WalletAdapter | null = useWallet().wallet;
+```
+
+### 3. New Hooks
+
+Several new utility hooks have been added:
+
+```typescript
+import {
+  useSolanaBalance,
+  useSolanaTokenAccounts,
+  useSolanaNFTs,
+  useSolanaTransaction,
+  useWalletAdapters
+} from '@hermis/solana-headless-react';
+
+// Fetch balance
+const { balance } = useSolanaBalance(publicKey);
+
+// Fetch token accounts
+const { tokenAccounts } = useSolanaTokenAccounts(publicKey);
+
+// Fetch NFTs
+const { nfts } = useSolanaNFTs(publicKey);
+```
+
+### 4. Wallet Standard Support
+
+V2 adds native support for the Wallet Standard:
+
+```typescript
+import { getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+
+// Automatically detects Wallet Standard wallets
+const adapters = getStandardWalletAdapters(customAdapters);
+```
+
+## Migration Steps
+
+<Steps>
+  <Step title="Update Dependencies">
+    Update package.json with new package names:
+    ```bash
+    npm uninstall @solana-headless/core @solana-headless/react
+    npm install @hermis/solana-headless-core @hermis/solana-headless-react
+    ```
+  </Step>
+
+  <Step title="Update Imports">
+    Replace all import statements with new package names
+  </Step>
+
+  <Step title="Update Provider">
+    Replace `WalletProvider` with `HermisProvider` and update props
+  </Step>
+
+  <Step title="Update Hook Usage">
+    Replace `address` with `publicKey` and `isConnected` with `connected`
+  </Step>
+
+  <Step title="Add Error Handling">
+    Implement new error handling patterns where needed
+  </Step>
+
+  <Step title="Test Thoroughly">
+    Test all wallet operations to ensure everything works
+  </Step>
+</Steps>
+
+## Example Migration
+
+### Before (v1)
+
+```tsx
+import { WalletProvider, useWallet } from '@solana-headless/react';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+
+function App() {
+  const wallets = [new PhantomWalletAdapter()];
+
+  return (
+    <WalletProvider
+      endpoint="https://api.devnet.solana.com"
+      wallets={wallets}
+    >
+      <WalletButton />
+    </WalletProvider>
+  );
+}
+
+function WalletButton() {
+  const { connect, disconnect, isConnected, address } = useWallet();
+
+  return (
+    <button onClick={isConnected ? disconnect : connect}>
+      {isConnected ? `Connected: ${address}` : 'Connect'}
+    </button>
+  );
+}
+```
+
+### After (v2)
+
+```tsx
+import { HermisProvider, useWallet } from '@hermis/solana-headless-react';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
+
+function App() {
+  const wallets = [new PhantomWalletAdapter()];
+
+  return (
+    <HermisProvider
+      rpcEndpoint="https://api.devnet.solana.com"
+      network={WalletAdapterNetwork.Devnet}
+      additionalAdapters={wallets}
+    >
+      <WalletButton />
+    </HermisProvider>
+  );
+}
+
+function WalletButton() {
+  const { connect, disconnect, connected, publicKey } = useWallet();
+
+  return (
+    <button onClick={connected ? disconnect : connect}>
+      {connected ? `Connected: ${publicKey?.toBase58()}` : 'Connect'}
+    </button>
+  );
+}
+```
+
+## Deprecation Timeline
+
+| Feature | Deprecated In | Removed In | Alternative |
+|---------|---------------|------------|-------------|
+| `WalletProvider` | v2.0 | v3.0 | `HermisProvider` |
+| `address` property | v2.0 | v3.0 | `publicKey` |
+| `isConnected` property | v2.0 | v3.0 | `connected` |
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="GitHub Discussions" icon="comments" href="https://github.com/Assylum-Labs/hermis/discussions">
+    Ask questions and get help from the community
+  </Card>
+  <Card title="Report Issues" icon="github" href="https://github.com/Assylum-Labs/hermis/issues">
+    Report bugs or migration issues
+  </Card>
+</CardGroup>

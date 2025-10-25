@@ -14,6 +14,18 @@ Try our playground:
 
 This demo showcases the core functionality of our adapter-base package with the React framework, demonstrating how you can integrate Solana wallets with complete UI freedom.
 
+## 📚 **Documentation**
+
+Comprehensive documentation is available at **[docs.hermis.xyz](https://docs.hermis.xyz)** (or your custom documentation URL).
+
+- **[Getting Started](docs/getting-started.mdx)** – Quick start guide
+- **[Quick Starts](docs/quickstart/)** – Package-specific guides
+- **[Core Concepts](docs/core-concepts/)** – Architecture and design
+- **[API Reference](docs/api-reference/)** – Complete API documentation
+- **[Cookbook](docs/cookbook/)** – Practical examples and recipes
+- **[Migration Guide](docs/migration/)** – Upgrade from v1 to v2
+- **[Examples](docs/examples/)** – Complete example projects
+
 ## 🌟 **Community Edition Features**
 
 - **Fully Headless** – No predefined UI, complete developer control

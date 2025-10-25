@@ -1,0 +1,179 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "Solana Headless SDK",
+  "logo": {
+    "dark": "./hermis_logo_2.png",
+    "light": "/logo/light.svg"
+  },
+  "logoSize": {
+      "width": 140,
+      "height": 40
+    },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#9945FF",
+    "light": "#14F195",
+    "dark": "#9945FF",
+    "anchors": {
+      "from": "#9945FF",
+      "to": "#14F195"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "Support",
+      "url": "mailto:agateh.labs@gmail.com"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "GitHub",
+    "url": "https://github.com/Assylum-Labs/hermis"
+  },
+  "tabs": [
+    {
+      "name": "API Reference",
+      "url": "api-reference"
+    },
+    {
+      "name": "Cookbook",
+      "url": "cookbook"
+    },
+    {
+      "name": "Examples",
+      "url": "examples"
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Live Demo",
+      "icon": "play",
+      "url": "https://assylum-labs.github.io/hermis/"
+    },
+    {
+      "name": "Community",
+      "icon": "twitter",
+      "url": "https://x.com/Hermis_xyz"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/Assylum-Labs/hermis"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "getting-started",
+        "installation"
+      ]
+    },
+    {
+      "group": "Quick Starts",
+      "pages": [
+        "quickstart/core",
+        "quickstart/adapter-base",
+        "quickstart/react"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "core-concepts/architecture",
+        "core-concepts/wallet-management",
+        "core-concepts/transactions",
+        "core-concepts/authentication"
+      ]
+    },
+    {
+      "group": "Migration Guides",
+      "pages": [
+        "migration/v1-to-v2",
+        "migration/from-other-adapters"
+      ]
+    },
+    {
+      "group": "Core API",
+      "pages": [
+        "api-reference/core/overview",
+        "api-reference/core/hermis-client",
+        "api-reference/core/wallet-adapter",
+        "api-reference/core/connection"
+      ]
+    },
+    {
+      "group": "Adapter Base API",
+      "pages": [
+        "api-reference/adapter-base/overview",
+        "api-reference/adapter-base/base-adapter",
+        "api-reference/adapter-base/wallet-connect"
+      ]
+    },
+    {
+      "group": "React API",
+      "pages": [
+        "api-reference/react/overview",
+        "api-reference/react/use-hermis",
+        "api-reference/react/use-wallet",
+        "api-reference/react/use-connection"
+      ]
+    },
+    {
+      "group": "Wallet Operations",
+      "pages": [
+        "cookbook/connect-wallet",
+        "cookbook/disconnect-wallet",
+        "cookbook/sign-message",
+        "cookbook/send-transaction"
+      ]
+    },
+    {
+      "group": "Token Operations",
+      "pages": [
+        "cookbook/mint-token",
+        "cookbook/transfer-tokens",
+        "cookbook/burn-tokens"
+      ]
+    },
+    {
+      "group": "NFT Operations",
+      "pages": [
+        "cookbook/mint-nft",
+        "cookbook/transfer-nft",
+        "cookbook/query-nft-metadata"
+      ]
+    },
+    {
+      "group": "Advanced",
+      "pages": [
+        "cookbook/custom-transactions",
+        "cookbook/transaction-batching",
+        "cookbook/error-handling"
+      ]
+    },
+    {
+      "group": "Example Projects",
+      "pages": [
+        "examples/vanilla-js",
+        "examples/react-integration",
+        "examples/nextjs-app",
+        "examples/custom-ui"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "twitter": "https://x.com/Hermis_xyz",
+    "github": "https://github.com/Assylum-Labs/hermis"
+  },
+  "analytics": {
+    "ga4": {
+      "measurementId": "G-XXXXXXXXXX"
+    }
+  },
+  "feedback": {
+    "thumbsRating": true,
+    "suggestEdit": true,
+    "raiseIssue": true
+  }
+}

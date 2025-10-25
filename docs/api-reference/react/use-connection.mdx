@@ -1,0 +1,48 @@
+---
+title: 'useConnection Hook'
+description: 'Access Solana RPC connection'
+---
+
+## useConnection()
+
+Hook to access the Solana RPC connection.
+
+```typescript
+import { useConnection } from '@hermis/solana-headless-react';
+
+const { connection, network } = useConnection();
+
+// Get balance
+const balance = await connection.getBalance(publicKey);
+
+// Get account info
+const accountInfo = await connection.getAccountInfo(publicKey);
+```
+
+## Return Values
+
+<ResponseField name="connection" type="Connection">
+  Solana Connection instance for RPC calls
+</ResponseField>
+
+<ResponseField name="network" type="WalletAdapterNetwork">
+  Current network (mainnet-beta, devnet, testnet)
+</ResponseField>
+
+## Common Usage
+
+```typescript
+function AccountInfo() {
+  const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const [balance, setBalance] = useState(0);
+
+  useEffect(() => {
+    if (publicKey) {
+      connection.getBalance(publicKey).then(setBalance);
+    }
+  }, [publicKey, connection]);
+
+  return <div>Balance: {balance / LAMPORTS_PER_SOL} SOL</div>;
+}
+```

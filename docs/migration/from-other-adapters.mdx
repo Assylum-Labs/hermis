@@ -1,0 +1,146 @@
+---
+title: 'Migrating from Other Wallet Adapters'
+description: 'Guide for migrating from other Solana wallet adapter libraries'
+---
+
+## Overview
+
+Migrating from other Solana wallet adapter libraries to Hermis is straightforward. This guide covers common migration scenarios.
+
+## From @solana/wallet-adapter-react
+
+### Key Differences
+
+<CardGroup cols={2}>
+  <Card title="Headless by Default">
+    Hermis provides no UI components, giving you complete control
+  </Card>
+  <Card title="Smaller Bundle">
+    Leaner core with only essential functionality
+  </Card>
+  <Card title="Better TypeScript">
+    Enhanced type definitions and inference
+  </Card>
+  <Card title="Modern Hooks">
+    Additional utility hooks for common operations
+  </Card>
+</CardGroup>
+
+### Migration Example
+
+<CodeGroup>
+```tsx @solana/wallet-adapter-react
+import { WalletProvider } from '@solana/wallet-adapter-react';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+
+<WalletProvider wallets={wallets}>
+  <WalletModalProvider>
+    {children}
+  </WalletModalProvider>
+</WalletProvider>
+```
+
+```tsx Hermis SDK
+import { HermisProvider } from '@hermis/solana-headless-react';
+
+<HermisProvider
+  rpcEndpoint="https://api.devnet.solana.com"
+  network={WalletAdapterNetwork.Devnet}
+  additionalAdapters={wallets}
+>
+  {children}
+</HermisProvider>
+```
+</CodeGroup>
+
+## From wagmi/RainbowKit (EVM)
+
+If you're coming from EVM development:
+
+### Conceptual Differences
+
+- **Accounts** = PublicKey (Solana addresses)
+- **Chains** = Networks (mainnet-beta, devnet, testnet)
+- **Providers** = Connection (RPC connection)
+- **Signers** = Wallet Adapters
+
+### Example Comparison
+
+<CodeGroup>
+```tsx wagmi (EVM)
+import { useAccount, useConnect } from 'wagmi';
+
+const { address, isConnected } = useAccount();
+const { connect } = useConnect();
+```
+
+```tsx Hermis (Solana)
+import { useWallet } from '@hermis/solana-headless-react';
+
+const { publicKey, connected, connect } = useWallet();
+```
+</CodeGroup>
+
+## Common Patterns
+
+### Connecting Wallets
+
+All libraries follow similar patterns. Here's how Hermis compares:
+
+```tsx
+// Other adapters
+const { connect, disconnect } = useWallet();
+
+// Hermis - same pattern!
+const { connect, disconnect } = useWallet();
+```
+
+### Sending Transactions
+
+```tsx
+// Hermis
+const { sendTransaction } = useWallet();
+const { connection } = useConnection();
+
+const signature = await sendTransaction(transaction, connection);
+```
+
+## Migration Checklist
+
+<Check>Install Hermis packages</Check>
+<Check>Replace provider components</Check>
+<Check>Update import statements</Check>
+<Check>Build your own wallet selection UI</Check>
+<Check>Test all wallet operations</Check>
+<Check>Update error handling</Check>
+
+## Why Choose Hermis?
+
+<AccordionGroup>
+  <Accordion title="Complete UI Freedom">
+    No predefined UI components means your dApp looks exactly how you want it
+  </Accordion>
+
+  <Accordion title="Solana-First">
+    Built specifically for Solana, not adapted from other chains
+  </Accordion>
+
+  <Accordion title="Framework Agnostic Core">
+    Use with React, Vue, or vanilla JavaScript
+  </Accordion>
+
+  <Accordion title="Modern Developer Experience">
+    Great TypeScript support, comprehensive hooks, and clear documentation
+  </Accordion>
+</AccordionGroup>
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card title="Get Started" href="/getting-started">
+    Start with our getting started guide
+  </Card>
+  <Card title="Ask Questions" href="https://github.com/Assylum-Labs/hermis/discussions">
+    Get help from the community
+  </Card>
+</CardGroup>

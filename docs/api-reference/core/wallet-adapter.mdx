@@ -1,0 +1,81 @@
+---
+title: 'Wallet Adapter API'
+description: 'API reference for wallet adapter functions'
+---
+
+## createWallet()
+
+Creates a new Solana wallet.
+
+```typescript
+import { createWallet } from '@hermis/solana-headless-core';
+
+const wallet = createWallet();
+console.log('Public key:', wallet.publicKey.toBase58());
+```
+
+<Warning>
+Store the secret key securely! It cannot be recovered if lost.
+</Warning>
+
+## importWallet()
+
+Imports a wallet from a secret key.
+
+```typescript
+import { importWallet } from '@hermis/solana-headless-core';
+
+const secretKey = new Uint8Array([...]);
+const wallet = importWallet(secretKey);
+```
+
+### Parameters
+
+<ParamField path="secretKey" type="Uint8Array" required>
+  64-byte secret key array
+</ParamField>
+
+## exportWallet()
+
+Exports a wallet's secret key.
+
+```typescript
+import { exportWallet } from '@hermis/solana-headless-core';
+
+const secretKey = exportWallet(wallet);
+```
+
+<Warning>
+Never expose or commit secret keys to version control!
+</Warning>
+
+## signTransaction()
+
+Signs a transaction with a wallet.
+
+```typescript
+import { signTransaction } from '@hermis/solana-headless-core';
+
+const signed = await signTransaction(transaction, wallet);
+```
+
+## sendTransaction()
+
+Sends a signed transaction to the network.
+
+```typescript
+import { sendTransaction } from '@hermis/solana-headless-core';
+
+const signature = await sendTransaction(connection, transaction, wallet);
+```
+
+## signMessage()
+
+Signs a message for authentication.
+
+```typescript
+import { signMessage } from '@hermis/solana-headless-core';
+
+const message = 'Sign in to MyDApp';
+const signature = await signMessage(message, adapter);
+```

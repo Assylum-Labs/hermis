@@ -1,0 +1,111 @@
+---
+title: 'Connect Wallet'
+description: 'How to connect to Solana wallets'
+---
+
+## React Example
+
+```tsx
+import { useWallet } from '@hermis/solana-headless-react';
+
+function ConnectButton() {
+  const { connect, disconnect, connected, connecting, wallet, publicKey } = useWallet();
+
+  if (connected) {
+    return (
+      <div>
+        <p>Connected to {wallet?.adapter.name}</p>
+        <p>{publicKey?.toBase58()}</p>
+        <button onClick={disconnect}>Disconnect</button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={connect} disabled={connecting}>
+      {connecting ? 'Connecting...' : 'Connect Wallet'}
+    </button>
+  );
+}
+```
+
+## With Wallet Selection
+
+```tsx
+import { useWallet, useWalletAdapters } from '@hermis/solana-headless-react';
+
+function WalletSelector() {
+  const { select, connect } = useWallet();
+  const { installed } = useWalletAdapters();
+
+  return (
+    <div>
+      {installed.map(adapter => (
+        <button
+          key={adapter.name}
+          onClick={async () => {
+            select(adapter.name);
+            await connect();
+          }}
+        >
+          {adapter.icon && <img src={adapter.icon} width={20} />}
+          {adapter.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+## Vanilla JavaScript
+
+```javascript
+import { WalletAdapterManager, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
+
+const wallets = [new PhantomWalletAdapter()];
+const adapters = getStandardWalletAdapters(wallets);
+const manager = new WalletAdapterManager(adapters);
+
+manager.on('connect', (publicKey) => {
+  console.log('Connected:', publicKey.toBase58());
+});
+
+// Connect
+manager.selectAdapter('Phantom');
+await manager.connect();
+```
+
+## Error Handling
+
+```tsx
+const handleConnect = async () => {
+  try {
+    await connect();
+  } catch (error) {
+    if (error.code === 4001) {
+      console.log('User rejected connection');
+    } else if (error.message.includes('not installed')) {
+      alert('Please install the wallet extension');
+    } else {
+      console.error('Connection failed:', error);
+    }
+  }
+};
+```
+
+## Auto-Connect
+
+```tsx
+<HermisProvider autoConnect={true}>
+  {children}
+</HermisProvider>
+```
+
+## Best Practices
+
+<Check>Always handle connection errors</Check>
+<Check>Show clear loading states</Check>
+<Check>Provide wallet selection UI</Check>
+<Check>Handle wallet disconnection events</Check>
+<Check>Test on mobile devices</Check>

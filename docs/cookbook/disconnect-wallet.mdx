@@ -1,0 +1,66 @@
+---
+title: 'Disconnect Wallet'
+description: 'How to disconnect from wallets'
+---
+
+## Basic Disconnect
+
+```tsx
+import { useWallet } from '@hermis/solana-headless-react';
+
+function DisconnectButton() {
+  const { disconnect, disconnecting } = useWallet();
+
+  return (
+    <button onClick={disconnect} disabled={disconnecting}>
+      {disconnecting ? 'Disconnecting...' : 'Disconnect'}
+    </button>
+  );
+}
+```
+
+## With Cleanup
+
+```tsx
+function WalletComponent() {
+  const { disconnect, connected } = useWallet();
+
+  const handleDisconnect = async () => {
+    try {
+      await disconnect();
+
+      // Clear local state
+      localStorage.removeItem('user-data');
+
+      // Redirect or update UI
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Disconnect failed:', error);
+    }
+  };
+
+  return (
+    connected && <button onClick={handleDisconnect}>Disconnect</button>
+  );
+}
+```
+
+## Vanilla JavaScript
+
+```javascript
+await manager.disconnect();
+console.log('Disconnected');
+```
+
+## Automatic Cleanup
+
+```tsx
+useEffect(() => {
+  return () => {
+    // Cleanup on unmount
+    if (connected) {
+      disconnect();
+    }
+  };
+}, [connected, disconnect]);
+```

@@ -1,0 +1,272 @@
+---
+title: 'Getting Started'
+description: 'Start building with Solana Headless SDK in minutes'
+---
+
+## Welcome
+
+This guide will help you get started with Solana Headless SDK. Whether you're building a new dApp or integrating wallet functionality into an existing application, we'll walk you through the setup process.
+
+## Prerequisites
+
+Before you begin, ensure you have:
+
+<CardGroup cols={2}>
+  <Card title="Node.js" icon="node">
+    Version 16.x or higher
+  </Card>
+  <Card title="Package Manager" icon="box">
+    npm, yarn, or pnpm
+  </Card>
+  <Card title="Solana Knowledge" icon="book">
+    Basic understanding of Solana concepts
+  </Card>
+  <Card title="TypeScript" icon="code">
+    TypeScript 4.5+ (recommended)
+  </Card>
+</CardGroup>
+
+## Choose Your Path
+
+<CardGroup cols={3}>
+  <Card
+    title="React"
+    icon="react"
+    href="/quickstart/react"
+  >
+    Start with React hooks and providers
+  </Card>
+  <Card
+    title="Core Package"
+    icon="box"
+    href="/quickstart/core"
+  >
+    Framework-agnostic core functionality
+  </Card>
+  <Card
+    title="Adapter Base"
+    icon="plug"
+    href="/quickstart/adapter-base"
+  >
+    Advanced adapter customization
+  </Card>
+</CardGroup>
+
+## Installation
+
+Choose the package that best fits your needs:
+
+<Tabs>
+  <Tab title="React">
+    ```bash
+    npm install @hermis/solana-headless-react @solana/web3.js
+    ```
+
+    This package includes everything you need for React applications, including hooks and context providers.
+  </Tab>
+  <Tab title="Core">
+    ```bash
+    npm install @hermis/solana-headless-core @solana/web3.js
+    ```
+
+    The core package provides framework-agnostic wallet functionality that works anywhere.
+  </Tab>
+  <Tab title="Adapter Base">
+    ```bash
+    npm install @hermis/solana-headless-adapter-base @solana/web3.js
+    ```
+
+    Use this package when you need to create custom wallet adapters or extend existing ones.
+  </Tab>
+</Tabs>
+
+## Quick Setup
+
+Here's a minimal example to get you started:
+
+<CodeGroup>
+```tsx React
+import { HermisProvider, useHermis } from '@hermis/solana-headless-react';
+
+function App() {
+  return (
+    <HermisProvider
+      network="mainnet-beta"
+      autoConnect={false}
+    >
+      <WalletButton />
+    </HermisProvider>
+  );
+}
+
+function WalletButton() {
+  const { connect, disconnect, connected, publicKey } = useHermis();
+
+  return (
+    <button onClick={connected ? disconnect : connect}>
+      {connected ? `Connected: ${publicKey?.toBase58()}` : 'Connect Wallet'}
+    </button>
+  );
+}
+```
+
+```javascript Vanilla JS
+import { HermisClient } from '@hermis/solana-headless-core';
+import { Connection, clusterApiUrl } from '@solana/web3.js';
+
+// Initialize the client
+const connection = new Connection(clusterApiUrl('mainnet-beta'));
+const hermis = new HermisClient({ connection });
+
+// Connect to a wallet
+async function connectWallet() {
+  try {
+    await hermis.connect();
+    console.log('Connected:', hermis.publicKey?.toBase58());
+  } catch (error) {
+    console.error('Failed to connect:', error);
+  }
+}
+
+// Disconnect wallet
+async function disconnectWallet() {
+  await hermis.disconnect();
+  console.log('Disconnected');
+}
+```
+
+```typescript TypeScript
+import { HermisClient, type WalletAdapter } from '@hermis/solana-headless-core';
+import { Connection, PublicKey } from '@solana/web3.js';
+
+interface AppConfig {
+  network: 'mainnet-beta' | 'devnet' | 'testnet';
+  autoConnect: boolean;
+}
+
+class WalletManager {
+  private hermis: HermisClient;
+
+  constructor(config: AppConfig) {
+    const connection = new Connection(
+      config.network === 'mainnet-beta'
+        ? 'https://api.mainnet-beta.solana.com'
+        : `https://api.${config.network}.solana.com`
+    );
+
+    this.hermis = new HermisClient({
+      connection,
+      autoConnect: config.autoConnect,
+    });
+  }
+
+  async connect(): Promise<PublicKey | null> {
+    await this.hermis.connect();
+    return this.hermis.publicKey;
+  }
+
+  async disconnect(): Promise<void> {
+    await this.hermis.disconnect();
+  }
+
+  get publicKey(): PublicKey | null {
+    return this.hermis.publicKey;
+  }
+
+  get connected(): boolean {
+    return this.hermis.connected;
+  }
+}
+
+export { WalletManager };
+```
+</CodeGroup>
+
+## Configuration Options
+
+Configure the SDK to match your application's needs:
+
+<ParamField path="network" type="string" default="mainnet-beta">
+  The Solana network to connect to: `mainnet-beta`, `devnet`, or `testnet`
+</ParamField>
+
+<ParamField path="autoConnect" type="boolean" default="false">
+  Automatically connect to a previously connected wallet on page load
+</ParamField>
+
+<ParamField path="commitment" type="string" default="confirmed">
+  The commitment level for transactions: `processed`, `confirmed`, or `finalized`
+</ParamField>
+
+<ParamField path="wallets" type="WalletAdapter[]">
+  Array of wallet adapters to support. If not provided, all available wallets are supported.
+</ParamField>
+
+## Understanding the Architecture
+
+<Steps>
+  <Step title="Choose Your Package">
+    Select the package that fits your framework and use case
+  </Step>
+  <Step title="Initialize the Client">
+    Create a connection to Solana and initialize the Hermis client
+  </Step>
+  <Step title="Connect Wallets">
+    Let users connect their Solana wallets (Phantom, Backpack, etc.)
+  </Step>
+  <Step title="Perform Operations">
+    Send transactions, sign messages, and interact with programs
+  </Step>
+</Steps>
+
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card
+    title="Core Concepts"
+    icon="book"
+    href="/core-concepts/architecture"
+  >
+    Learn about the SDK's architecture and design principles
+  </Card>
+  <Card
+    title="Cookbook"
+    icon="book-open"
+    href="/cookbook/connect-wallet"
+  >
+    Explore practical examples and common patterns
+  </Card>
+  <Card
+    title="API Reference"
+    icon="code"
+    href="/api-reference/core/overview"
+  >
+    Dive deep into the API documentation
+  </Card>
+  <Card
+    title="Examples"
+    icon="flask"
+    href="/examples/vanilla-js"
+  >
+    View complete example projects
+  </Card>
+</CardGroup>
+
+## Need Help?
+
+<CardGroup cols={2}>
+  <Card
+    title="GitHub Issues"
+    icon="github"
+    href="https://github.com/Assylum-Labs/hermis/issues"
+  >
+    Report bugs or request features
+  </Card>
+  <Card
+    title="Discussions"
+    icon="comments"
+    href="https://github.com/Assylum-Labs/hermis/discussions"
+  >
+    Ask questions and share ideas
+  </Card>
+</CardGroup>

@@ -1,0 +1,76 @@
+---
+title: 'React API Overview'
+description: 'Complete API reference for @hermis/solana-headless-react'
+---
+
+## Overview
+
+React hooks and components for Solana wallet integration.
+
+## Installation
+
+```bash
+npm install @hermis/solana-headless-react @hermis/solana-headless-core @solana/web3.js
+```
+
+## Core Hooks
+
+<CardGroup cols={2}>
+  <Card title="useWallet" href="/api-reference/react/use-wallet">
+    Primary hook for wallet interactions
+  </Card>
+  <Card title="useConnection" href="/api-reference/react/use-connection">
+    Access Solana connection
+  </Card>
+  <Card title="useHermis" href="/api-reference/react/use-hermis">
+    Combined wallet and connection hook
+  </Card>
+</CardGroup>
+
+## Provider
+
+### HermisProvider
+
+```typescript
+import { HermisProvider } from '@hermis/solana-headless-react';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+
+function App() {
+  return (
+    <HermisProvider
+      rpcEndpoint="https://api.devnet.solana.com"
+      network={WalletAdapterNetwork.Devnet}
+      autoConnect={true}
+    >
+      {children}
+    </HermisProvider>
+  );
+}
+```
+
+## Utility Hooks
+
+- `useSolanaBalance` - Fetch wallet balance
+- `useSolanaTokenAccounts` - Fetch token accounts
+- `useSolanaNFTs` - Fetch NFTs
+- `useSolanaTransaction` - Track transaction status
+- `useWalletAdapters` - Access wallet adapters
+- `useWalletModal` - Wallet selection modal
+- `useAnchorWallet` - Anchor-compatible wallet
+
+## Quick Examples
+
+```typescript
+import { useWallet, useSolanaBalance } from '@hermis/solana-headless-react';
+
+function WalletInfo() {
+  const { publicKey, connected } = useWallet();
+  const { balance, loading } = useSolanaBalance(publicKey);
+
+  return (
+    <div>
+      {connected && <p>Balance: {balance} SOL</p>}
+    </div>
+  );
+}
+```

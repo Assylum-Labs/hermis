@@ -1,0 +1,119 @@
+---
+title: 'Send Transaction'
+description: 'How to send SOL and create transactions'
+---
+
+## Send SOL
+
+```tsx
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+
+function SendSOL() {
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+
+  const send = async (recipient: string, amount: number) => {
+    if (!publicKey) return;
+
+    const transaction = new Transaction();
+
+    transaction.add(
+      SystemProgram.transfer({
+        fromPubkey: publicKey,
+        toPubkey: new PublicKey(recipient),
+        lamports: amount * LAMPORTS_PER_SOL
+      })
+    );
+
+    const { blockhash } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = publicKey;
+
+    const signature = await sendTransaction(transaction, connection);
+
+    // Wait for confirmation
+    await connection.confirmTransaction(signature, 'confirmed');
+
+    return signature;
+  };
+
+  return (
+    <button onClick={() => send('recipient...', 0.1)}>
+      Send 0.1 SOL
+    </button>
+  );
+}
+```
+
+## With UI Feedback
+
+```tsx
+function SendTransaction() {
+  const [sending, setSending] = useState(false);
+  const [signature, setSignature] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSend = async () => {
+    setSending(true);
+    setError('');
+
+    try {
+      const sig = await send(recipient, amount);
+      setSignature(sig);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div>
+      <button onClick={handleSend} disabled={sending}>
+        {sending ? 'Sending...' : 'Send'}
+      </button>
+      {signature && <p>Success: {signature}</p>}
+      {error && <p>Error: {error}</p>}
+    </div>
+  );
+}
+```
+
+## With Retry Logic
+
+```tsx
+const sendWithRetry = async (transaction: Transaction, maxRetries = 3) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      if (i > 0) {
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+      }
+
+      const signature = await sendTransaction(transaction, connection);
+      await connection.confirmTransaction(signature);
+      return signature;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+};
+```
+
+## Vanilla JavaScript
+
+```javascript
+import { sendTransaction, signTransaction } from '@hermis/solana-headless-core';
+
+const transaction = new Transaction();
+// ... add instructions
+
+const { blockhash } = await connection.getLatestBlockhash();
+transaction.recentBlockhash = blockhash;
+transaction.feePayer = wallet.publicKey;
+
+const signature = await sendTransaction(connection, transaction, wallet);
+await connection.confirmTransaction(signature);
+```
