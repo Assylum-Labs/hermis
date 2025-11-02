@@ -10,7 +10,7 @@ React hooks and components for Solana wallet integration.
 ## Installation
 
 ```bash
-npm install @hermis/solana-headless-react @hermis/solana-headless-core @solana/web3.js
+npm install @hermis/solana-headless-react
 ```
 
 ## Core Hooks
@@ -22,9 +22,6 @@ npm install @hermis/solana-headless-react @hermis/solana-headless-core @solana/w
   <Card title="useConnection" href="/api-reference/react/use-connection">
     Access Solana connection
   </Card>
-  <Card title="useHermis" href="/api-reference/react/use-hermis">
-    Combined wallet and connection hook
-  </Card>
 </CardGroup>
 
 ## Provider
@@ -33,12 +30,12 @@ npm install @hermis/solana-headless-react @hermis/solana-headless-core @solana/w
 
 ```typescript
 import { HermisProvider } from '@hermis/solana-headless-react';
-import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 
 function App() {
   return (
     <HermisProvider
-      rpcEndpoint="https://api.devnet.solana.com"
+      endpoint="https://api.devnet.solana.com"
       network={WalletAdapterNetwork.Devnet}
       autoConnect={true}
     >

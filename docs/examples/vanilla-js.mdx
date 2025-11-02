@@ -5,7 +5,23 @@ description: 'Complete vanilla JavaScript implementation'
 
 ## Overview
 
-This example demonstrates how to use Solana Headless SDK with vanilla JavaScript - no framework required!
+This example demonstrates how to use Hermis with vanilla JavaScript - no framework required! The guide shows examples for both **web3.js** (legacy) and **@solana/kit** (modern) architectures.
+
+## Architecture Guide
+
+### Web3.js (Legacy)
+- Mature and widely supported
+- Compatible with all existing Solana tools
+- Well-documented ecosystem
+- Larger bundle size
+
+### @solana/kit (Modern)
+- Type-safe instruction building
+- Better tree-shaking for smaller bundles
+- Modern API design
+- Future-proof architecture
+
+**Good news:** Both architectures work seamlessly with `WalletAdapterManager`! You can even use Kit signers with wallet adapters through `createKitSignersFromAdapter`.
 
 ## Project Setup
 
@@ -13,7 +29,13 @@ This example demonstrates how to use Solana Headless SDK with vanilla JavaScript
 mkdir solana-wallet-app
 cd solana-wallet-app
 npm init -y
-npm install @hermis/solana-headless-adapter-base @hermis/solana-headless-core @solana/web3.js @solana/wallet-adapter-wallets
+
+# For web3.js architecture
+npm install @hermis/solana-headless-adapter-base @hermis/errors
+npm install @solana/wallet-adapter-phantom @solana/wallet-adapter-solflare @solana/web3.js
+
+# For Kit architecture (optional)
+npm install @solana/web-sdk @solana-program/system @solana/kit
 ```
 
 ## HTML Structure
@@ -149,141 +171,473 @@ h1 {
 }
 ```
 
-## JavaScript Implementation
+## Wallet Connection
 
-```javascript app.js
-import {
-  WalletAdapterManager,
-  getStandardWalletAdapters,
-  sortWalletAdapters
-} from '@hermis/solana-headless-adapter-base';
+<CodeGroup>
+```javascript app.js (Web3.js)
+import { WalletAdapterManager, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { Connection, clusterApiUrl, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
-import {
-  WalletAdapterNetwork,
-  createConnection
-} from '@hermis/solana-headless-core';
+// Global state
+let manager;
+let connection;
 
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
-import { SolflareWalletAdapter } from '@solana/wallet-adapter-solflare';
-import { BackpackWalletAdapter } from '@solana/wallet-adapter-backpack';
-import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+// Initialize wallet manager and connection
+function initWalletManager() {
+  connection = new Connection(clusterApiUrl('devnet'));
 
-class WalletApp {
-  constructor() {
-    this.manager = null;
-    this.connection = null;
-    this.init();
-  }
+  // Auto-detect wallet-standard compatible wallets
+  const wallets = []; // Add custom wallet adapters here if needed
+  const adapters = getStandardWalletAdapters(wallets);
 
-  init() {
-    // Create connection
-    this.connection = createConnection(WalletAdapterNetwork.Devnet);
+  manager = new WalletAdapterManager(adapters);
+  setupEventListeners();
+  renderWalletOptions();
+}
 
-    // Setup wallet adapters
-    const wallets = [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-      new BackpackWalletAdapter(),
-    ];
+// Setup wallet event listeners
+function setupEventListeners() {
+  manager.on('connect', async (publicKey) => {
+    console.log('Connected:', publicKey.toBase58());
+    showWalletInfo(publicKey.toBase58());
+    await updateBalance(publicKey);
+  });
 
-    const adapters = getStandardWalletAdapters(wallets);
-    const sorted = sortWalletAdapters(adapters);
+  manager.on('disconnect', () => {
+    console.log('Disconnected');
+    hideWalletInfo();
+  });
 
-    // Create wallet manager
-    this.manager = new WalletAdapterManager(adapters);
+  manager.on('error', (error) => {
+    console.error('Error:', error);
+    alert(`Wallet error: ${error.message}`);
+  });
 
-    // Setup event listeners
-    this.setupEventListeners();
+  document.getElementById('disconnect-btn').onclick = () => {
+    manager.disconnect();
+  };
+}
 
-    // Render wallet options
-    this.renderWalletOptions(sorted);
-  }
+// Render available wallet options
+function renderWalletOptions() {
+  const container = document.getElementById('wallet-selector');
+  const adapters = manager.getAdapters();
 
-  setupEventListeners() {
-    this.manager.on('connect', async (publicKey) => {
-      console.log('Connected:', publicKey.toBase58());
-      this.showWalletInfo(publicKey.toBase58());
-      await this.updateBalance(publicKey);
-    });
+  adapters.forEach(adapter => {
+    const button = document.createElement('button');
+    button.className = 'wallet-option';
+    button.textContent = adapter.name;
 
-    this.manager.on('disconnect', () => {
-      console.log('Disconnected');
-      this.hideWalletInfo();
-    });
-
-    this.manager.on('error', (error) => {
-      console.error('Error:', error);
-      alert(`Wallet error: ${error.message}`);
-    });
-
-    // Disconnect button
-    document.getElementById('disconnect-btn').onclick = () => {
-      this.manager.disconnect();
-    };
-  }
-
-  renderWalletOptions(adapters) {
-    const container = document.getElementById('wallet-selector');
-
-    adapters.forEach(adapter => {
-      const button = document.createElement('button');
-      button.className = 'wallet-option';
-      button.textContent = adapter.name;
-
-      if (adapter.readyState === 'Installed') {
-        button.classList.add('installed');
-        const badge = document.createElement('span');
-        badge.textContent = ' ✓ Installed';
-        badge.style.color = '#14F195';
-        badge.style.marginLeft = '10px';
-        button.appendChild(badge);
-      }
-
-      button.onclick = async () => {
-        this.manager.selectAdapter(adapter.name);
-        try {
-          await this.manager.connect();
-        } catch (error) {
-          console.error('Connection failed:', error);
-        }
-      };
-
-      container.appendChild(button);
-    });
-  }
-
-  async updateBalance(publicKey) {
-    try {
-      const balance = await this.connection.getBalance(publicKey);
-      const solBalance = balance / LAMPORTS_PER_SOL;
-      document.getElementById('wallet-balance').textContent = solBalance.toFixed(4);
-    } catch (error) {
-      console.error('Failed to get balance:', error);
-      document.getElementById('wallet-balance').textContent = 'Error';
+    if (adapter.readyState === 'Installed') {
+      button.classList.add('installed');
+      const badge = document.createElement('span');
+      badge.textContent = ' ✓ Installed';
+      badge.style.color = '#14F195';
+      badge.style.marginLeft = '10px';
+      button.appendChild(badge);
     }
-  }
 
-  showWalletInfo(address) {
-    const walletInfo = document.getElementById('wallet-info');
-    const walletName = document.getElementById('wallet-name');
-    const walletAddress = document.getElementById('wallet-address');
+    button.onclick = async () => {
+      manager.selectAdapter(adapter.name);
+      try {
+        await manager.connect();
+      } catch (error) {
+        console.error('Connection failed:', error);
+      }
+    };
 
-    walletName.textContent = this.manager.wallet?.adapter.name || 'Unknown';
-    walletAddress.textContent = address;
-    walletInfo.style.display = 'block';
+    container.appendChild(button);
+  });
+}
 
-    // Hide selector
-    document.getElementById('wallet-selector').style.display = 'none';
-  }
-
-  hideWalletInfo() {
-    document.getElementById('wallet-info').style.display = 'none';
-    document.getElementById('wallet-selector').style.display = 'flex';
+// Update wallet balance
+async function updateBalance(publicKey) {
+  try {
+    const balance = await connection.getBalance(publicKey);
+    const solBalance = balance / LAMPORTS_PER_SOL;
+    document.getElementById('wallet-balance').textContent = solBalance.toFixed(4);
+  } catch (error) {
+    console.error('Failed to get balance:', error);
+    document.getElementById('wallet-balance').textContent = 'Error';
   }
 }
 
-// Initialize the app
-const app = new WalletApp();
+// Show wallet info UI
+function showWalletInfo(address) {
+  document.getElementById('wallet-name').textContent = manager.getSelectedAdapter()?.name || 'Unknown';
+  document.getElementById('wallet-address').textContent = address;
+  document.getElementById('wallet-info').style.display = 'block';
+  document.getElementById('wallet-selector').style.display = 'none';
+}
+
+// Hide wallet info UI
+function hideWalletInfo() {
+  document.getElementById('wallet-info').style.display = 'none';
+  document.getElementById('wallet-selector').style.display = 'flex';
+}
+
+// Initialize on load
+initWalletManager();
+```
+
+```javascript app.js (Kit)
+import { WalletAdapterManager, createKitSignersFromAdapter, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { Connection, clusterApiUrl } from '@solana/web3.js';
+
+// Global state
+let manager;
+let connection;
+let kitSigners;
+
+// Initialize wallet manager with Kit support
+function initWalletManager() {
+  connection = new Connection(clusterApiUrl('devnet'));
+
+  // Auto-detect wallet-standard compatible wallets
+  const wallets = []; // Add custom wallet adapters here if needed
+  const adapters = getStandardWalletAdapters(wallets);
+
+  manager = new WalletAdapterManager(adapters);
+  setupEventListeners();
+  renderWalletOptions();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  manager.on('connect', (publicKey) => {
+    // Create Kit signers from connected adapter
+    kitSigners = createKitSignersFromAdapter(
+      manager.getSelectedAdapter(),
+      connection
+    );
+
+    console.log('Kit signers created:');
+    console.log('Address:', kitSigners.addressString);
+    console.log('Has message signer:', !!kitSigners.messageSigner);
+    console.log('Has transaction signer:', !!kitSigners.transactionSigner);
+
+    showKitInfo(publicKey.toBase58());
+  });
+
+  manager.on('disconnect', () => {
+    console.log('Disconnected');
+    kitSigners = null;
+    hideWalletInfo();
+  });
+
+  document.getElementById('disconnect-btn').onclick = () => {
+    manager.disconnect();
+  };
+}
+
+// Render wallet options (same as Web3.js example)
+function renderWalletOptions() {
+  const container = document.getElementById('wallet-selector');
+  const adapters = manager.getAdapters();
+
+  adapters.forEach(adapter => {
+    const button = document.createElement('button');
+    button.className = 'wallet-option';
+    button.textContent = adapter.name;
+
+    if (adapter.readyState === 'Installed') {
+      button.classList.add('installed');
+    }
+
+    button.onclick = async () => {
+      manager.selectAdapter(adapter.name);
+      try {
+        await manager.connect();
+      } catch (error) {
+        console.error('Connection failed:', error);
+      }
+    };
+
+    container.appendChild(button);
+  });
+}
+
+// Show Kit signer info
+function showKitInfo(address) {
+  document.getElementById('wallet-name').textContent = manager.getSelectedAdapter()?.name || 'Unknown';
+  document.getElementById('wallet-address').textContent = address;
+  document.getElementById('wallet-info').style.display = 'block';
+  document.getElementById('wallet-selector').style.display = 'none';
+}
+
+// Hide wallet info UI
+function hideWalletInfo() {
+  document.getElementById('wallet-info').style.display = 'none';
+  document.getElementById('wallet-selector').style.display = 'flex';
+}
+
+// Initialize on load
+initWalletManager();
+```
+</CodeGroup>
+
+## Send Transaction
+
+<CodeGroup>
+```javascript Web3.js
+import { Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
+
+// Send SOL transaction
+async function sendSOL(recipientAddress, amountInSOL) {
+  const publicKey = manager.getAdapter()?.publicKey;
+  if (!publicKey) {
+    throw new Error('Wallet not connected');
+  }
+
+  try {
+    const transaction = new Transaction();
+    transaction.add(
+      SystemProgram.transfer({
+        fromPubkey: publicKey,
+        toPubkey: new PublicKey(recipientAddress),
+        lamports: amountInSOL * LAMPORTS_PER_SOL
+      })
+    );
+
+    const { blockhash } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = publicKey;
+
+    const signature = await manager.signAndSendTransaction(connection, transaction);
+
+    if (!signature) {
+      throw new Error('Transaction failed');
+    }
+
+    console.log('✅ Transaction signature:', signature);
+
+    // Wait for confirmation
+    await connection.confirmTransaction(signature, 'confirmed');
+    console.log('✅ Transaction confirmed!');
+
+    return signature;
+  } catch (error) {
+    console.error('❌ Transaction error:', error);
+    throw error;
+  }
+}
+
+// Wire up send button
+document.getElementById('send-btn').onclick = async () => {
+  const recipient = document.getElementById('recipient').value;
+  const amount = parseFloat(document.getElementById('amount').value);
+  const statusEl = document.getElementById('tx-status');
+
+  if (!recipient || !amount) {
+    statusEl.textContent = 'Please enter recipient and amount';
+    return;
+  }
+
+  try {
+    statusEl.textContent = 'Sending transaction...';
+    const signature = await sendSOL(recipient, amount);
+    statusEl.textContent = `Success! Signature: ${signature.substring(0, 20)}...`;
+  } catch (error) {
+    statusEl.textContent = `Error: ${error.message}`;
+  }
+};
+```
+
+```javascript Kit
+import {
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction,
+  address,
+  lamports
+} from '@solana/kit';
+import { createSolanaRpc, devnet } from '@solana/kit';
+import { getTransferSolInstruction } from '@solana-program/system';
+
+// Send SOL using Kit pipe pattern
+async function sendSOLKit(recipientAddress, amountInSOL) {
+  const publicKey = manager.getAdapter()?.publicKey;
+  if (!publicKey) {
+    throw new Error('Wallet not connected');
+  }
+
+  try {
+    // Create Kit RPC
+    const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+    // Get latest blockhash
+    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+    // Build transaction using Kit's functional pipe pattern
+    const message = pipe(
+      createTransactionMessage({ version: 0 }),
+      m => setTransactionMessageFeePayer(address(publicKey.toBase58()), m),
+      m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+      m => appendTransactionMessageInstruction(
+        getTransferSolInstruction({
+          source: address(publicKey.toBase58()),
+          destination: address(recipientAddress),
+          amount: lamports(BigInt(Math.floor(amountInSOL * 1_000_000_000)))
+        }),
+        m
+      )
+    );
+
+    // Sign and send using manager
+    const signature = await manager.signAndSendTransaction(rpc, message);
+
+    console.log('✅ Kit transaction signature:', signature);
+    return signature;
+  } catch (error) {
+    console.error('❌ Kit transaction error:', error);
+    throw error;
+  }
+}
+
+// Wire up send button
+document.getElementById('send-btn').onclick = async () => {
+  const recipient = document.getElementById('recipient').value;
+  const amount = parseFloat(document.getElementById('amount').value);
+  const statusEl = document.getElementById('tx-status');
+
+  if (!recipient || !amount) {
+    statusEl.textContent = 'Please enter recipient and amount';
+    return;
+  }
+
+  try {
+    statusEl.textContent = 'Sending transaction...';
+    const signature = await sendSOLKit(recipient, amount);
+    statusEl.textContent = `Success! Signature: ${signature.substring(0, 20)}...`;
+  } catch (error) {
+    statusEl.textContent = `Error: ${error.message}`;
+  }
+};
+```
+</CodeGroup>
+
+**HTML for transaction UI:**
+
+```html
+<!-- Add to wallet-info div -->
+<div class="transaction-form">
+  <h3>Send SOL</h3>
+  <input type="text" id="recipient" placeholder="Recipient Address" />
+  <input type="number" id="amount" placeholder="Amount (SOL)" step="0.01" min="0" />
+  <button id="send-btn" class="button button-primary">Send Transaction</button>
+  <p id="tx-status"></p>
+</div>
+```
+
+## Sign Message
+
+<CodeGroup>
+```javascript Web3.js
+// Sign message with wallet
+async function signMessage(message) {
+  const publicKey = manager.getAdapter()?.publicKey;
+  if (!publicKey) {
+    throw new Error('Wallet not connected');
+  }
+
+  try {
+    // Encode message to Uint8Array
+    const encodedMessage = new TextEncoder().encode(message);
+
+    // Sign using manager
+    const signature = await manager.signMessage(encodedMessage);
+
+    if (!signature) {
+      throw new Error('Message signing failed');
+    }
+
+    console.log('✅ Signature:', signature);
+    return signature;
+  } catch (error) {
+    console.error('❌ Signing error:', error);
+    throw error;
+  }
+}
+
+// Wire up sign button
+document.getElementById('sign-btn').onclick = async () => {
+  const message = document.getElementById('message-input').value;
+  const outputEl = document.getElementById('signature-output');
+
+  if (!message) {
+    outputEl.textContent = 'Please enter a message';
+    return;
+  }
+
+  try {
+    outputEl.textContent = 'Signing message...';
+    const signature = await signMessage(message);
+    outputEl.textContent = `Signature: ${Array.from(signature).slice(0, 10).join(', ')}...`;
+  } catch (error) {
+    outputEl.textContent = `Error: ${error.message}`;
+  }
+};
+```
+
+```javascript Kit
+import { signBytes } from '@solana/kit';
+
+// Sign message using Kit
+async function signMessageKit(message) {
+  const publicKey = manager.getAdapter()?.publicKey;
+  if (!publicKey || !kitSigners?.messageSigner) {
+    throw new Error('Wallet not connected or message signing not supported');
+  }
+
+  try {
+    // Encode message to Uint8Array
+    const messageBytes = new TextEncoder().encode(message);
+
+    // Sign using Kit message signer
+    const signatures = await signBytes(kitSigners.messageSigner, messageBytes);
+    const signature = signatures[kitSigners.messageSigner.address];
+
+    console.log('✅ Kit signature:', signature);
+    return signature;
+  } catch (error) {
+    console.error('❌ Kit signing error:', error);
+    throw error;
+  }
+}
+
+// Wire up sign button
+document.getElementById('sign-btn').onclick = async () => {
+  const message = document.getElementById('message-input').value;
+  const outputEl = document.getElementById('signature-output');
+
+  if (!message) {
+    outputEl.textContent = 'Please enter a message';
+    return;
+  }
+
+  try {
+    outputEl.textContent = 'Signing message...';
+    const signature = await signMessageKit(message);
+    outputEl.textContent = `Signature: ${Array.from(signature).slice(0, 10).join(', ')}...`;
+  } catch (error) {
+    outputEl.textContent = `Error: ${error.message}`;
+  }
+};
+```
+</CodeGroup>
+
+**HTML for message signing:**
+
+```html
+<!-- Add to wallet-info div -->
+<div class="message-form">
+  <h3>Sign Message</h3>
+  <textarea id="message-input" placeholder="Enter message to sign"></textarea>
+  <button id="sign-btn" class="button button-primary">Sign Message</button>
+  <p id="signature-output"></p>
+</div>
 ```
 
 ## Build Setup
@@ -312,16 +666,24 @@ Open http://localhost:5173 in your browser!
 
 ## Features Demonstrated
 
-<Check>Wallet detection and prioritization</Check>
-<Check>Multi-wallet support</Check>
-<Check>Balance fetching</Check>
-<Check>Event-driven updates</Check>
+### Web3.js Architecture
+<Check>Wallet connection with WalletAdapterManager</Check>
+<Check>SOL balance fetching</Check>
+<Check>Transaction sending (SOL transfers)</Check>
+<Check>Message signing</Check>
+<Check>Event-driven wallet state</Check>
 <Check>Error handling</Check>
-<Check>Clean UI/UX</Check>
 
-## Next Steps
+### Kit Architecture
+<Check>Kit signer creation from adapters</Check>
+<Check>Kit transaction building with pipe pattern</Check>
+<Check>Kit message signing with signBytes</Check>
+<Check>Type-safe instruction building</Check>
+<Check>Functional composition with pipe</Check>
+<Check>Modern RPC interface</Check>
 
-- Add transaction sending
-- Implement token transfers
-- Add NFT display
-- Create custom UI components
+### Both Architectures
+<Check>Same WalletAdapterManager for connection</Check>
+<Check>Seamless bridge via createKitSignersFromAdapter</Check>
+<Check>Multi-wallet support</Check>
+<Check>Event-driven architecture</Check>

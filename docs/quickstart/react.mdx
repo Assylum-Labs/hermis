@@ -1,17 +1,11 @@
 ---
 title: 'React Quick Start'
-description: 'Get started with Solana Headless SDK in React applications'
+description: 'Get started with Hermis in React applications'
 ---
 
 ## Overview
 
-This guide will walk you through integrating Solana Headless SDK into a React application. You'll learn how to set up wallet connections, display wallet information, and perform basic Solana operations.
-
-## Prerequisites
-
-<Check>Node.js 16.x or higher</Check>
-<Check>Basic React knowledge</Check>
-<Check>Understanding of React Hooks</Check>
+This guide will walk you through integrating Hermis into a React application. You'll learn how to set up wallet connections, display wallet information, and perform basic Solana operations.
 
 ## Installation
 
@@ -19,15 +13,15 @@ Install the React package and its peer dependencies:
 
 <CodeGroup>
 ```bash npm
-npm install @hermis/solana-headless-react @hermis/solana-headless-core @solana/web3.js @solana/wallet-adapter-wallets
+npm install @hermis/solana-headless-react @solana/wallet-adapter-phantom @solana/wallet-adapter-solflare
 ```
 
 ```bash yarn
-yarn add @hermis/solana-headless-react @hermis/solana-headless-core @solana/web3.js @solana/wallet-adapter-wallets
+yarn add @hermis/solana-headless-react @solana/wallet-adapter-phantom @solana/wallet-adapter-solflare
 ```
 
 ```bash pnpm
-pnpm add @hermis/solana-headless-react @hermis/solana-headless-core @solana/web3.js @solana/wallet-adapter-wallets
+pnpm add @hermis/solana-headless-react @solana/wallet-adapter-phantom @solana/wallet-adapter-solflare
 ```
 </CodeGroup>
 
@@ -38,30 +32,19 @@ Wrap your app with the `HermisProvider` to enable wallet functionality throughou
 ```tsx App.tsx
 import React from 'react';
 import { HermisProvider } from '@hermis/solana-headless-react';
-import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
-import {
-  PhantomWalletAdapter,
-  SolflareWalletAdapter,
-  TrustWalletAdapter,
-  CoinbaseWalletAdapter,
-} from "@solana/wallet-adapter-wallets";
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import Home from './Home';
 
 function App() {
-  // Create wallet adapters
-  const wallets = [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
-    new TrustWalletAdapter(),
-    new CoinbaseWalletAdapter(),
-  ];
+  // Auto-detect wallet-standard compatible wallets
+  const wallets = []; // Add custom wallet adapters here if needed
 
   return (
     <HermisProvider
-      rpcEndpoint="https://api.devnet.solana.com"
+      endpoint="https://api.devnet.solana.com"
       network={WalletAdapterNetwork.Devnet}
       autoConnect={true}
-      additionalAdapters={wallets}
+      wallets={wallets}
       onError={(error) => console.error('Wallet error:', error)}
     >
       <Home />
@@ -74,7 +57,7 @@ export default App;
 
 ### Provider Options
 
-<ParamField path="rpcEndpoint" type="string" required>
+<ParamField path="endpoint" type="string" required>
   The Solana RPC endpoint URL (e.g., `https://api.devnet.solana.com`)
 </ParamField>
 
@@ -86,7 +69,7 @@ export default App;
   Automatically reconnect to the last used wallet on page load
 </ParamField>
 
-<ParamField path="additionalAdapters" type="Adapter[]">
+<ParamField path="wallets" type="Adapter[]">
   Array of wallet adapters to support
 </ParamField>
 
@@ -160,7 +143,8 @@ export default Home;
 
 Add transaction functionality using the `sendTransaction` method:
 
-```tsx SendTransaction.tsx
+<CodeGroup>
+```tsx Legacy (Web3.js)
 import React, { useState } from 'react';
 import { useWallet, useConnection } from '@hermis/solana-headless-react';
 import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
@@ -255,6 +239,155 @@ function SendTransaction() {
 export default SendTransaction;
 ```
 
+```tsx Kit
+import React, { useState } from 'react';
+import { useWallet } from '@hermis/solana-headless-react';
+import {
+  address,
+  appendTransactionMessageInstruction,
+  createSolanaRpc,
+  createTransactionMessage,
+  devnet,
+  lamports,
+  pipe,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  type TransactionSigner
+} from '@solana/kit';
+
+// System Program Address
+const SYSTEM_PROGRAM_ADDRESS = address('11111111111111111111111111111111');
+
+// Create a transfer SOL instruction using Kit
+function getTransferSolInstruction({
+  source,
+  destination,
+  amount,
+}: {
+  source: TransactionSigner<string>
+  destination: address<string>
+  amount: ReturnType<typeof lamports>
+}) {
+  const instructionData = new Uint8Array(12);
+  const view = new DataView(instructionData.buffer);
+  view.setUint32(0, 2, true); // instruction discriminator: 2 = Transfer
+  view.setBigUint64(4, BigInt(amount), true); // amount in lamports
+
+  return {
+    programAddress: SYSTEM_PROGRAM_ADDRESS,
+    accounts: [
+      { address: source.address, role: 3 }, // from account (writable + signer)
+      { address: destination, role: 1 },     // to account (writable)
+    ],
+    data: instructionData,
+  };
+}
+
+function SendTransaction() {
+  const { transactionSigner, signAndSendTransaction } = useWallet();
+  const [recipient, setRecipient] = useState('');
+  const [amount, setAmount] = useState('0.1');
+  const [sending, setSending] = useState(false);
+  const [signature, setSignature] = useState('');
+
+  // Create Kit RPC (can be created once and reused, or stored in a context)
+  const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+  const handleSend = async () => {
+    if (!transactionSigner || !recipient) return;
+
+    setSending(true);
+    setSignature('');
+
+    try {
+      const recipientAddr = address(recipient.trim());
+
+      // Convert SOL to lamports
+      const numDecimals = BigInt(amount.split('.')[1]?.length ?? 0);
+      const amountLamports = lamports(
+        BigInt(amount.replace('.', '')) * 10n ** (9n - numDecimals)
+      );
+
+      // Get latest blockhash from Kit RPC
+      const { value: latestBlockhash } = await rpc
+        .getLatestBlockhash({ commitment: 'confirmed' })
+        .send();
+
+      // Build transaction using Kit's pattern
+      const message = pipe(
+        createTransactionMessage({ version: 0 }),
+        m => setTransactionMessageFeePayerSigner(transactionSigner, m),
+        m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+        m => appendTransactionMessageInstruction(
+          getTransferSolInstruction({
+            amount: amountLamports,
+            destination: recipientAddr,
+            source: transactionSigner,
+          }),
+          m,
+        ),
+      );
+
+      // Pass Kit RPC as the connection parameter
+      const sig = await signAndSendTransaction(message, rpc);
+      setSignature(sig);
+      console.log('Transaction sent:', sig);
+    } catch (error) {
+      console.error('Error sending transaction:', error);
+      alert('Failed to send transaction');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <div className="send-transaction">
+      <h2>Send SOL</h2>
+      <div className="form">
+        <input
+          type="text"
+          placeholder="Recipient address"
+          value={recipient}
+          onChange={(e) => setRecipient(e.target.value)}
+          className="input"
+        />
+        <input
+          type="number"
+          placeholder="Amount (SOL)"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          step="0.01"
+          min="0"
+          className="input"
+        />
+        <button
+          onClick={handleSend}
+          disabled={!transactionSigner || !recipient || sending}
+          className="send-button"
+        >
+          {sending ? 'Sending...' : 'Send SOL'}
+        </button>
+      </div>
+      {signature && (
+        <div className="success">
+          <p>Transaction successful!</p>
+          <a
+            href={`https://explorer.solana.com/tx/${signature}?cluster=devnet`}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            View on Explorer
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default SendTransaction;
+```
+</CodeGroup>
+
 ## Available Hooks
 
 ### useWallet
@@ -263,18 +396,40 @@ Primary hook for wallet interactions:
 
 ```tsx
 const {
-  wallet,              // Currently selected wallet
-  publicKey,           // Public key of connected wallet
-  connecting,          // Connection status
-  connected,           // Whether wallet is connected
-  disconnecting,       // Disconnection status
-  select,              // Select a wallet by name
-  connect,             // Connect to selected wallet
-  disconnect,          // Disconnect wallet
-  sendTransaction,     // Send a transaction
-  signTransaction,     // Sign a transaction
-  signAllTransactions, // Sign multiple transactions
-  signMessage,         // Sign a message
+  // Wallet state
+  autoConnect,           // Whether auto-connect is enabled
+  wallets,               // Array of all available wallets
+  wallet,                // Currently selected wallet
+  publicKey,             // Public key of connected wallet (web3.js)
+  connecting,            // Connection status
+  connected,             // Whether wallet is connected
+  disconnecting,         // Disconnection status
+
+  // Kit-specific properties
+  address,               // Kit Address type (null if not connected)
+  addressString,         // Plain address string (null if not connected)
+  chain,                 // Solana chain identifier (e.g., 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1')
+  messageSigner,         // Message signer for Kit architecture (null if not available)
+  transactionSigner,     // Transaction sending signer for Kit (null if not available)
+  getChainId,            // Function to get chain ID: (network: 'devnet' | 'mainnet' | 'testnet') => `solana:${string}`
+
+  // Methods
+  select,                // Select a wallet by name
+  connect,               // Connect to selected wallet
+  disconnect,            // Disconnect wallet
+
+  // Transaction methods (support both web3.js and Kit)
+  sendTransaction,       // Send a transaction (dual architecture support)
+  signTransaction,       // Sign a transaction (dual architecture support)
+  signAllTransactions,   // Sign multiple transactions (dual architecture support)
+  signAndSendTransaction, // Sign and send transaction (dual architecture support)
+
+  // Message signing
+  signMessage,           // Sign a message
+  signIn,                // Sign in with wallet
+
+  // Utilities
+  hasFeature,            // Check if wallet supports a feature: (feature: 'signMessage' | 'signTransaction' | 'signAllTransactions' | 'signIn') => boolean
 } = useWallet();
 ```
 
@@ -283,10 +438,16 @@ const {
 Access the Solana connection:
 
 ```tsx
-const { connection, network } = useConnection();
+const {
+  connection,  // DualConnection - supports both web3.js Connection and Kit Rpc
+  network      // WalletAdapterNetwork (optional)
+} = useConnection();
 
-// Get account info
+// Works with both architectures
 const accountInfo = await connection.getAccountInfo(publicKey);
+
+// For Kit RPC, use the .send() pattern
+const { value } = await connection.getLatestBlockhash().send();
 ```
 
 ### useSolanaBalance
@@ -329,6 +490,72 @@ const {
 } = useSolanaNFTs(publicKey);
 ```
 
+### useSolanaTransaction
+
+Track transaction status with confirmations:
+
+```tsx
+const {
+  status,  // TransactionStatus object
+  loading, // Loading state
+  refetch  // Manually refetch status
+} = useSolanaTransaction(signature, autoFetch);
+
+// TransactionStatus includes:
+// - signature: string
+// - status: 'pending' | 'confirmed' | 'finalized' | 'failed'
+// - confirmations: number
+// - confirmationStatus: SignatureStatus['confirmationStatus']
+// - error?: string
+// - transactionDetails?: VersionedTransactionResponse
+```
+
+### useWalletAdapters
+
+Get grouped and sorted wallet adapters:
+
+```tsx
+const {
+  installed,    // Installed wallet adapters
+  loadable,     // Loadable wallet adapters
+  notDetected,  // Not detected wallet adapters
+  all           // All wallet adapters (sorted)
+} = useWalletAdapters();
+```
+
+### useAnchorWallet
+
+Get an Anchor-compatible wallet with dual architecture support:
+
+```tsx
+const anchorWallet = useAnchorWallet();
+// Returns AnchorWallet | undefined
+
+// Primary use: Pass to Anchor programs (uses web3.js internally)
+const program = new Program(idl, programId, { connection, wallet: anchorWallet });
+await program.methods.myMethod().accounts({...}).rpc();
+
+// Advanced use: Manual signing with web3.js
+const signedTx = await anchorWallet.signTransaction(web3Transaction);
+
+// Advanced use: Manual signing with Kit (also supported)
+const signedKitTx = await anchorWallet.signTransaction(kitTransactionMessage);
+```
+
+### useWalletModal
+
+Manage wallet selection modal state:
+
+```tsx
+const {
+  visible,           // Whether modal is visible
+  showModal,         // Show the modal
+  hideModal,         // Hide the modal
+  selectedWallet,    // Currently selected wallet name
+  setSelectedWallet  // Set selected wallet
+} = useWalletModal();
+```
+
 ## Next.js Integration
 
 For Next.js 13+ with App Router, create a client-side provider:
@@ -337,21 +564,18 @@ For Next.js 13+ with App Router, create a client-side provider:
 'use client';
 
 import { HermisProvider } from '@hermis/solana-headless-react';
-import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adapter-wallets';
-import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const wallets = [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter(),
-  ];
+  // Auto-detect wallet-standard compatible wallets
+  const wallets = []; // Add custom wallet adapters here if needed
 
   return (
     <HermisProvider
-      rpcEndpoint="https://api.devnet.solana.com"
+      endpoint="https://api.devnet.solana.com"
       network={WalletAdapterNetwork.Devnet}
       autoConnect={true}
-      additionalAdapters={wallets}
+      wallets={wallets}
     >
       {children}
     </HermisProvider>
@@ -386,8 +610,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     Implement proper error handling for all wallet operations, especially during transactions. Use the `onError` callback in the provider.
   </Accordion>
 
-  <Accordion title="Mobile Support">
-    Test on mobile devices and handle mobile wallet redirects correctly. Consider using deep links for mobile wallets.
+  <Accordion title="Mobile Wallet Adapter Performance">
+    For best performance with Solana Mobile Wallet Adapter, disable battery/power saving mode on your device. Power saving modes can interfere with wallet adapter connections, transaction signing, and deeplinking to wallet applications.
+
+    Disabling power saving mode ensures:
+    - Reliable wallet adapter connections
+    - Smooth deeplinking between your dApp and wallet apps
+    - Faster transaction signing responses
+
+    **Tip:** Instruct users to disable power saving mode before connecting their mobile wallet for optimal experience.
   </Accordion>
 
   <Accordion title="Network Selection">

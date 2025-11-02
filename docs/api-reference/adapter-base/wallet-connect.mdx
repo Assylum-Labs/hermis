@@ -1,35 +1,93 @@
 ---
-title: 'Wallet Connect'
-description: 'Wallet connection utilities'
+title: 'Wallet Connection Manager'
+description: 'Manage wallet connections in vanilla TypeScript'
 ---
 
-## initAdapters()
+## createWalletConnectionManager()
 
-Initialize wallet adapters for use.
-
-```typescript
-import { initAdapters } from '@hermis/solana-headless-adapter-base';
-
-const initialized = initAdapters(adapters);
-```
-
-## selectAdapter()
-
-Select a wallet adapter by name.
+Factory function that creates a wallet connection manager for vanilla TypeScript applications.
 
 ```typescript
-manager.selectAdapter('Phantom');
+import { createWalletConnectionManager, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+
+// Auto-detect wallet-standard compatible wallets
+const wallets = []; // Add custom wallet adapters here if needed
+const adapters = getStandardWalletAdapters(wallets);
+
+const manager = createWalletConnectionManager(
+  adapters,
+  'wallet-name-storage-key',
+  'https://api.devnet.solana.com'  // Optional: for wallet detection
+);
 ```
 
-## connect()
+### Parameters
+
+<ParamField path="adapters" type="Adapter[]" required>
+  Array of wallet adapters to manage
+</ParamField>
+
+<ParamField path="localStorageKey" type="string" default="walletName">
+  Key to store the selected wallet name in localStorage
+</ParamField>
+
+<ParamField path="endpoint" type="string">
+  Optional RPC endpoint for automatic wallet detection
+</ParamField>
+
+## WalletConnectionManager Interface
+
+The returned manager object provides the following methods:
+
+### getAdapter()
+
+Get the currently selected wallet adapter.
+
+```typescript
+const adapter = manager.getAdapter();
+if (adapter) {
+  console.log('Selected:', adapter.name);
+}
+```
+
+<ResponseField name="return" type="Adapter | null">
+  The currently selected adapter, or null if none selected
+</ResponseField>
+
+### selectWallet()
+
+Select a wallet by name.
+
+```typescript
+const adapter = manager.selectWallet('Phantom');
+```
+
+<ParamField path="walletName" type="WalletName | null" required>
+  Name of the wallet to select, or null to deselect
+</ParamField>
+
+<ResponseField name="return" type="Adapter | null">
+  The selected adapter, or null
+</ResponseField>
+
+### connect()
 
 Connect to the selected wallet.
 
 ```typescript
-const adapter = await manager.connect();
+try {
+  const adapter = await manager.connect();
+  console.log('Connected:', adapter?.publicKey?.toBase58());
+} catch (error) {
+  console.error('Connection failed:', error);
+}
 ```
 
-## disconnect()
+<ResponseField name="return" type="Promise<Adapter | null>">
+  Promise resolving to the connected adapter
+</ResponseField>
+
+### disconnect()
 
 Disconnect from the current wallet.
 
@@ -37,18 +95,165 @@ Disconnect from the current wallet.
 await manager.disconnect();
 ```
 
-## Event Listeners
+<ResponseField name="return" type="Promise<void>">
+  Promise that resolves when disconnected
+</ResponseField>
+
+### autoConnect()
+
+Automatically reconnect to the previously selected wallet on page load.
 
 ```typescript
-manager.on('connect', (publicKey) => {
-  console.log('Connected:', publicKey.toBase58());
+// On app startup
+const adapter = await manager.autoConnect();
+if (adapter) {
+  console.log('Auto-reconnected to:', adapter.name);
+}
+```
+
+<ResponseField name="return" type="Promise<Adapter | null>">
+  Promise resolving to the reconnected adapter, or null
+</ResponseField>
+
+## Transaction Methods
+
+The manager supports dual architecture (web3.js and Kit) for all transaction operations:
+
+### signTransaction()
+
+Sign a single transaction.
+
+```typescript
+import { Transaction } from '@solana/web3.js';
+
+const signedTx = await manager.signTransaction(transaction);
+```
+
+<ParamField path="transaction" type="DualTransaction" required>
+  Transaction to sign (Transaction, VersionedTransaction, or TransactionMessage)
+</ParamField>
+
+<ParamField path="options" type="DualArchitectureOptions">
+  Optional architecture-specific options
+</ParamField>
+
+### signAllTransactions()
+
+Sign multiple transactions.
+
+```typescript
+const signedTxs = await manager.signAllTransactions([tx1, tx2, tx3]);
+```
+
+### sendTransaction()
+
+Send a transaction to the network.
+
+```typescript
+const signature = await manager.sendTransaction(
+  connection,
+  transaction
+);
+```
+
+<ParamField path="connection" type="DualConnection" required>
+  Solana connection (web3.js Connection or Kit Rpc)
+</ParamField>
+
+<ParamField path="transaction" type="DualTransaction" required>
+  Transaction to send
+</ParamField>
+
+### signAndSendTransaction()
+
+Sign and send a transaction in one operation.
+
+```typescript
+const signature = await manager.signAndSendTransaction(
+  connection,
+  transaction
+);
+```
+
+## Adapter Management
+
+### getAdapters()
+
+Get all available wallet adapters (including dynamically detected ones).
+
+```typescript
+const allAdapters = manager.getAdapters();
+console.log('Available wallets:', allAdapters.map(a => a.name));
+```
+
+<ResponseField name="return" type="Adapter[]">
+  Array of all detected wallet adapters
+</ResponseField>
+
+### onAdaptersChange()
+
+Subscribe to adapter list changes (e.g., when new wallets are dynamically registered).
+
+```typescript
+const unsubscribe = manager.onAdaptersChange((adapters) => {
+  console.log('Adapters updated:', adapters.length);
 });
 
-manager.on('disconnect', () => {
-  console.log('Disconnected');
+// Later: unsubscribe when no longer needed
+unsubscribe();
+```
+
+<ParamField path="callback" type="(adapters: Adapter[]) => void" required>
+  Function called when adapter list changes
+</ParamField>
+
+<ResponseField name="return" type="() => void">
+  Unsubscribe function to stop listening for changes
+</ResponseField>
+
+## Complete Example
+
+```typescript
+import { createWalletConnectionManager, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { Connection, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+
+// Auto-detect wallet-standard compatible wallets
+const wallets = []; // Add custom wallet adapters here if needed
+const adapters = getStandardWalletAdapters(wallets);
+
+// Create manager
+const manager = createWalletConnectionManager(
+  adapters,
+  'my-app-wallet',
+  'https://api.devnet.solana.com'
+);
+
+// Listen for adapter changes
+manager.onAdaptersChange((adapters) => {
+  console.log('Available wallets:', adapters.map(a => a.name));
 });
 
-manager.on('error', (error) => {
-  console.error('Error:', error);
-});
+// Connect to wallet
+manager.selectWallet('Phantom');
+const adapter = await manager.connect();
+
+if (!adapter) {
+  throw new Error('Failed to connect');
+}
+
+// Send a transaction
+const connection = new Connection('https://api.devnet.solana.com');
+const transaction = new Transaction().add(
+  SystemProgram.transfer({
+    fromPubkey: adapter.publicKey!,
+    toPubkey: recipientPublicKey,
+    lamports: 0.001 * LAMPORTS_PER_SOL
+  })
+);
+
+const signature = await manager.signAndSendTransaction(connection, transaction);
+console.log('Transaction signature:', signature);
+
+// Disconnect when done
+await manager.disconnect();
 ```

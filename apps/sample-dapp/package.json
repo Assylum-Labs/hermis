@@ -1,6 +1,6 @@
 {
   "name": "sample-dapp",
-  "version": "1.0.8",
+  "version": "1.0.9-beta.0",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -12,11 +12,18 @@
     "build:pages": "webpack --config webpack.github-pages.config.cjs"
   },
   "dependencies": {
-    "@hermis/solana-headless-adapter-base": "^1.0.8",
-    "@hermis/solana-headless-core": "^1.0.8",
+    "@hermis/solana-headless-adapter-base": "workspace:*",
+    "@hermis/solana-headless-core": "workspace:*",
+    "@hermis/wallet-standard-base": "workspace:*",
+    "@solana-program/compute-budget": "^0.10.0",
+    "@solana-program/system": "^0.9.0",
+    "@solana-program/token": "^0.7.0",
+    "@solana/kit": "^3.0.2",
+    "@solana/spl-token": "^0.4.6",
     "@solana/wallet-adapter-phantom": "^0.9.24",
     "@solana/wallet-adapter-solflare": "^0.6.28",
     "@solana/wallet-adapter-trust": "^0.1.13",
+    "@solana/web3.js": "^1.98.0",
     "axios": "^1.6.2"
   },
   "devDependencies": {

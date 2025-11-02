@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Solana Headless SDK",
+  "name": "Hermis",
   "logo": {
     "dark": "./hermis_logo_2.png",
     "light": "/logo/light.svg"
@@ -72,7 +72,6 @@
     {
       "group": "Quick Starts",
       "pages": [
-        "quickstart/core",
         "quickstart/adapter-base",
         "quickstart/react"
       ]
@@ -80,7 +79,6 @@
     {
       "group": "Core Concepts",
       "pages": [
-        "core-concepts/architecture",
         "core-concepts/wallet-management",
         "core-concepts/transactions",
         "core-concepts/authentication"
@@ -89,32 +87,21 @@
     {
       "group": "Migration Guides",
       "pages": [
-        "migration/v1-to-v2",
-        "migration/from-other-adapters"
-      ]
-    },
-    {
-      "group": "Core API",
-      "pages": [
-        "api-reference/core/overview",
-        "api-reference/core/hermis-client",
-        "api-reference/core/wallet-adapter",
-        "api-reference/core/connection"
+        "migration/v1-to-v2"
       ]
     },
     {
       "group": "Adapter Base API",
       "pages": [
         "api-reference/adapter-base/overview",
-        "api-reference/adapter-base/base-adapter",
-        "api-reference/adapter-base/wallet-connect"
+        "api-reference/adapter-base/wallet-connect",
+        "api-reference/adapter-base/kit-integration"
       ]
     },
     {
       "group": "React API",
       "pages": [
         "api-reference/react/overview",
-        "api-reference/react/use-hermis",
         "api-reference/react/use-wallet",
         "api-reference/react/use-connection"
       ]

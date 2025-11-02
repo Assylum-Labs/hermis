@@ -1,5 +1,13 @@
 # sample-dapp
 
+## 1.0.9-beta.0
+
+### Patch Changes
+
+- Updated dependencies
+  - @hermis/solana-headless-adapter-base@2.0.0-beta.0
+  - @hermis/solana-headless-core@2.0.0-beta.0
+
 ## 1.0.8
 
 ### Patch Changes

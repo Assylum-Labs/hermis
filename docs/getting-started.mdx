@@ -1,34 +1,15 @@
 ---
 title: 'Getting Started'
-description: 'Start building with Solana Headless SDK in minutes'
+description: 'Start building with Hermis in minutes'
 ---
 
 ## Welcome
 
-This guide will help you get started with Solana Headless SDK. Whether you're building a new dApp or integrating wallet functionality into an existing application, we'll walk you through the setup process.
-
-## Prerequisites
-
-Before you begin, ensure you have:
-
-<CardGroup cols={2}>
-  <Card title="Node.js" icon="node">
-    Version 16.x or higher
-  </Card>
-  <Card title="Package Manager" icon="box">
-    npm, yarn, or pnpm
-  </Card>
-  <Card title="Solana Knowledge" icon="book">
-    Basic understanding of Solana concepts
-  </Card>
-  <Card title="TypeScript" icon="code">
-    TypeScript 4.5+ (recommended)
-  </Card>
-</CardGroup>
+This guide will help you get started with Hermis. Whether you're building a new dApp or integrating wallet functionality into an existing application, we'll walk you through the setup process.
 
 ## Choose Your Path
 
-<CardGroup cols={3}>
+<CardGroup cols={2}>
   <Card
     title="React"
     icon="react"
@@ -37,18 +18,11 @@ Before you begin, ensure you have:
     Start with React hooks and providers
   </Card>
   <Card
-    title="Core Package"
-    icon="box"
-    href="/quickstart/core"
-  >
-    Framework-agnostic core functionality
-  </Card>
-  <Card
     title="Adapter Base"
     icon="plug"
     href="/quickstart/adapter-base"
   >
-    Advanced adapter customization
+    Vanilla TypeScript implementation for any framework
   </Card>
 </CardGroup>
 
@@ -64,34 +38,34 @@ Choose the package that best fits your needs:
 
     This package includes everything you need for React applications, including hooks and context providers.
   </Tab>
-  <Tab title="Core">
-    ```bash
-    npm install @hermis/solana-headless-core @solana/web3.js
-    ```
-
-    The core package provides framework-agnostic wallet functionality that works anywhere.
-  </Tab>
   <Tab title="Adapter Base">
     ```bash
     npm install @hermis/solana-headless-adapter-base @solana/web3.js
     ```
 
-    Use this package when you need to create custom wallet adapters or extend existing ones.
+    The base vanilla TypeScript implementation that works with any TypeScript framework.
   </Tab>
 </Tabs>
+
+<Info>
+Both packages work seamlessly with **@solana/web3.js** and **@solana/kit** with identical APIs.
+</Info>
 
 ## Quick Setup
 
 Here's a minimal example to get you started:
 
 <CodeGroup>
-```tsx React
-import { HermisProvider, useHermis } from '@hermis/solana-headless-react';
+```tsx React (web3.js)
+import { HermisProvider, useWallet } from '@hermis/solana-headless-react';
+import { Connection, clusterApiUrl } from '@solana/web3.js';
 
 function App() {
+  const connection = new Connection(clusterApiUrl('mainnet-beta'));
+
   return (
     <HermisProvider
-      network="mainnet-beta"
+      connection={connection}
       autoConnect={false}
     >
       <WalletButton />
@@ -100,7 +74,7 @@ function App() {
 }
 
 function WalletButton() {
-  const { connect, disconnect, connected, publicKey } = useHermis();
+  const { connect, disconnect, connected, publicKey } = useWallet();
 
   return (
     <button onClick={connected ? disconnect : connect}>
@@ -110,81 +84,104 @@ function WalletButton() {
 }
 ```
 
-```javascript Vanilla JS
-import { HermisClient } from '@hermis/solana-headless-core';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
+```tsx React (@solana/kit)
+import { HermisProvider, useWallet } from '@hermis/solana-headless-react';
+import { createSolanaRpc, mainnet } from '@solana/kit';
 
-// Initialize the client
-const connection = new Connection(clusterApiUrl('mainnet-beta'));
-const hermis = new HermisClient({ connection });
+function App() {
+  const rpc = createSolanaRpc(mainnet('https://api.mainnet-beta.solana.com'));
 
-// Connect to a wallet
-async function connectWallet() {
-  try {
-    await hermis.connect();
-    console.log('Connected:', hermis.publicKey?.toBase58());
-  } catch (error) {
-    console.error('Failed to connect:', error);
-  }
+  return (
+    <HermisProvider
+      connection={rpc}
+      autoConnect={false}
+    >
+      <WalletButton />
+    </HermisProvider>
+  );
 }
 
-// Disconnect wallet
-async function disconnectWallet() {
-  await hermis.disconnect();
-  console.log('Disconnected');
+function WalletButton() {
+  const { connect, disconnect, connected, publicKey } = useWallet();
+
+  return (
+    <button onClick={connected ? disconnect : connect}>
+      {connected ? `Connected: ${publicKey?.toBase58()}` : 'Connect Wallet'}
+    </button>
+  );
 }
 ```
 
-```typescript TypeScript
-import { HermisClient, type WalletAdapter } from '@hermis/solana-headless-core';
-import { Connection, PublicKey } from '@solana/web3.js';
+```typescript Adapter Base (web3.js)
+import {
+  WalletAdapterManager,
+  getStandardWalletAdapters
+} from '@hermis/solana-headless-adapter-base';
+import { Connection, clusterApiUrl } from '@solana/web3.js';
 
-interface AppConfig {
-  network: 'mainnet-beta' | 'devnet' | 'testnet';
-  autoConnect: boolean;
-}
+// Create connection
+const connection = new Connection(clusterApiUrl('devnet'));
 
-class WalletManager {
-  private hermis: HermisClient;
+// Auto-detect wallet-standard compatible wallets
+const wallets = []; // Add custom wallet adapters here if needed
+const adapters = getStandardWalletAdapters(wallets);
 
-  constructor(config: AppConfig) {
-    const connection = new Connection(
-      config.network === 'mainnet-beta'
-        ? 'https://api.mainnet-beta.solana.com'
-        : `https://api.${config.network}.solana.com`
-    );
+// Create wallet manager
+const manager = new WalletAdapterManager(adapters);
 
-    this.hermis = new HermisClient({
-      connection,
-      autoConnect: config.autoConnect,
-    });
-  }
+// Setup event listeners
+manager.on('connect', (publicKey) => {
+  console.log('Connected:', publicKey.toBase58());
+});
 
-  async connect(): Promise<PublicKey | null> {
-    await this.hermis.connect();
-    return this.hermis.publicKey;
-  }
+manager.on('disconnect', () => {
+  console.log('Disconnected');
+});
 
-  async disconnect(): Promise<void> {
-    await this.hermis.disconnect();
-  }
+// Connect to a wallet
+manager.selectAdapter('Phantom');
+await manager.connect();
+```
 
-  get publicKey(): PublicKey | null {
-    return this.hermis.publicKey;
-  }
+```typescript Adapter Base (@solana/kit)
+import {
+  WalletAdapterManager,
+  getStandardWalletAdapters
+} from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
 
-  get connected(): boolean {
-    return this.hermis.connected;
-  }
-}
+// Create connection
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
 
-export { WalletManager };
+// Auto-detect wallet-standard compatible wallets
+const wallets = []; // Add custom wallet adapters here if needed
+const adapters = getStandardWalletAdapters(wallets);
+
+// Create wallet manager
+const manager = new WalletAdapterManager(adapters);
+
+// Setup event listeners
+manager.on('connect', (publicKey) => {
+  console.log('Connected:', publicKey.toBase58());
+});
+
+manager.on('disconnect', () => {
+  console.log('Disconnected');
+});
+
+// Connect to a wallet
+manager.selectAdapter('Phantom');
+await manager.connect();
 ```
 </CodeGroup>
 
+<Info>
+**Zero Breaking Changes**: Notice how the Hermis integration code remains identical across @solana/web3.js and @solana/kit—only the Solana library imports and connection setup change.
+</Info>
+
 ## Configuration Options
 
-Configure the SDK to match your application's needs:
+Configure Hermis to match your application's needs:
 
 <ParamField path="network" type="string" default="mainnet-beta">
   The Solana network to connect to: `mainnet-beta`, `devnet`, or `testnet`
@@ -227,7 +224,7 @@ Configure the SDK to match your application's needs:
     icon="book"
     href="/core-concepts/architecture"
   >
-    Learn about the SDK's architecture and design principles
+    Learn about Hermis's architecture and design principles
   </Card>
   <Card
     title="Cookbook"
@@ -239,14 +236,14 @@ Configure the SDK to match your application's needs:
   <Card
     title="API Reference"
     icon="code"
-    href="/api-reference/core/overview"
+    href="/api-reference/react/overview"
   >
     Dive deep into the API documentation
   </Card>
   <Card
     title="Examples"
     icon="flask"
-    href="/examples/vanilla-js"
+    href="/examples/react-integration"
   >
     View complete example projects
   </Card>

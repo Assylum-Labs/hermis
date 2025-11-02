@@ -1,120 +1,102 @@
 ---
-title: 'Migrating from v1 to v2'
-description: 'Guide for migrating from Solana Headless SDK v1 to v2'
+title: "What's New in v2"
+description: "Guide for updating to Hermis v2"
 ---
 
 ## Overview
 
-Version 2 of Solana Headless SDK introduces several improvements, new features, and breaking changes. This guide will help you migrate your existing v1 applications to v2.
+Version 2 of Hermis adds major new features while maintaining compatibility with existing code. This release introduces @solana/kit support, enhanced error handling, and standardizes provider interfaces.
 
-## Breaking Changes
+## What's New
 
-### 1. Package Names
+### 1. @solana/kit Architecture Support
 
-Package names have been updated to reflect the `@hermis` namespace:
+V2 adds full support for @solana/kit alongside @solana/web3.js. Here's how Hermis simplifies Kit transaction creation:
 
 <CodeGroup>
-```bash v1
-npm install @solana-headless/core
-npm install @solana-headless/react
+```typescript Standard Kit Pattern
+import {
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction
+} from '@solana/kit';
+import { getTransferSolInstruction } from '@solana-program/system';
+
+const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+const message = pipe(
+  createTransactionMessage({ version: 0 }),
+  m => setTransactionMessageFeePayerSigner(transactionSigner, m),
+  m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+  m => appendTransactionMessageInstruction(
+    getTransferSolInstruction({
+      source: fromAddress,
+      destination: toAddress,
+      amount: lamports(1000000n)
+    }),
+    m
+  )
+);
+
+const signature = await signAndSendTransaction(message, rpc);
 ```
 
-```bash v2
-npm install @hermis/solana-headless-core
-npm install @hermis/solana-headless-react
+```typescript With createKitTransaction Helper
+import { createKitTransaction } from '@hermis/solana-headless-react';
+import { getTransferSolInstruction } from '@solana-program/system';
+
+const instruction = getTransferSolInstruction({
+  source: fromAddress,
+  destination: toAddress,
+  amount: lamports(1000000n)
+});
+
+const message = await createKitTransaction(
+  rpc,
+  fromAddress,
+  [instruction]
+);
+
+const signature = await signAndSendTransaction(message, rpc);
 ```
 </CodeGroup>
 
-### 2. Import Statements
+**Why use `createKitTransaction`?**
+- **70% less boilerplate** - No pipe pattern or nested callbacks
+- **Automatic blockhash fetching** - One less async call to manage
+- **Batch instruction handling** - Pass multiple instructions as array
+- **Dual architecture support** - Works with web3.js Connection or Kit Rpc
+- **Beginner-friendly** - Imperative style, easier to understand
 
-Update all import statements:
+**Key Features:**
+- Dual architecture support - use web3.js OR Kit in the same app
+- Automatic transaction type detection
+- Kit-friendly wallet properties (`transactionSigner`, `messageSigner`, `address`)
+- Helper utilities for Kit development
 
-<CodeGroup>
-```typescript v1
-import { useWallet } from '@solana-headless/react';
-import { createConnection } from '@solana-headless/core';
-```
+### 2. Enhanced Error Handling
 
-```typescript v2
-import { useWallet } from '@hermis/solana-headless-react';
-import { createConnection } from '@hermis/solana-headless-core';
-```
-</CodeGroup>
-
-### 3. Provider Configuration
-
-The provider configuration has been simplified:
-
-<CodeGroup>
-```tsx v1
-<WalletProvider
-  endpoint="https://api.devnet.solana.com"
-  network="devnet"
-  autoConnect={true}
-  wallets={walletAdapters}
->
-  {children}
-</WalletProvider>
-```
-
-```tsx v2
-<HermisProvider
-  rpcEndpoint="https://api.devnet.solana.com"
-  network={WalletAdapterNetwork.Devnet}
-  autoConnect={true}
-  additionalAdapters={wallets}
->
-  {children}
-</HermisProvider>
-```
-</CodeGroup>
-
-### 4. Hook Return Values
-
-Some hook return values have been renamed for consistency:
-
-<CodeGroup>
-```typescript v1
-const { wallet, address, isConnected } = useWallet();
-```
-
-```typescript v2
-const { wallet, publicKey, connected } = useWallet();
-```
-</CodeGroup>
-
-## New Features
-
-### 1. Enhanced Error Handling
-
-V2 introduces comprehensive error handling with custom error types:
+New `@hermis/errors` package with structured error codes:
 
 ```typescript
-import { HermisError } from '@hermis/errors';
+import { HermisError, isHermisError } from '@hermis/errors';
 
 try {
-  await connect();
+  await signTransaction(tx);
 } catch (error) {
-  if (error instanceof HermisError) {
-    console.error('Error code:', error.code);
-    console.error('Error message:', error.message);
+  if (isHermisError(error)) {
+    console.log(error.code);        // Structured error code
+    console.log(error.context);     // Rich context with wallet/transaction details
+    console.log(error.getSolution()); // Actionable guidance
   }
 }
 ```
 
-### 2. Improved Type Safety
+### 3. New Utility Hooks
 
-All functions and hooks now have better TypeScript definitions:
-
-```typescript
-import type { WalletAdapter, Connection } from '@hermis/solana-headless-core';
-
-const wallet: WalletAdapter | null = useWallet().wallet;
-```
-
-### 3. New Hooks
-
-Several new utility hooks have been added:
+Additional hooks for common operations:
 
 ```typescript
 import {
@@ -125,130 +107,216 @@ import {
   useWalletAdapters
 } from '@hermis/solana-headless-react';
 
-// Fetch balance
-const { balance } = useSolanaBalance(publicKey);
+// Fetch balance with automatic updates
+const { balance, loading } = useSolanaBalance(publicKey);
 
-// Fetch token accounts
+// Get token accounts
 const { tokenAccounts } = useSolanaTokenAccounts(publicKey);
 
 // Fetch NFTs
 const { nfts } = useSolanaNFTs(publicKey);
 ```
 
-### 4. Wallet Standard Support
+### 4. Wallet Standard Compliance
 
-V2 adds native support for the Wallet Standard:
+Improved wallet detection with CAIP-2 compliant chain identifiers:
 
-```typescript
-import { getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+- ✅ `solana:mainnet`
+- ✅ `solana:devnet`
+- ✅ `solana:testnet`
 
-// Automatically detects Wallet Standard wallets
-const adapters = getStandardWalletAdapters(customAdapters);
+## Breaking Changes (Pre-Release Users Only)
+
+If you were using HermisProvider in early/pre-release versions, the following props were renamed for consistency:
+
+### HermisProvider Props Standardized
+
+To match `WalletProvider` interface and follow web3.js conventions:
+
+<CodeGroup>
+```tsx Before
+<HermisProvider
+  rpcEndpoint="https://devnet.solana.com"
+  additionalAdapters={wallets}
+>
+  {children}
+</HermisProvider>
 ```
+
+```tsx After (v2)
+<HermisProvider
+  endpoint="https://devnet.solana.com"
+  wallets={wallets}
+>
+  {children}
+</HermisProvider>
+```
+</CodeGroup>
+
+**Changes:**
+- `rpcEndpoint` → `endpoint` (matches web3.js `Connection` pattern)
+- `additionalAdapters` → `wallets` (matches `WalletProvider` interface)
 
 ## Migration Steps
 
 <Steps>
-  <Step title="Update Dependencies">
-    Update package.json with new package names:
-    ```bash
-    npm uninstall @solana-headless/core @solana-headless/react
-    npm install @hermis/solana-headless-core @hermis/solana-headless-react
-    ```
+  <Step title="Update HermisProvider Props (if using)">
+    If you're using HermisProvider, update prop names:
+
+    - Change `rpcEndpoint` to `endpoint`
+    - Change `additionalAdapters` to `wallets`
   </Step>
 
-  <Step title="Update Imports">
-    Replace all import statements with new package names
+  <Step title="Optionally Adopt Kit Architecture">
+    Start using Kit features where beneficial - access Kit-specific properties from `useWallet()`
   </Step>
 
-  <Step title="Update Provider">
-    Replace `WalletProvider` with `HermisProvider` and update props
+  <Step title="Upgrade Error Handling">
+    Implement enhanced error handling with the new `@hermis/errors` package
   </Step>
 
-  <Step title="Update Hook Usage">
-    Replace `address` with `publicKey` and `isConnected` with `connected`
-  </Step>
-
-  <Step title="Add Error Handling">
-    Implement new error handling patterns where needed
-  </Step>
-
-  <Step title="Test Thoroughly">
-    Test all wallet operations to ensure everything works
+  <Step title="Test Your Application">
+    Test all wallet operations to ensure everything works correctly
   </Step>
 </Steps>
 
-## Example Migration
+## Example: Before and After
 
-### Before (v1)
+### Using HermisProvider
 
-```tsx
-import { WalletProvider, useWallet } from '@solana-headless/react';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
-
-function App() {
-  const wallets = [new PhantomWalletAdapter()];
-
-  return (
-    <WalletProvider
-      endpoint="https://api.devnet.solana.com"
-      wallets={wallets}
-    >
-      <WalletButton />
-    </WalletProvider>
-  );
-}
-
-function WalletButton() {
-  const { connect, disconnect, isConnected, address } = useWallet();
-
-  return (
-    <button onClick={isConnected ? disconnect : connect}>
-      {isConnected ? `Connected: ${address}` : 'Connect'}
-    </button>
-  );
-}
-```
-
-### After (v2)
-
-```tsx
-import { HermisProvider, useWallet } from '@hermis/solana-headless-react';
-import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-wallets';
+<CodeGroup>
+```tsx Before (Pre-Release)
+import { HermisProvider } from '@hermis/solana-headless-react';
 
 function App() {
-  const wallets = [new PhantomWalletAdapter()];
+  // Auto-detect wallet-standard compatible wallets
+  const wallets = []; // Add custom wallet adapters here if needed
 
   return (
     <HermisProvider
-      rpcEndpoint="https://api.devnet.solana.com"
-      network={WalletAdapterNetwork.Devnet}
+      rpcEndpoint="https://devnet.solana.com"
       additionalAdapters={wallets}
     >
       <WalletButton />
     </HermisProvider>
   );
 }
+```
 
-function WalletButton() {
-  const { connect, disconnect, connected, publicKey } = useWallet();
+```tsx After (v2)
+import { HermisProvider } from '@hermis/solana-headless-react';
+
+function App() {
+  // Auto-detect wallet-standard compatible wallets
+  const wallets = []; // Add custom wallet adapters here if needed
 
   return (
-    <button onClick={connected ? disconnect : connect}>
-      {connected ? `Connected: ${publicKey?.toBase58()}` : 'Connect'}
-    </button>
+    <HermisProvider
+      endpoint="https://devnet.solana.com"
+      wallets={wallets}
+    >
+      <WalletButton />
+    </HermisProvider>
+  );
+}
+```
+</CodeGroup>
+
+### Using WalletProvider
+
+**No changes needed** - WalletProvider interface is unchanged:
+
+```tsx
+import { WalletProvider, ConnectionProvider } from '@hermis/solana-headless-react';
+
+function App() {
+  return (
+    <ConnectionProvider endpoint="https://devnet.solana.com">
+      <WalletProvider wallets={wallets}>
+        <YourApp />
+      </WalletProvider>
+    </ConnectionProvider>
   );
 }
 ```
 
-## Deprecation Timeline
+## New Features Deep Dive
 
-| Feature | Deprecated In | Removed In | Alternative |
-|---------|---------------|------------|-------------|
-| `WalletProvider` | v2.0 | v3.0 | `HermisProvider` |
-| `address` property | v2.0 | v3.0 | `publicKey` |
-| `isConnected` property | v2.0 | v3.0 | `connected` |
+### Dual Architecture Support
+
+All transaction methods now support both architectures automatically:
+
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import { Transaction } from '@solana/web3.js';
+import { createTransactionMessage } from '@solana/kit';
+
+const { signTransaction } = useWallet();
+
+// Works with web3.js
+const web3Tx = new Transaction();
+await signTransaction(web3Tx);
+
+// Also works with Kit
+const kitTx = createTransactionMessage({ version: 0 });
+await signTransaction(kitTx);
+
+// Same method, both architectures! ✨
+```
+
+### Kit-Friendly Properties
+
+New properties added to `useWallet()` hook for Kit development:
+
+```typescript
+const {
+  // Kit-specific properties (NEW in v2)
+  address,              // Kit Address type
+  addressString,        // Plain string address
+  chain,                // Chain identifier (e.g., 'solana:devnet')
+  messageSigner,        // Kit MessageModifyingSigner
+  transactionSigner,    // Kit TransactionSendingSigner
+  getChainId,           // Get chain ID for network
+
+  // Existing web3.js properties (unchanged)
+  publicKey,
+  connected,
+  connect,
+  disconnect,
+  signTransaction,
+  // ... all other existing properties
+} = useWallet();
+```
+
+### Helper Utilities
+
+New Kit helper functions:
+
+```typescript
+import {
+  createKitTransaction,
+  generateKitKeypair,
+  signTransactionWithSigner,
+  createRPCConnection,
+  isKitTransaction,
+  supportsKitArchitecture
+} from '@hermis/solana-headless-react';
+```
+
+## Backwards Compatibility
+
+**All existing web3.js code continues to work without modification**
+
+```typescript
+// Your existing code - still works perfectly!
+import { useWallet } from '@hermis/solana-headless-react';
+import { Transaction, SystemProgram } from '@solana/web3.js';
+
+const { signTransaction, sendTransaction } = useWallet();
+const tx = new Transaction();
+// ... add instructions
+await signTransaction(tx);
+```
 
 ## Need Help?
 
@@ -258,5 +326,11 @@ function WalletButton() {
   </Card>
   <Card title="Report Issues" icon="github" href="https://github.com/Assylum-Labs/hermis/issues">
     Report bugs or migration issues
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/react/overview">
+    Explore the complete API documentation
+  </Card>
+  <Card title="Kit Guide" icon="book" href="/guides/kit-architecture">
+    Learn about Kit architecture support
   </Card>
 </CardGroup>

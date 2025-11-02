@@ -1,5 +1,5 @@
 // src/types.ts
-import { Adapter, WalletName, WalletReadyState } from '@hermis/solana-headless-adapter-base';
+import { Adapter, WalletName, WalletReadyState } from './types/index.js';
 import type { DualArchitectureOptions, DualTransaction, DualConnection } from '@hermis/solana-headless-core';
 
 /**
@@ -81,4 +81,17 @@ export interface WalletConnectionManager {
     transaction: T,
     options?: DualArchitectureOptions
   ): Promise<string>;
+
+  /**
+   * Get all available wallet adapters
+   * @returns Array of all detected wallet adapters
+   */
+  getAdapters: () => Adapter[];
+
+  /**
+   * Subscribe to adapter list changes (e.g., when new wallets are dynamically registered)
+   * @param callback - Function to call when adapters change
+   * @returns Unsubscribe function
+   */
+  onAdaptersChange: (callback: (adapters: Adapter[]) => void) => () => void;
 }

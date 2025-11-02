@@ -1,0 +1,378 @@
+---
+title: 'Kit Integration'
+description: 'Bridge wallet adapters with @solana/kit architecture'
+---
+
+## Overview
+
+The Kit integration utilities allow you to convert legacy wallet adapters into Kit-compatible signers, enabling seamless use of @solana/kit's modern architecture.
+
+**DualConnection Support:** All functions in this module support both legacy `Connection` from @solana/web3.js and Kit `Rpc`. Wallet adapters created with the Hermis wallet standard handle both connection types transparently through their `sendTransaction` and `signAndSendTransaction` methods.
+
+## createKitSignersFromAdapter()
+
+Convert a wallet adapter to Kit-compatible signers.
+
+```typescript
+import { createKitSignersFromAdapter, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { Connection } from '@solana/web3.js';
+
+// Auto-detect wallet-standard compatible wallets
+const adapters = getStandardWalletAdapters([]);
+const adapter = adapters[0]; // Use first detected wallet
+await adapter.connect();
+
+// Network auto-detected from connection endpoint
+const connection = new Connection('https://api.devnet.solana.com');
+const { address, addressString, messageSigner, transactionSigner } =
+  createKitSignersFromAdapter(adapter, connection);
+```
+
+### Parameters
+
+<ParamField path="adapter" type="WalletAdapter | null" required>
+  The wallet adapter instance (must be connected)
+</ParamField>
+
+<ParamField path="connection" type="DualConnection" required>
+  Solana connection (supports both web3.js Connection and Kit Rpc). Network is auto-detected from the endpoint.
+</ParamField>
+
+<ParamField path="network" type="'mainnet' | 'devnet' | 'testnet'" optional>
+  Optional network override. Use this for custom RPC URLs where auto-detection might fail.
+</ParamField>
+
+### Returns
+
+<ResponseField name="KitSigners" type="object">
+  Object containing Kit-compatible signers
+
+  <Expandable title="properties">
+    <ResponseField name="address" type="Address<string> | null">
+      Kit Address type (null if wallet not connected)
+    </ResponseField>
+
+    <ResponseField name="addressString" type="string | null">
+      Plain address string (null if wallet not connected)
+    </ResponseField>
+
+    <ResponseField name="messageSigner" type="MessageModifyingSigner<string> | null">
+      Kit message signer (null if wallet doesn't support signing or not connected)
+    </ResponseField>
+
+    <ResponseField name="transactionSigner" type="TransactionSendingSigner<string> | null">
+      Kit transaction sending signer (null if wallet doesn't support or not connected)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Usage with Kit
+
+```typescript
+import { createKitSignersFromAdapter, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
+import { getTransferSolInstruction } from '@solana-program/system';
+import {
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction
+} from '@solana/kit';
+
+// Auto-detect wallet-standard compatible wallets
+const adapters = getStandardWalletAdapters([]);
+const adapter = adapters[0]; // Use first detected wallet
+await adapter.connect();
+
+// Create RPC connection (Kit Rpc)
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+// Create Kit signers - works with both legacy Connection and Kit Rpc
+// Network is auto-detected from RPC endpoint
+const { address, transactionSigner } = createKitSignersFromAdapter(adapter, rpc);
+
+if (!address || !transactionSigner) {
+  throw new Error('Wallet not ready');
+}
+
+// Use with Kit RPC and instructions
+const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+const message = pipe(
+  createTransactionMessage({ version: 0 }),
+  m => setTransactionMessageFeePayerSigner(transactionSigner, m),
+  m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+  m => appendTransactionMessageInstruction(
+    getTransferSolInstruction({
+      source: address,
+      destination: recipientAddress,
+      amount: lamports(1000000n)
+    }),
+    m
+  )
+);
+```
+
+## Helper Functions
+
+### adapterSupportsMessageSigning()
+
+Check if a wallet adapter supports message signing.
+
+```typescript
+import { adapterSupportsMessageSigning } from '@hermis/solana-headless-adapter-base';
+
+if (adapterSupportsMessageSigning(adapter)) {
+  const signature = await adapter.signMessage(message);
+}
+```
+
+<ParamField path="adapter" type="WalletAdapter | null" required>
+  The wallet adapter to check
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if the adapter supports message signing, `false` otherwise
+</ResponseField>
+
+### adapterSupportsTransactionSending()
+
+Check if a wallet adapter supports transaction sending.
+
+```typescript
+import { adapterSupportsTransactionSending } from '@hermis/solana-headless-adapter-base';
+
+if (adapterSupportsTransactionSending(adapter)) {
+  const signature = await adapter.sendTransaction(transaction, connection);
+}
+```
+
+<ParamField path="adapter" type="WalletAdapter | null" required>
+  The wallet adapter to check
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if the adapter supports transaction sending, `false` otherwise
+</ResponseField>
+
+## Chain Utilities
+
+### SOLANA_CHAINS
+
+Constants for Solana chain identifiers following the Wallet Standard format.
+
+```typescript
+import { SOLANA_CHAINS } from '@hermis/solana-headless-adapter-base';
+
+console.log(SOLANA_CHAINS.mainnet);  // 'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'
+console.log(SOLANA_CHAINS.devnet);   // 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1'
+console.log(SOLANA_CHAINS.testnet);  // 'solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z'
+```
+
+### getChainId()
+
+Get the Wallet Standard chain identifier for a network.
+
+```typescript
+import { getChainId } from '@hermis/solana-headless-adapter-base';
+
+const chainId = getChainId('devnet');
+// Returns: 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1'
+```
+
+<ParamField path="network" type="'mainnet' | 'devnet' | 'testnet'" required>
+  The Solana network name
+</ParamField>
+
+<ResponseField name="return" type="`solana:${string}`">
+  The Wallet Standard chain identifier
+</ResponseField>
+
+### getNetworkFromChainId()
+
+Get the network name from a Wallet Standard chain identifier.
+
+```typescript
+import { getNetworkFromChainId } from '@hermis/solana-headless-adapter-base';
+
+const network = getNetworkFromChainId('solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1');
+// Returns: 'devnet'
+
+const unknown = getNetworkFromChainId('solana:unknown');
+// Returns: null
+```
+
+<ParamField path="chain" type="string" required>
+  The Wallet Standard chain identifier
+</ParamField>
+
+<ResponseField name="return" type="'mainnet' | 'devnet' | 'testnet' | null">
+  The network name, or null if unknown
+</ResponseField>
+
+### isSolanaChain()
+
+Check if a chain identifier is a Solana chain.
+
+```typescript
+import { isSolanaChain } from '@hermis/solana-headless-adapter-base';
+
+if (isSolanaChain(chainId)) {
+  // TypeScript knows chainId is `solana:${string}`
+  console.log('This is a Solana chain');
+}
+```
+
+<ParamField path="chain" type="string" required>
+  The chain identifier to check
+</ParamField>
+
+<ResponseField name="return" type="boolean">
+  `true` if the chain is a Solana chain, `false` otherwise
+</ResponseField>
+
+## Transaction Helpers
+
+### createKitTransaction()
+
+Create a Kit transaction message with automatic blockhash handling. Simplifies the process of building @solana/kit transactions.
+
+```typescript
+import { createKitTransaction } from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
+import { getTransferSolInstruction } from '@solana-program/system';
+import { lamports } from '@solana/kit';
+
+// Works with both Connection and Kit Rpc
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+// Create transaction with instructions
+const transaction = await createKitTransaction(
+  rpc,
+  senderAddress,
+  [
+    getTransferSolInstruction({
+      source: senderAddress,
+      destination: recipientAddress,
+      amount: lamports(1000000n)
+    })
+  ]
+);
+```
+
+<ParamField path="connection" type="DualConnection" required>
+  Solana connection for fetching latest blockhash (supports both web3.js Connection and Kit Rpc)
+</ParamField>
+
+<ParamField path="feePayer" type="Address<string>" required>
+  Address of the transaction fee payer
+</ParamField>
+
+<ParamField path="instructions" type="Instruction[]" optional>
+  Array of Kit instructions to include in the transaction. Defaults to empty array.
+</ParamField>
+
+<ResponseField name="return" type="Promise<TransactionMessage>">
+  A Kit TransactionMessage ready for signing, with blockhash and lifetime automatically set
+</ResponseField>
+
+### Usage with Legacy Connection
+
+```typescript
+import { Connection } from '@solana/web3.js';
+import { createKitTransaction } from '@hermis/solana-headless-adapter-base';
+
+const connection = new Connection('https://api.devnet.solana.com');
+
+const transaction = await createKitTransaction(
+  connection,
+  feePayerAddress,
+  instructions
+);
+```
+
+### Usage with Kit Rpc
+
+```typescript
+import { createSolanaRpc, devnet } from '@solana/kit';
+import { createKitTransaction } from '@hermis/solana-headless-adapter-base';
+
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const transaction = await createKitTransaction(
+  rpc,
+  feePayerAddress,
+  instructions
+);
+```
+
+## Complete Example
+
+```typescript
+import {
+  createKitSignersFromAdapter,
+  createKitTransaction,
+  adapterSupportsMessageSigning,
+  adapterSupportsTransactionSending,
+  getStandardWalletAdapters
+} from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
+import { getTransferSolInstruction } from '@solana-program/system';
+import { lamports } from '@solana/kit';
+
+// Auto-detect wallet-standard compatible wallets
+const adapters = getStandardWalletAdapters([]);
+const adapter = adapters[0]; // Use first detected wallet
+await adapter.connect();
+
+// Check capabilities
+console.log('Supports message signing:', adapterSupportsMessageSigning(adapter));
+console.log('Supports transaction sending:', adapterSupportsTransactionSending(adapter));
+
+// Create RPC connection (network auto-detected from endpoint)
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+// Create Kit signers
+const { address, addressString, messageSigner, transactionSigner } =
+  createKitSignersFromAdapter(adapter, rpc);
+
+if (!address || !transactionSigner) {
+  throw new Error('Wallet not ready');
+}
+
+console.log('Connected address:', addressString);
+
+// Create transaction using helper
+const transaction = await createKitTransaction(
+  rpc,
+  address,
+  [
+    getTransferSolInstruction({
+      source: address,
+      destination: recipientAddress,
+      amount: lamports(1000000n)
+    })
+  ]
+);
+```
+
+## Type Definitions
+
+```typescript
+interface KitSigners {
+  /** Kit Address type (null if wallet not connected) */
+  address: Address<string> | null;
+
+  /** Plain address string (null if wallet not connected) */
+  addressString: string | null;
+
+  /** Message signer (null if wallet doesn't support signing or not connected) */
+  messageSigner: MessageModifyingSigner<string> | null;
+
+  /** Transaction sending signer (null if wallet doesn't support or not connected) */
+  transactionSigner: TransactionSendingSigner<string> | null;
+}
+
+type SolanaNetwork = 'mainnet' | 'devnet' | 'testnet';
+```

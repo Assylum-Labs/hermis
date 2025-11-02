@@ -12,6 +12,12 @@ export { createLocalStorageUtility } from './utils/storage.js';
 export * from './kit-integration.js';
 export * from './chain-utils.js';
 
+// Export WalletAdapterManager and createWalletConnectionManager for vanilla TypeScript usage
+export { WalletAdapterManager, createWalletConnectionManager } from './core/manager.js';
+
+// Export WalletConnectionManager type
+export type { WalletConnectionManager } from './types.js';
+
 // Re-export dual architecture types from core for convenience
 export type {
     DualArchitectureOptions,
@@ -26,3 +32,6 @@ export type {
     SignableMessage,
     SignatureDictionary,
 } from '@hermis/solana-headless-core';
+
+// Re-export createKitTransaction utility from core for convenience
+export { createKitTransaction } from '@hermis/solana-headless-core';

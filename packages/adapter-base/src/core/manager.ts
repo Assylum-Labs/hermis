@@ -3,7 +3,7 @@ import { PublicKey, Transaction, TransactionSignature } from '@solana/web3.js';
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
 import { WalletConnectionManager } from '../types.js';
-import { getDetectedWalletAdapters, initializeWalletDetection } from '@hermis/wallet-standard-base';
+import { getStandardWalletAdapters, subscribeToWalletAdapterChanges, initializeWalletDetection, getDetectedWalletAdapters } from '@hermis/wallet-standard-base';
 import {
     signTransaction,
     signAllTransactions,
@@ -11,7 +11,8 @@ import {
     sendTransaction as sendTransactionCore,
     DualArchitectureOptions,
     DualConnection,
-    DualTransaction
+    DualTransaction,
+    signAndSendTransaction
 } from '@hermis/solana-headless-core';
 import {
     HermisError,
@@ -20,24 +21,57 @@ import {
 } from '@hermis/errors';
 
 /**
- * Create a simple wallet connection manager
+ * Create a simple wallet connection manager with built-in adapter management
  * @param adapters Array of adapters to manage
  * @param localStorageKey Key to store the selected wallet name
+ * @param endpoint Optional RPC endpoint for wallet detection
  * @returns Wallet connection manager object
  */
-export function createWalletConnectionManager(adapters: Adapter[], localStorageKey = 'walletName'): WalletConnectionManager {
-    // Initialize wallet detection and merge with provided adapters
-    initializeWalletDetection();
-    const allAdapters = getDetectedWalletAdapters(adapters);
-    
-    
+export function createWalletConnectionManager(
+    adapters: Adapter[],
+    localStorageKey = 'walletName',
+    endpoint?: string
+): WalletConnectionManager {
+    // Internal state for adapters
+    let currentAdapters: Adapter[] = [];
+    const adaptersChangeCallbacks = new Set<(adapters: Adapter[]) => void>();
+
     const storageUtil = createLocalStorageUtility<string | null>(localStorageKey, null);
     let currentAdapter: Adapter | null = null;
 
-    storageUtil.get().then((storedWalletName) => {
+    // Helper function to notify adapter change callbacks
+    function notifyAdaptersChange() {
+        adaptersChangeCallbacks.forEach(callback => {
+            try {
+                callback([...currentAdapters]);
+            } catch (error) {
+                console.error('Error in adapters change callback:', error);
+            }
+        });
+    }
+
+    // Initialize wallet detection and get initial adapters
+    (async () => {
+        const detectedAdapters = await getStandardWalletAdapters(adapters, endpoint);
+        currentAdapters = detectedAdapters;
+
+        // Try to restore previously selected wallet
+        const storedWalletName = await storageUtil.get();
         if (storedWalletName) {
-            currentAdapter = allAdapters.find(a => a.name === storedWalletName) || null;
+            currentAdapter = currentAdapters.find(a => a.name === storedWalletName) || null;
         }
+
+        notifyAdaptersChange();
+    })();
+
+    // Subscribe to dynamic adapter changes
+    subscribeToWalletAdapterChanges((updatedAdapters: Adapter[]) => {
+        const mergedAdapters = [...adapters, ...updatedAdapters];
+        const uniqueAdapters = mergedAdapters.filter((adapter, index, array) =>
+            array.findIndex(a => a.name === adapter.name) === index
+        );
+        currentAdapters = uniqueAdapters;
+        notifyAdaptersChange();
     })
 
     return {
@@ -69,7 +103,7 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
                 return null;
             }
 
-            const adapter = allAdapters.find(a => a.name === walletName) || null;
+            const adapter = currentAdapters.find(a => a.name === walletName) || null;
             currentAdapter = adapter;
 
             // Store selected wallet
@@ -134,7 +168,7 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
             if (!currentAdapter) {
                 throw new HermisError(
                     HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
-                    { walletName: currentAdapter?.name }
+                    { walletName: undefined }
                 );
             }
             return await signTransaction(transaction, currentAdapter, options);
@@ -150,7 +184,7 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
             if (!currentAdapter) {
                 throw new HermisError(
                     HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
-                    { walletName: currentAdapter?.name }
+                    { walletName: undefined }
                 );
             }
             return await signAllTransactions(transactions, currentAdapter, options);
@@ -167,7 +201,7 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
             if (!currentAdapter) {
                 throw new HermisError(
                     HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
-                    { walletName: currentAdapter?.name }
+                    { walletName: undefined }
                 );
             }
             return await sendTransactionCore(connection, transaction, currentAdapter, options);
@@ -184,12 +218,30 @@ export function createWalletConnectionManager(adapters: Adapter[], localStorageK
             if (!currentAdapter) {
                 throw new HermisError(
                     HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
-                    { walletName: currentAdapter?.name }
+                    { walletName: undefined }
                 );
             }
-            // For simplicity, we'll sign then send
-            const signed = await signTransaction(transaction, currentAdapter, options);
-            return await sendTransactionCore(connection, signed, currentAdapter, options);
+            // Delegate to core function which handles atomic signAndSendTransaction
+            // for wallets that support it, or falls back to sign-then-send
+            return await signAndSendTransaction(connection, transaction, currentAdapter, options);
+        },
+
+        /**
+         * Get all available wallet adapters
+         */
+        getAdapters: () => [...currentAdapters],
+
+        /**
+         * Subscribe to adapter list changes
+         */
+        onAdaptersChange: (callback: (adapters: Adapter[]) => void) => {
+            adaptersChangeCallbacks.add(callback);
+            // Immediately call with current adapters if available
+            if (currentAdapters.length > 0) {
+                callback([...currentAdapters]);
+            }
+            // Return unsubscribe function
+            return () => adaptersChangeCallbacks.delete(callback);
         }
     };
 }
@@ -517,10 +569,8 @@ export class WalletAdapterManager extends EventEmitter {
         }
 
         try {
-            // Sign the transaction first
-            const signed = await signTransaction(transaction, this.selectedAdapter, options);
-            // Then send it
-            return await sendTransactionCore(connection, signed, this.selectedAdapter, options);
+            // Sign and send the transaction in one atomic operation
+            return await signAndSendTransaction(connection, transaction, this.selectedAdapter, options);
         } catch (error) {
             this.emitSafeError(error)
             return null

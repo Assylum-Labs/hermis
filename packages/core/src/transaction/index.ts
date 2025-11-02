@@ -150,7 +150,8 @@ import type {
   Blockhash,
   TransactionMessage,
   KeyPairSigner,
-  MessagePartialSigner
+  MessagePartialSigner,
+  Instruction
 } from '@solana/kit';
 import {
   SolanaSignAndSendTransactionFeature,
@@ -1833,16 +1834,44 @@ async function signInLegacy(
     
     // Check if wallet supports signIn directly
     if ('signIn' in wallet && typeof wallet.signIn === 'function') {
-      // The wallet has native signIn support, use it
-      const result = await wallet.signIn(input);
-      return {
-        ...result,
-        signature: result.signature,
-        signedMessage: result.signedMessage,
-        domain: input.domain || (typeof window !== 'undefined' ? window.location.host : 'unknown'),
-        nonce: input.nonce || generateNonce(),
-        version: input.version || '1'
-      };
+      try {
+        // The wallet has native signIn support, try it
+        const result = await wallet.signIn(input);
+
+        // Extract signature and signedMessage - handle both normal and nested formats
+        // Some wallets return: {signature, signedMessage, account}
+        // Others return: {'0': {signature, signedMessage}, account} (weird format)
+        let signature = result.signature;
+        let signedMessage = result.signedMessage;
+        let account = result.account;
+
+        // Handle weird nested format where data is in result['0']
+        // Cast to any to access dynamic property not in type definition
+        const resultAny = result as any;
+        if (!signature && resultAny['0']) {
+          signature = resultAny['0'].signature;
+          signedMessage = resultAny['0'].signedMessage;
+          account = account || resultAny['0'].account;
+        }
+
+        // If we have valid signature and signedMessage, return them
+        if (signature && signedMessage) {
+          return {
+            account,
+            signature,
+            signedMessage,
+            domain: input.domain || (typeof window !== 'undefined' ? window.location.host : 'unknown'),
+            nonce: input.nonce || generateNonce(),
+            statement: input.statement,
+            version: input.version || '1'
+          };
+        }
+
+        // Wallet's signIn didn't return signature/signedMessage - fall through to manual signing
+      } catch (error) {
+        // Wallet's native signIn failed, fall through to manual signing
+        console.warn('Wallet native signIn failed, falling back to manual signing:', error);
+      }
     }
     
     // Check if wallet at least supports signMessage
@@ -1890,31 +1919,30 @@ async function signInLegacy(
 export async function createKitTransaction(
   connection: DualConnection,
   feePayer: Address,
-  instructions: any[] = []
+  instructions: Instruction[] = []
 ): Promise<TransactionMessage> {
   // Get recent blockhash using helper (supports both connection types)
   const { blockhash, lastValidBlockHeight } = await getLatestBlockhash(connection);
-  
-  // Create transaction message
-  let transactionMessage = createTransactionMessage({ version: 0 });
-  
+
+  // Create transaction message (let TypeScript infer the type as it changes)
+  let transactionMessage: any = createTransactionMessage({ version: 0 });
+
   // Add instructions if provided
   for (const instruction of instructions) {
-    // This would need proper instruction handling
-    // transactionMessage = addTransactionMessageInstruction(instruction, transactionMessage);
+    transactionMessage = appendTransactionMessageInstruction(instruction, transactionMessage);
   }
-  
+
   // Set fee payer
   transactionMessage = setTransactionMessageFeePayer(feePayer, transactionMessage);
-  
+
   // Set lifetime
   const recentBlockhash = {
     blockhash: blockhash as Blockhash,
     lastValidBlockHeight: BigInt(lastValidBlockHeight),
   };
   transactionMessage = setTransactionMessageLifetimeUsingBlockhash(recentBlockhash, transactionMessage);
-  
-  return transactionMessage;
+
+  return transactionMessage as TransactionMessage;
 }
 
 /**

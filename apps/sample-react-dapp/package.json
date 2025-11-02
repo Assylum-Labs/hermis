@@ -1,7 +1,7 @@
 {
   "name": "sample-react-dapp",
   "private": true,
-  "version": "0.0.13",
+  "version": "0.0.14-beta.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
@@ -19,6 +19,9 @@
     "@hermis/solana-headless-adapter-base": "workspace:*",
     "@hermis/solana-headless-core": "workspace:*",
     "@hermis/solana-headless-react": "workspace:*",
+    "@solana-program/compute-budget": "^0.10.0",
+    "@solana-program/system": "^0.9.0",
+    "@solana-program/token": "^0.7.0",
     "@solana/kit": "^3.0.2",
     "@solana/wallet-adapter-phantom": "^0.9.24",
     "@solana/wallet-adapter-solflare": "^0.6.28",

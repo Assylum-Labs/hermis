@@ -6,6 +6,8 @@
  */
 
 import { HermisError, HERMIS_ERROR__INVARIANT__INVALID_ARGUMENT } from '@hermis/errors'
+import type { DualConnection, WalletAdapterNetwork } from '@hermis/solana-headless-core'
+import { isLegacyConnection } from '@hermis/solana-headless-core'
 
 /**
  * Solana chain identifiers following the Wallet Standard format
@@ -114,4 +116,80 @@ export function getExplorerClusterName(network: SolanaNetwork): 'mainnet-beta' |
     case 'testnet':
       return 'testnet'
   }
+}
+
+/**
+ * Convert WalletAdapterNetwork enum to SolanaNetwork type
+ *
+ * @param network - The WalletAdapterNetwork enum value
+ * @returns The corresponding SolanaNetwork type
+ *
+ * @example
+ * ```typescript
+ * import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+ *
+ * const network = walletAdapterNetworkToSolanaNetwork(WalletAdapterNetwork.Devnet);
+ * // 'devnet'
+ * ```
+ */
+export function walletAdapterNetworkToSolanaNetwork(network: WalletAdapterNetwork): SolanaNetwork {
+  switch (network) {
+    case 'mainnet-beta' as WalletAdapterNetwork:
+      return 'mainnet'
+    case 'devnet' as WalletAdapterNetwork:
+      return 'devnet'
+    case 'testnet' as WalletAdapterNetwork:
+      return 'testnet'
+    default:
+      return 'mainnet' // Default to mainnet for unknown networks
+  }
+}
+
+/**
+ * Detect the Solana network from a connection's RPC endpoint
+ *
+ * Analyzes the connection's endpoint URL to determine which Solana network
+ * (mainnet, devnet, or testnet) is being used. Supports both legacy web3.js
+ * Connection and Kit Rpc.
+ *
+ * @param connection - The Solana connection (DualConnection supports both architectures)
+ * @param fallbackNetwork - Optional network to use if detection fails (defaults to 'devnet')
+ * @returns The detected network name
+ *
+ * @example
+ * ```typescript
+ * import { Connection } from '@solana/web3.js';
+ *
+ * const connection = new Connection('https://api.devnet.solana.com');
+ * const network = getNetworkFromConnection(connection);
+ * // 'devnet'
+ * ```
+ */
+export function getNetworkFromConnection(
+  connection: DualConnection,
+  fallbackNetwork: SolanaNetwork = 'devnet'
+): SolanaNetwork {
+  // For legacy connections, check the rpcEndpoint property
+  if (isLegacyConnection(connection)) {
+    const endpoint = connection.rpcEndpoint.toLowerCase()
+
+    // Check for devnet
+    if (endpoint.includes('devnet')) {
+      return 'devnet'
+    }
+
+    // Check for testnet
+    if (endpoint.includes('testnet')) {
+      return 'testnet'
+    }
+
+    // Check for mainnet-beta (official endpoint)
+    if (endpoint.includes('mainnet-beta') || endpoint.includes('mainnet')) {
+      return 'mainnet'
+    }
+  }
+
+  // For Kit connections or if endpoint parsing failed, use fallback
+  // Kit connections don't expose endpoint URL in a standard way
+  return fallbackNetwork
 }

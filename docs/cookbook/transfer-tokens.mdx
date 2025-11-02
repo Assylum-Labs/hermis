@@ -68,47 +68,66 @@ function TransferTokens() {
 ## With Associated Token Account Creation
 
 ```tsx
-import { getOrCreateAssociatedTokenAccount, createTransferInstruction } from '@solana/spl-token';
+import { useWallet, useConnection, useAnchorWallet } from '@hermis/solana-headless-react';
+import { getOrCreateAssociatedTokenAccount, createTransferInstruction, Transaction } from '@solana/spl-token';
+import { PublicKey } from '@solana/web3.js';
 
-const transferWithAccountCreation = async (
-  mint: PublicKey,
-  recipient: PublicKey,
-  amount: number
-) => {
-  // Get or create sender's token account
-  const fromAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    wallet,
-    mint,
-    publicKey!
+function TransferWithAccountCreation() {
+  const { publicKey, sendTransaction } = useWallet();
+  const { connection } = useConnection();
+  const wallet = useAnchorWallet(); // Provides Signer interface for getOrCreateAssociatedTokenAccount
+
+  const transferWithAccountCreation = async (
+    mint: PublicKey,
+    recipient: PublicKey,
+    amount: number
+  ) => {
+    if (!publicKey || !wallet) return;
+
+    // Get or create sender's token account
+    const fromAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      wallet, // AnchorWallet as fee payer
+      mint,
+      publicKey
+    );
+
+    // Get or create recipient's token account
+    const toAccount = await getOrCreateAssociatedTokenAccount(
+      connection,
+      wallet, // AnchorWallet as fee payer
+      mint,
+      recipient
+    );
+
+    // Transfer
+    const transaction = new Transaction();
+
+    transaction.add(
+      createTransferInstruction(
+        fromAccount.address,
+        toAccount.address,
+        publicKey,
+        amount
+      )
+    );
+
+    const { blockhash } = await connection.getLatestBlockhash();
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = publicKey;
+
+    return await sendTransaction(transaction, connection);
+  };
+
+  return (
+    <button
+      onClick={() => transferWithAccountCreation(mintPubkey, recipientPubkey, 1000000)}
+      disabled={!wallet}
+    >
+      Transfer Tokens
+    </button>
   );
-
-  // Get or create recipient's token account
-  const toAccount = await getOrCreateAssociatedTokenAccount(
-    connection,
-    wallet,
-    mint,
-    recipient
-  );
-
-  // Transfer
-  const transaction = new Transaction();
-
-  transaction.add(
-    createTransferInstruction(
-      fromAccount.address,
-      toAccount.address,
-      publicKey!,
-      amount
-    )
-  );
-
-  const { blockhash } = await connection.getLatestBlockhash();
-  transaction.recentBlockhash = blockhash;
-  transaction.feePayer = publicKey!;
-
-  return await sendTransaction(transaction, connection);
-};
+}
 ```
 
 ## Complete Component
@@ -174,10 +193,84 @@ function TokenTransfer() {
 }
 ```
 
-## Best Practices
+## Token Transfer (@solana/kit)
 
-<Check>Check balance before transferring</Check>
-<Check>Handle associated token account creation</Check>
-<Check>Use proper decimals</Check>
-<Check>Wait for confirmation</Check>
-<Check>Handle errors gracefully</Check>
+```tsx
+import { useWallet, useConnection, createKitTransaction } from '@hermis/solana-headless-react';
+import { createKitSignersFromAdapter } from '@hermis/solana-headless-adapter-base';
+import { HermisError, HERMIS_ERROR__WALLET_INTERACTION__FEATURE_NOT_SUPPORTED } from '@hermis/errors';
+import { address } from '@solana/web-sdk';
+import { getTransferCheckedInstruction, getAssociatedTokenAddressSync } from '@solana/spl-token';
+import { PublicKey } from '@solana/web3.js';
+
+function TransferTokensKit() {
+  const { wallet, publicKey, addressString } = useWallet();
+  const { connection } = useConnection();
+
+  const transfer = async (
+    mintAddress: string,
+    recipient: string,
+    amount: number,
+    decimals: number = 9
+  ) => {
+    if (!wallet || !publicKey || !addressString) return;
+
+    // Create Kit signers from adapter
+    const { transactionSigner } = createKitSignersFromAdapter(
+      wallet.adapter,
+      connection
+    );
+
+    if (!transactionSigner) {
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_INTERACTION__FEATURE_NOT_SUPPORTED,
+        { feature: 'transactions' }
+      );
+    }
+
+    const mint = new PublicKey(mintAddress);
+    const recipientPubKey = new PublicKey(recipient);
+
+    // Get associated token accounts
+    const fromTokenAccount = getAssociatedTokenAddressSync(mint, publicKey);
+    const toTokenAccount = getAssociatedTokenAddressSync(mint, recipientPubKey);
+
+    // Create transfer instruction
+    const instruction = getTransferCheckedInstruction(
+      fromTokenAccount,
+      mint,
+      toTokenAccount,
+      publicKey,
+      amount * Math.pow(10, decimals),
+      decimals
+    );
+
+    // Create Kit transaction with automatic blockhash
+    const transaction = await createKitTransaction(
+      connection,
+      address(addressString),
+      [instruction]
+    );
+
+    // Sign and send
+    const [signature] = await transactionSigner.signAndSendTransactions([transaction]);
+
+    console.log('Transfer signature:', signature);
+    return signature;
+  };
+
+  return (
+    <button onClick={() => transfer('mint...', 'recipient...', 100)}>
+      Transfer 100 Tokens (Kit)
+    </button>
+  );
+}
+```
+
+**When to use Kit for token operations:**
+- Building with @solana/kit architecture
+- Need modern type-safe transaction building
+- Want to integrate with Kit-native programs
+- Prefer createKitTransaction for automatic blockhash handling
+
+**Note:** This example still uses `@solana/spl-token` for token account addresses and instructions, but wraps them in a Kit transaction. For fully Kit-native token operations, watch for @solana/spl-token Kit equivalents as they become available.

@@ -1,6 +1,6 @@
 # Mintlify Documentation Deployment Guide
 
-This guide will help you deploy your Solana Headless SDK documentation to Mintlify with a custom domain.
+This guide will help you deploy your Hermis documentation to Mintlify with a custom domain.
 
 ## Prerequisites
 
@@ -82,7 +82,7 @@ Update the `mint.json` file with your custom domain:
 ```json
 {
   "$schema": "https://mintlify.com/schema.json",
-  "name": "Solana Headless SDK",
+  "name": "Hermis",
   "url": "https://docs.hermis.xyz",
   ...
 }

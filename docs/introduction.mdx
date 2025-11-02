@@ -1,13 +1,27 @@
 ---
 title: Introduction
-description: 'Welcome to Hermis Solana Headless Wallet SDK - A Modular & Fully Headless and Framework Agnostic Wallet Adapter for Solana Devs'
+description: 'Hermis is a headless, framework-agnostic wallet adapter library for Solana. You can use it to integrate wallet
+   functionality in React, Vue, Svelte, Angular, vanilla JavaScript, and just about any other JavaScript 
+  framework, without any UI constraints or design opinions.'
 ---
 
 ## Overview
 
-Solana Headless SDK is a **UI-agnostic wallet adapter** that enables developers to integrate Solana authentication, wallet management, and transactions **without enforcing any UI constraints**.
+**Hermis** is a framework-agnostic, headless wallet adapter library for Solana that gives developers complete control over wallet integration in your dApp.
 
-This SDK provides **complete flexibility** for dApp developers, allowing full customization while leveraging Solana's core capabilities.
+Unlike traditional wallet adapters that include pre-designed UI components, Hermis provides raw wallet functionality; authentication, transaction signing, and wallet management, without including any UI opinions or design limitations.
+
+**Use any framework.** React, Vue, Svelte, Angular, or vanilla JavaScript.
+**Style however you want.** Tailwind, Material-UI, styled-components, or custom CSS.
+**Craft the experience your users deserve.** Complete creative freedom, no compromises.
+
+This SDK provides the building blocks. You provide the vision.
+
+## Built for Solana's Ecosystem
+
+Hermis works seamlessly with both **@solana/web3.js** and **@solana/kit**, Anza's next-generation Solana JavaScript SDK (successor to web3.js).
+
+By exposing **compatible APIs** and maintaining **backward compatibility**, Hermis ensures **zero breaking changes** when switching libraries. Your wallet integration code remains identical whether you are building with the predecessor or porting over to the modern toolkit, upgrade at your convenience.
 
 <CardGroup cols={2}>
   <Card
@@ -29,12 +43,12 @@ This SDK provides **complete flexibility** for dApp developers, allowing full cu
     icon="rocket"
     href="/getting-started"
   >
-    Get started with Solana Headless SDK in minutes
+    Get started with Hermis in minutes
   </Card>
   <Card
     title="API Reference"
     icon="code"
-    href="/api-reference/core/overview"
+    href="/api-reference/adapter-base/overview"
   >
     Explore our comprehensive API documentation
   </Card>
@@ -49,8 +63,8 @@ This SDK provides **complete flexibility** for dApp developers, allowing full cu
   <Card title="Solana-Native" icon="bolt">
     Built specifically for Solana, not a general blockchain solution
   </Card>
-  <Card title="Multi-Wallet Support" icon="wallet">
-    Compatible with Phantom, Backpack, Ledger, and more
+  <Card title="@solana/kit & web3.js Support" icon="plug">
+    Same APIs for both @solana/kit and @solana/web3.js
   </Card>
   <Card title="Framework Flexibility" icon="layer-group">
     React, Vue, and vanilla JS support
@@ -63,7 +77,7 @@ This SDK provides **complete flexibility** for dApp developers, allowing full cu
   </Card>
 </CardGroup>
 
-## Enterprise Edition Features
+{/* ## Enterprise Edition Features
 
 <Note>
   The Enterprise Edition provides advanced features for production applications requiring enhanced security and user experience.
@@ -77,7 +91,7 @@ This SDK provides **complete flexibility** for dApp developers, allowing full cu
 
 <Info>
   **Interested in Enterprise?** Contact us at [agateh.labs@gmail.com](mailto:agateh.labs@gmail.com)
-</Info>
+</Info> */}
 
 ## Packages Overview
 
@@ -85,20 +99,19 @@ This SDK provides **complete flexibility** for dApp developers, allowing full cu
 
 | Package | Description | Version |
 |---------|-------------|---------|
-| [@hermis/solana-headless-core](https://www.npmjs.com/package/@hermis/solana-headless-core) | Core wallet functionality and Solana interactions | ![npm](https://img.shields.io/npm/v/@hermis/solana-headless-core) |
-| [@hermis/solana-headless-adapter-base](https://www.npmjs.com/package/@hermis/solana-headless-adapter-base) | Base adapter implementations | ![npm](https://img.shields.io/npm/v/@hermis/solana-headless-adapter-base) |
-| [@hermis/solana-headless-react](https://www.npmjs.com/package/@hermis/solana-headless-react) | React hooks and components | ![npm](https://img.shields.io/npm/v/@hermis/solana-headless-react) |
-| @hermis/solana-headless-vue | Vue composables and components | Coming soon |
+| [@hermis/solana-headless-adapter-base](https://www.npmjs.com/package/@hermis/solana-headless-adapter-base) | Base vanilla TypeScript implementation that works with any TypeScript framework | ![npm](https://img.shields.io/npm/v/@hermis/solana-headless-adapter-base) |
+| [@hermis/solana-headless-react](https://www.npmjs.com/package/@hermis/solana-headless-react) | Built on adapter-base, exposing React hooks and context for React applications | ![npm](https://img.shields.io/npm/v/@hermis/solana-headless-react) |
+| @hermis/solana-headless-vue | Built on adapter-base, exposing Vue composables and components for Vue applications | Coming soon |
 
-### Enterprise Edition
+{/* ### Enterprise Edition
 
-Available under a commercial license. [Contact us](mailto:agateh.labs@gmail.com) for access.
+Available under a commercial license. [Contact us](mailto:agateh.labs@gmail.com) for access. */}
 
-## Why Choose Solana Headless SDK?
+## Why Choose Hermis?
 
 <AccordionGroup>
   <Accordion title="Complete UI Freedom">
-    Unlike other wallet adapters that come with predefined UI components, Solana Headless SDK gives you complete control. Build your interface exactly the way you want it, matching your brand and design system perfectly.
+    Unlike other wallet adapters that come with predefined UI components, Hermis gives you complete control. Build your interface exactly the way you want it, matching your brand and design system perfectly.
   </Accordion>
 
   <Accordion title="Solana-First Design">
@@ -114,7 +127,7 @@ Available under a commercial license. [Contact us](mailto:agateh.labs@gmail.com)
   </Accordion>
 </AccordionGroup>
 
-## Licensing
+{/* ## Licensing
 
 <Warning>
   **Open Core Model**: Community Edition packages are licensed under Apache 2.0, allowing free use, modification, and distribution. Enterprise Edition requires a separate commercial license.
@@ -140,7 +153,7 @@ Available under a commercial license. [Contact us](mailto:agateh.labs@gmail.com)
   >
     Join the community discussion
   </Card>
-</CardGroup>
+</CardGroup> */}
 
 ## Next Steps
 
@@ -150,7 +163,7 @@ Available under a commercial license. [Contact us](mailto:agateh.labs@gmail.com)
     icon="play"
     href="/getting-started"
   >
-    Install and configure your first Solana Headless SDK project
+    Install and configure your first Hermis project
   </Card>
   <Card
     title="Quick Start - React"

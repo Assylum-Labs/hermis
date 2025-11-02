@@ -61,9 +61,9 @@ function WalletSelector() {
 
 ```javascript
 import { WalletAdapterManager, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
-import { PhantomWalletAdapter } from '@solana/wallet-adapter-phantom';
 
-const wallets = [new PhantomWalletAdapter()];
+// Auto-detect wallet-standard compatible wallets
+const wallets = []; // Add custom wallet adapters here if needed
 const adapters = getStandardWalletAdapters(wallets);
 const manager = new WalletAdapterManager(adapters);
 
@@ -102,10 +102,56 @@ const handleConnect = async () => {
 </HermisProvider>
 ```
 
-## Best Practices
+## Accessing Kit Signers
 
-<Check>Always handle connection errors</Check>
-<Check>Show clear loading states</Check>
-<Check>Provide wallet selection UI</Check>
-<Check>Handle wallet disconnection events</Check>
-<Check>Test on mobile devices</Check>
+After connecting a wallet, you can access Kit-compatible signers for @solana/kit operations:
+
+```tsx
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { createKitSignersFromAdapter } from '@hermis/solana-headless-adapter-base';
+import { useEffect, useState } from 'react';
+
+function KitSignerInfo() {
+  const { wallet, connected, addressString } = useWallet();
+  const { connection } = useConnection();
+  const [signerInfo, setSignerInfo] = useState<string>('');
+
+  useEffect(() => {
+    if (connected && wallet) {
+      // Create Kit signers from connected wallet adapter
+      const { address, messageSigner, transactionSigner } = createKitSignersFromAdapter(
+        wallet.adapter,
+        connection
+      );
+
+      const info = `
+        Kit Address: ${address}
+        Message Signer: ${messageSigner ? 'Available' : 'Not supported'}
+        Transaction Signer: ${transactionSigner ? 'Available' : 'Not supported'}
+      `;
+      setSignerInfo(info);
+    } else {
+      setSignerInfo('Not connected');
+    }
+  }, [connected, wallet, connection]);
+
+  return (
+    <div>
+      <h3>Kit Signer Status</h3>
+      <pre>{signerInfo}</pre>
+    </div>
+  );
+}
+```
+
+**What are Kit Signers?**
+- `messageSigner` - Sign messages using Kit's `MessageModifyingSigner` interface
+- `transactionSigner` - Sign and send transactions using Kit's `TransactionSendingSigner` interface
+- `address` - Kit Address type (base58 string compatible with Kit functions)
+- `addressString` - Plain string representation of the address
+
+**When to use Kit Signers:**
+- Building with @solana/kit architecture
+- Using Kit-native programs and instructions
+- Need type-safe signer interfaces
+- Want to integrate with Kit ecosystem libraries

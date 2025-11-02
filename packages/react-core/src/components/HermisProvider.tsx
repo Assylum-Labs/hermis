@@ -11,7 +11,7 @@ export interface HermisWalletProviderProps {
   /** Children components */
   children: ReactNode;
   /** RPC endpoint for Solana connection */
-  rpcEndpoint?: string;
+  endpoint?: string;
   /** Network to connect to */
   network?: WalletAdapterNetwork;
   /** Whether to automatically connect to the last used wallet */
@@ -20,8 +20,8 @@ export interface HermisWalletProviderProps {
   storageKey?: string;
   /** Custom storage factory for persisting wallet selection */
   storageFactory?: StorageProviderFactory;
-  /** Additional wallet adapters to use */
-  additionalAdapters?: Adapter[];
+  /** Wallet adapters to use */
+  wallets?: Adapter[];
   /** Error handler for wallet errors */
   onError?: (error: WalletError, adapter?: Adapter) => void;
 }
@@ -38,34 +38,34 @@ export interface HermisWalletProviderProps {
  */
 export const HermisProvider = ({
   children,
-  rpcEndpoint = 'https://api.mainnet-beta.solana.com',
+  endpoint = 'https://api.mainnet-beta.solana.com',
   network = WalletAdapterNetwork.Mainnet,
   autoConnect = false,
   storageKey = 'walletName',
   storageFactory,
-  additionalAdapters = [],
+  wallets = [],
   onError,
 }: HermisWalletProviderProps) => {
   const [adapters, setAdapters] = useState<Adapter[]>([]);
 
   const memoizedAdapters = useMemo(() =>
-    additionalAdapters, [
+    wallets, [
 
-    additionalAdapters.length,
+    wallets.length,
   ]);
 
   useEffect(() => {
     const baseAdapters: Adapter[] = [];
 
-    setAdapters([...baseAdapters, ...additionalAdapters]);
+    setAdapters([...baseAdapters, ...wallets]);
   }, [memoizedAdapters]);
 
-  const allAdapters = useStandardWalletAdapters(adapters, rpcEndpoint);
+  const allAdapters = useStandardWalletAdapters(adapters, endpoint);
 
   return (
     <ContextProvider
       adapters={allAdapters}
-      rpcEndpoint={rpcEndpoint}
+      rpcEndpoint={endpoint}
       network={network}
       autoConnect={autoConnect}
       storageKey={storageKey}

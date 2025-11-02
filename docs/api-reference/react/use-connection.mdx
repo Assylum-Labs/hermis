@@ -5,34 +5,40 @@ description: 'Access Solana RPC connection'
 
 ## useConnection()
 
-Hook to access the Solana RPC connection.
+Hook to access the Solana RPC connection. Supports both legacy @solana/web3.js Connection and modern @solana/kit Rpc.
 
 ```typescript
 import { useConnection } from '@hermis/solana-headless-react';
 
 const { connection, network } = useConnection();
 
-// Get balance
+// Works with both Connection and Kit Rpc
 const balance = await connection.getBalance(publicKey);
-
-// Get account info
-const accountInfo = await connection.getAccountInfo(publicKey);
 ```
 
 ## Return Values
 
-<ResponseField name="connection" type="Connection">
-  Solana Connection instance for RPC calls
+<ResponseField name="connection" type="DualConnection">
+  Solana connection instance for RPC calls. Can be either:
+  - **Legacy:** `Connection` from @solana/web3.js
+  - **Kit:** `Rpc` from @solana/kit
+
+  The connection type depends on what you passed to `ConnectionProvider` or `HermisProvider`.
+  All dual architecture transaction methods work seamlessly with either type.
 </ResponseField>
 
 <ResponseField name="network" type="WalletAdapterNetwork">
-  Current network (mainnet-beta, devnet, testnet)
+  Current network (mainnet-beta, devnet, testnet). Optional field.
 </ResponseField>
 
-## Common Usage
+## Usage with web3.js Connection
 
 ```typescript
-function AccountInfo() {
+import { useConnection, useWallet } from '@hermis/solana-headless-react';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { useEffect, useState } from 'react';
+
+function AccountBalance() {
   const { publicKey } = useWallet();
   const { connection } = useConnection();
   const [balance, setBalance] = useState(0);
@@ -46,3 +52,256 @@ function AccountInfo() {
   return <div>Balance: {balance / LAMPORTS_PER_SOL} SOL</div>;
 }
 ```
+
+## Usage with Kit Rpc
+
+```typescript
+import { useConnection, useWallet } from '@hermis/solana-headless-react';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+function SendTransaction() {
+  const { address, transactionSigner } = useWallet();
+  const { connection } = useConnection();
+
+  const handleSend = async () => {
+    if (!address || !transactionSigner) return;
+
+    // connection is Kit Rpc when configured with Kit
+    const { value: latestBlockhash } = await connection.getLatestBlockhash().send();
+
+    // Use with Kit transaction patterns
+    // ... build and send transaction
+  };
+
+  return <button onClick={handleSend}>Send Transaction</button>;
+}
+```
+
+## Provider Setup
+
+### With Legacy Connection
+
+```typescript
+import { ConnectionProvider } from '@hermis/solana-headless-react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+
+function App() {
+  return (
+    <ConnectionProvider
+      endpoint="https://api.devnet.solana.com"
+      network={WalletAdapterNetwork.Devnet}
+      config={{ commitment: 'confirmed' }}
+    >
+      {children}
+    </ConnectionProvider>
+  );
+}
+```
+
+### With Kit Rpc (Custom Provider)
+
+**Note:** `ConnectionProvider` creates a legacy `Connection` internally. To use Kit `Rpc`, create a custom provider:
+
+```typescript
+import { FC, ReactNode, useMemo } from 'react';
+import { createSolanaRpc, devnet, Rpc } from '@solana/kit';
+import { ConnectionContext } from '@hermis/solana-headless-react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+
+interface KitRpcProviderProps {
+  children: ReactNode;
+  endpoint: string;
+  network?: WalletAdapterNetwork;
+}
+
+export const KitRpcProvider: FC<KitRpcProviderProps> = ({
+  children,
+  endpoint,
+  network = WalletAdapterNetwork.Devnet
+}) => {
+  const rpc = useMemo(() =>
+    createSolanaRpc(devnet(endpoint)),
+    [endpoint]
+  );
+
+  return (
+    <ConnectionContext.Provider value={{ connection: rpc as any, network }}>
+      {children}
+    </ConnectionContext.Provider>
+  );
+};
+
+// Usage
+function App() {
+  return (
+    <KitRpcProvider endpoint="https://api.devnet.solana.com">
+      {children}
+    </KitRpcProvider>
+  );
+}
+```
+
+### With HermisProvider (Simplified)
+
+**Note:** `HermisProvider` uses `ConnectionProvider` internally, which creates a legacy `Connection`.
+
+```typescript
+import { HermisProvider } from '@hermis/solana-headless-react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+
+function App() {
+  return (
+    <HermisProvider
+      endpoint="https://api.devnet.solana.com"
+      network={WalletAdapterNetwork.Devnet}
+      autoConnect={true}
+    >
+      {children}
+    </HermisProvider>
+  );
+}
+```
+
+The `HermisProvider` is the recommended approach for most applications. It combines wallet and connection setup with sensible defaults.
+
+## DualConnection Type
+
+The `DualConnection` type is a union type that accepts both architectures:
+
+```typescript
+type DualConnection = Connection | Rpc<any>
+```
+
+This means you can pass either:
+- `Connection` from @solana/web3.js (legacy)
+- `Rpc` from @solana/kit (modern)
+
+All transaction methods in the SDK (like `sendTransaction`, `signAndSendTransaction`) automatically handle both connection types.
+
+## Network Detection
+
+When using auto-detected networks, the connection analyzes the RPC endpoint URL:
+
+```typescript
+const { connection, network } = useConnection();
+
+// Endpoint: https://api.devnet.solana.com
+// network = WalletAdapterNetwork.Devnet
+```
+
+Supported network detection patterns:
+- URLs containing "devnet" → `WalletAdapterNetwork.Devnet`
+- URLs containing "testnet" → `WalletAdapterNetwork.Testnet`
+- URLs containing "mainnet" → `WalletAdapterNetwork.Mainnet`
+
+## Common RPC Methods
+
+Both Connection and Kit Rpc support these common methods (with slight API differences):
+
+### getBalance
+
+```typescript
+// web3.js Connection
+const balance = await connection.getBalance(publicKey);
+
+// Kit Rpc
+const { value: balance } = await connection.getBalance(address).send();
+```
+
+### getAccountInfo
+
+```typescript
+// web3.js Connection
+const accountInfo = await connection.getAccountInfo(publicKey);
+
+// Kit Rpc
+const { value: accountInfo } = await connection.getAccountInfo(address).send();
+```
+
+### getLatestBlockhash
+
+```typescript
+// web3.js Connection
+const { blockhash } = await connection.getLatestBlockhash();
+
+// Kit Rpc
+const { value: latestBlockhash } = await connection.getLatestBlockhash().send();
+```
+
+## Type Safety
+
+TypeScript will correctly infer the connection type based on your provider setup:
+
+```typescript
+// If you set up ConnectionProvider with Connection
+const { connection } = useConnection();
+// connection: Connection
+
+// If you set up ConnectionProvider with Kit Rpc
+const { connection } = useConnection();
+// connection: Rpc<any>
+```
+
+However, if you need to check at runtime which type you have:
+
+```typescript
+import { isLegacyConnection } from '@hermis/solana-headless-core';
+
+const { connection } = useConnection();
+
+if (isLegacyConnection(connection)) {
+  // connection is web3.js Connection
+  const balance = await connection.getBalance(publicKey);
+} else {
+  // connection is Kit Rpc
+  const { value: balance } = await connection.getBalance(address).send();
+}
+```
+
+## Migration Notes
+
+If you're upgrading from v1 and want to use Kit:
+
+```typescript
+// v1 (legacy only)
+import { Connection } from '@solana/web3.js';
+const connection = new Connection('https://api.devnet.solana.com');
+
+// v2 with Kit (optional, legacy still works!)
+import { createSolanaRpc, devnet } from '@solana/kit';
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+```
+
+Both approaches work - choose based on your needs:
+- **Stick with Connection** if you have existing web3.js code
+- **Upgrade to Kit Rpc** for modern features and better tree-shaking
+
+## Using Kit Rpc Without Providers
+
+If you want to use Kit Rpc but don't want to create a custom provider, you can pass the connection directly to transaction methods:
+
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import { createSolanaRpc, devnet } from '@solana/kit';
+import { useMemo } from 'react';
+
+function SendTransaction() {
+  const { sendTransaction } = useWallet();
+
+  // Create Kit Rpc instance
+  const rpc = useMemo(() =>
+    createSolanaRpc(devnet('https://api.devnet.solana.com')),
+    []
+  );
+
+  const handleSend = async () => {
+    // Pass Kit Rpc directly to transaction methods
+    const signature = await sendTransaction(transaction, rpc);
+    console.log('Transaction sent:', signature);
+  };
+
+  return <button onClick={handleSend}>Send Transaction</button>;
+}
+```
+
+This approach works because all transaction methods (`sendTransaction`, `signAndSendTransaction`, etc.) accept `DualConnection` and handle both connection types automatically.

@@ -105,15 +105,99 @@ const sendWithRetry = async (transaction: Transaction, maxRetries = 3) => {
 ## Vanilla JavaScript
 
 ```javascript
-import { sendTransaction, signTransaction } from '@hermis/solana-headless-core';
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { Connection, Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
+
+// Assuming you have a connected wallet manager instance
+const manager = new WalletAdapterManager(adapters);
+await manager.connect();
 
 const transaction = new Transaction();
-// ... add instructions
+// Add instructions
+transaction.add(
+  SystemProgram.transfer({
+    fromPubkey: manager.publicKey,
+    toPubkey: new PublicKey(recipient),
+    lamports: amount * LAMPORTS_PER_SOL
+  })
+);
 
 const { blockhash } = await connection.getLatestBlockhash();
 transaction.recentBlockhash = blockhash;
-transaction.feePayer = wallet.publicKey;
+transaction.feePayer = manager.publicKey;
 
-const signature = await sendTransaction(connection, transaction, wallet);
+// Send transaction using the manager
+const signature = await manager.sendTransaction(connection, transaction);
 await connection.confirmTransaction(signature);
 ```
+
+## Send SOL (@solana/kit)
+
+```tsx
+import { useWallet, useConnection, createKitTransaction } from '@hermis/solana-headless-react';
+import { createKitSignersFromAdapter } from '@hermis/solana-headless-adapter-base';
+import { HermisError, HERMIS_ERROR__WALLET_INTERACTION__FEATURE_NOT_SUPPORTED } from '@hermis/errors';
+import { address, lamports } from '@solana/web-sdk';
+import { getTransferSolInstruction } from '@solana-program/system';
+
+function SendSOLKit() {
+  const { wallet, addressString } = useWallet();
+  const { connection } = useConnection();
+
+  const send = async (recipient: string, amount: number) => {
+    if (!wallet || !addressString) return;
+
+    // Create Kit signers from adapter
+    const { transactionSigner } = createKitSignersFromAdapter(
+      wallet.adapter,
+      connection
+    );
+
+    if (!transactionSigner) {
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_INTERACTION__FEATURE_NOT_SUPPORTED,
+        { feature: 'transactions' }
+      );
+    }
+
+    // Create transfer instruction using Kit
+    const instruction = getTransferSolInstruction({
+      source: address(addressString),
+      destination: address(recipient),
+      amount: lamports(BigInt(Math.floor(amount * 1_000_000_000)))
+    });
+
+    // Create Kit transaction with automatic blockhash
+    const transaction = await createKitTransaction(
+      connection,
+      address(addressString),
+      [instruction]
+    );
+
+    // Sign and send using Kit transaction signer
+    const [signature] = await transactionSigner.signAndSendTransactions([transaction]);
+
+    console.log('Transaction signature:', signature);
+    return signature;
+  };
+
+  return (
+    <button onClick={() => send('recipient...', 0.1)}>
+      Send 0.1 SOL (Kit)
+    </button>
+  );
+}
+```
+
+**When to use Kit for transactions:**
+- Building modern Solana applications with @solana/kit
+- Need type-safe instruction building
+- Want better tree-shaking and smaller bundle sizes
+- Working with Kit-native programs and libraries
+
+**Key differences from web3.js:**
+- Uses `address()` type instead of `PublicKey`
+- Uses `lamports()` for amounts (native BigInt support)
+- `createKitTransaction` handles blockhash automatically
+- `transactionSigner` combines sign + send in one call
+- Instructions come from `@solana-program/system` instead of `SystemProgram`

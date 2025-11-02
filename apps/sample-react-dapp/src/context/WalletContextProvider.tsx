@@ -60,7 +60,7 @@ const WalletContextProvider: FC<WalletContextProviderProps> = ({
         <NetworkContext.Provider value={networkContextValue}>
             <HermisProvider
                 key={currentNetwork} // Force re-mount when network changes
-                rpcEndpoint={currentEndpoint}
+                endpoint={currentEndpoint}
                 autoConnect={true}
                 storageKey={`solana-wallet-name-${currentNetwork}`} // Network-specific storage
             >

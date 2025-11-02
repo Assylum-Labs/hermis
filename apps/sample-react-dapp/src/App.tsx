@@ -34,6 +34,7 @@ import { NetworkSelector } from './components/NetworkSelector'
 // import { UnifiedAPIDemo } from './components/UnifiedAPIDemo'
 import { useNetwork } from './context/WalletContextProvider'
 import { KitDemo } from './pages/KitDemo'
+import DocsValidation from './pages/DocsValidation';
 import { KitRpcContext } from './context/KitRpcContext'
 import { createSolanaRpc, createSolanaRpcSubscriptions, devnet } from '@solana/kit'
 // import { Keypair } from '@solana/web3.js';
@@ -115,6 +116,7 @@ function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/kit" element={<KitDemo />} />
+        <Route path="/docs-validation" element={<DocsValidation />} />
       </Routes>
     </KitRpcContext.Provider>
   );
@@ -267,8 +269,9 @@ function HomePage() {
       if(signIn) {
         const statement = `Test message for wallet authentication at ${new Date().toISOString()}`;
         const result = await signIn({ statement });
-        const parsedResult = result as unknown as {'0':{signature: Uint8Array}};
-        const signature = parsedResult['0'].signature;
+        console.log("Sign in Result:", result);
+        const { signature } = result
+
         if(signature) {
           let signatureBase64: string;
           try {

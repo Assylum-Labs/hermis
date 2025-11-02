@@ -9,13 +9,15 @@ Solana wallets can be used for authentication through message signing. This enab
 
 ## Sign-In With Solana (SIWS)
 
-Sign-In With Solana is a standard for wallet-based authentication:
+Sign-In With Solana is a standard for wallet-based authentication. The `signIn` method works identically whether you're using web3.js or Kit - choose whichever architecture fits your project.
 
+<Tabs>
+  <Tab title="React">
 ```typescript
 import { useWallet } from '@hermis/solana-headless-react';
 
 function SignInButton() {
-  const { signIn, publicKey } = useWallet();
+  const { signIn } = useWallet();
 
   const handleSignIn = async () => {
     try {
@@ -25,19 +27,13 @@ function SignInButton() {
         uri: window.location.origin,
       });
 
-      // Send to your backend for verification
-      const response = await fetch('/api/auth/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          publicKey: account.address,
-          message: signedMessage,
-          signature,
-        }),
-      });
+      // Verify signature on your backend using:
+      // - account.address (user's public key)
+      // - signedMessage (the message that was signed)
+      // - signature (the cryptographic signature)
+      // Then create a session token or JWT
 
-      const { token } = await response.json();
-      localStorage.setItem('auth-token', token);
+      console.log('Signed in:', account.address);
     } catch (error) {
       console.error('Sign in failed:', error);
     }
@@ -46,163 +42,36 @@ function SignInButton() {
   return <button onClick={handleSignIn}>Sign In</button>;
 }
 ```
+  </Tab>
 
-## Message Signing
-
-### Basic Message Signing
-
+  <Tab title="Vanilla TS">
 ```typescript
-const { signMessage, publicKey } = useWallet();
+import { WalletAdapterManager } from '@hermis/solana-headless-core';
 
-const authenticate = async () => {
-  const message = `Sign this message to authenticate:\n\nNonce: ${Date.now()}`;
-  const encodedMessage = new TextEncoder().encode(message);
+const manager = new WalletAdapterManager();
 
-  const signature = await signMessage(encodedMessage);
+async function handleSignIn() {
+  try {
+    const { account, signedMessage, signature } = await manager.signIn({
+      domain: window.location.host,
+      statement: 'Sign in to MyDApp',
+      uri: window.location.origin,
+    });
 
-  // Send to backend for verification
-  return { publicKey, message, signature };
-};
-```
+    // Verify signature on your backend using:
+    // - account.address (user's public key)
+    // - signedMessage (the message that was signed)
+    // - signature (the cryptographic signature)
+    // Then create a session token or JWT
 
-### Backend Verification
-
-```typescript
-// Backend (Node.js)
-import { PublicKey } from '@solana/web3.js';
-import * as nacl from 'tweetnacl';
-
-function verifySignature(
-  message: string,
-  signature: Uint8Array,
-  publicKey: string
-) {
-  const messageBytes = new TextEncoder().encode(message);
-  const publicKeyBytes = new PublicKey(publicKey).toBytes();
-
-  return nacl.sign.detached.verify(
-    messageBytes,
-    signature,
-    publicKeyBytes
-  );
+    console.log('Signed in:', account.address);
+  } catch (error) {
+    console.error('Sign in failed:', error);
+  }
 }
-
-// API endpoint
-app.post('/api/auth/verify', async (req, res) => {
-  const { message, signature, publicKey } = req.body;
-
-  const isValid = verifySignature(message, signature, publicKey);
-
-  if (isValid) {
-    const token = generateJWT(publicKey);
-    res.json({ token });
-  } else {
-    res.status(401).json({ error: 'Invalid signature' });
-  }
-});
 ```
-
-## Session Management
-
-### Creating Sessions
-
-```typescript
-const createSession = async () => {
-  const nonce = crypto.randomUUID();
-  const message = `Sign in to MyDApp\nNonce: ${nonce}`;
-
-  const signature = await signMessage(new TextEncoder().encode(message));
-
-  const response = await fetch('/api/auth/login', {
-    method: 'POST',
-    body: JSON.stringify({
-      publicKey: publicKey?.toBase58(),
-      message,
-      signature,
-    }),
-  });
-
-  const { sessionToken } = await response.json();
-  localStorage.setItem('session', sessionToken);
-
-  return sessionToken;
-};
-```
-
-### Checking Authentication
-
-```typescript
-const useAuth = () => {
-  const { publicKey, connected } = useWallet();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = localStorage.getItem('session');
-
-      if (!token || !connected) {
-        setIsAuthenticated(false);
-        return;
-      }
-
-      // Verify token with backend
-      try {
-        const response = await fetch('/api/auth/verify-session', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        setIsAuthenticated(response.ok);
-      } catch {
-        setIsAuthenticated(false);
-      }
-    };
-
-    checkAuth();
-  }, [connected]);
-
-  return { isAuthenticated };
-};
-```
-
-## Protected Routes
-
-### React Router Example
-
-```typescript
-import { Navigate } from 'react-router-dom';
-import { useWallet } from '@hermis/solana-headless-react';
-
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { connected } = useWallet();
-  const { isAuthenticated } = useAuth();
-
-  if (!connected) {
-    return <Navigate to="/connect" />;
-  }
-
-  if (!isAuthenticated) {
-    return <Navigate to="/sign-in" />;
-  }
-
-  return <>{children}</>;
-}
-
-// Usage
-<Route path="/dashboard" element={
-  <ProtectedRoute>
-    <Dashboard />
-  </ProtectedRoute>
-} />
-```
-
-## Best Practices
-
-<Check>Always include a nonce to prevent replay attacks</Check>
-<Check>Verify signatures on the backend</Check>
-<Check>Use HTTPS for all authentication requests</Check>
-<Check>Implement session expiration</Check>
-<Check>Clear sessions on wallet disconnect</Check>
-<Check>Never trust client-side verification alone</Check>
+  </Tab>
+</Tabs>
 
 ## What's Next?
 

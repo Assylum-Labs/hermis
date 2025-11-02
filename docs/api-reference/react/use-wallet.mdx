@@ -5,35 +5,51 @@ description: 'Primary hook for wallet interactions'
 
 ## useWallet()
 
-Primary hook for accessing wallet state and methods.
+Primary hook for accessing wallet state and methods. Supports both legacy web3.js and modern @solana/kit architectures.
 
 ```typescript
 import { useWallet } from '@hermis/solana-headless-react';
 
 const {
+  // Wallet state
   wallet,
   publicKey,
   connected,
   connecting,
   disconnecting,
+  wallets,
+  autoConnect,
+
+  // Kit properties (NEW in v2!)
+  address,
+  addressString,
+  chain,
+  messageSigner,
+  transactionSigner,
+
+  // Methods
   select,
   connect,
   disconnect,
   sendTransaction,
   signTransaction,
   signAllTransactions,
+  signAndSendTransaction,
   signMessage,
+  signIn,
+  getChainId,
+  hasFeature,
 } = useWallet();
 ```
 
-## Properties
+## Wallet State Properties
 
 <ResponseField name="wallet" type="Wallet | null">
   Currently selected wallet adapter
 </ResponseField>
 
 <ResponseField name="publicKey" type="PublicKey | null">
-  Public key of connected wallet
+  Public key of connected wallet (web3.js format)
 </ResponseField>
 
 <ResponseField name="connected" type="boolean">
@@ -48,32 +64,284 @@ const {
   Disconnection in progress
 </ResponseField>
 
-## Methods
-
-<ResponseField name="select" type="(walletName: string) => void">
-  Select a wallet by name
+<ResponseField name="wallets" type="Wallet[]">
+  Array of all available wallet adapters (both installed and detected)
 </ResponseField>
 
-<ResponseField name="connect" type="() => Promise<void>">
+<ResponseField name="autoConnect" type="boolean">
+  Whether auto-connect is enabled
+</ResponseField>
+
+## Kit Architecture Properties
+
+These properties enable seamless integration with @solana/kit's modern architecture.
+
+<ResponseField name="address" type="Address<string> | null">
+  **Kit Address type** - Use this with @solana/kit instead of `publicKey`. Null if wallet not connected.
+
+  ```typescript
+  const { address } = useWallet();
+  // Use with Kit instructions
+  const instruction = getTransferSolInstruction({
+    source: address,
+    destination: recipientAddress,
+    amount: lamports(1000000n)
+  });
+  ```
+</ResponseField>
+
+<ResponseField name="addressString" type="string | null">
+  **Plain address string** - Base58-encoded address. Null if wallet not connected.
+
+  ```typescript
+  const { addressString } = useWallet();
+  console.log('Wallet address:', addressString);
+  ```
+</ResponseField>
+
+<ResponseField name="chain" type="`solana:${string}` | null">
+  **Current Solana chain identifier** following Wallet Standard format (CAIP-2). Null if not configured.
+
+  Examples:
+  - Mainnet: `'solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp'`
+  - Devnet: `'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1'`
+  - Testnet: `'solana:4uhcVJyU9pJkvQyS88uRDiswHXSCkY3z'`
+</ResponseField>
+
+<ResponseField name="messageSigner" type="MessageModifyingSigner<string> | null">
+  **Kit message signer** - Use for signing messages with @solana/kit architecture. Null if wallet doesn't support message signing or not connected.
+
+  ```typescript
+  const { messageSigner } = useWallet();
+
+  if (messageSigner) {
+    const signedMessages = await messageSigner.modifyAndSignMessages([{
+      content: new TextEncoder().encode('Hello, Solana!'),
+      signatures: {}
+    }]);
+  }
+  ```
+</ResponseField>
+
+<ResponseField name="transactionSigner" type="TransactionSendingSigner<string> | null">
+  **Kit transaction signer** - Use for signing and sending transactions with @solana/kit. Null if wallet doesn't support transactions or not connected.
+
+  ```typescript
+  import { pipe, createTransactionMessage, setTransactionMessageFeePayerSigner } from '@solana/kit';
+
+  const { transactionSigner } = useWallet();
+
+  if (transactionSigner) {
+    const message = pipe(
+      createTransactionMessage({ version: 0 }),
+      m => setTransactionMessageFeePayerSigner(transactionSigner, m),
+      // ... add instructions
+    );
+  }
+  ```
+</ResponseField>
+
+## Wallet Methods
+
+<ResponseField name="select" type="(walletName: string | null) => Promise<void>">
+  Select a wallet by name. Pass `null` to deselect.
+
+  ```typescript
+  await select('Phantom');
+  ```
+</ResponseField>
+
+<ResponseField name="connect" type="() => Promise<WalletAdapter>">
   Connect to selected wallet
+
+  ```typescript
+  try {
+    await connect();
+  } catch (error) {
+    console.error('Connection failed:', error);
+  }
+  ```
 </ResponseField>
 
 <ResponseField name="disconnect" type="() => Promise<void>">
   Disconnect from wallet
+
+  ```typescript
+  await disconnect();
+  ```
 </ResponseField>
 
-<ResponseField name="sendTransaction" type="(transaction: Transaction, connection: Connection) => Promise<string>">
-  Sign and send a transaction
+## Transaction Methods
+
+All transaction methods support **both** web3.js and @solana/kit architectures through `DualConnection` and `DualTransaction` types.
+
+<ResponseField name="signTransaction" type="<T extends DualTransaction>(transaction: T, options?: DualArchitectureOptions) => Promise<T>">
+  Sign a transaction without sending it. Supports both web3.js Transaction/VersionedTransaction and Kit TransactionMessage.
+
+  ```typescript
+  // Web3.js usage (legacy)
+  import { Transaction } from '@solana/web3.js';
+  const tx = new Transaction();
+  const signed = await signTransaction(tx);
+
+  // Kit usage (NEW!)
+  import { createTransactionMessage } from '@solana/kit';
+  const kitTx = createTransactionMessage({ version: 0 });
+  const signed = await signTransaction(kitTx);
+  ```
 </ResponseField>
 
-<ResponseField name="signTransaction" type="(transaction: Transaction) => Promise<Transaction>">
-  Sign a transaction without sending
+<ResponseField name="sendTransaction" type="<T extends DualTransaction>(transaction: T, connection: DualConnection, options?: DualArchitectureOptions) => Promise<string>">
+  Sign and send a transaction. Accepts both legacy Connection and Kit Rpc.
+
+  ```typescript
+  // With web3.js Connection
+  import { Connection } from '@solana/web3.js';
+  const connection = new Connection('https://api.devnet.solana.com');
+  const signature = await sendTransaction(transaction, connection);
+
+  // With Kit Rpc (NEW!)
+  import { createSolanaRpc, devnet } from '@solana/kit';
+  const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+  const signature = await sendTransaction(transaction, rpc);
+  ```
 </ResponseField>
 
-<ResponseField name="signAllTransactions" type="(transactions: Transaction[]) => Promise<Transaction[]>">
-  Sign multiple transactions
+<ResponseField name="signAllTransactions" type="<T extends DualTransaction>(transactions: T[], options?: DualArchitectureOptions) => Promise<T[]>">
+  Sign multiple transactions. All transactions must use the same architecture (all web3.js OR all Kit).
+
+  ```typescript
+  const signed = await signAllTransactions([tx1, tx2, tx3]);
+  ```
+</ResponseField>
+
+<ResponseField name="signAndSendTransaction" type="<T extends DualTransaction>(transaction: T, connection: DualConnection, options?: DualArchitectureOptions) => Promise<string>">
+  Sign and send a transaction in one call. More efficient than separate sign + send.
+
+  ```typescript
+  const signature = await signAndSendTransaction(transaction, connection);
+  ```
 </ResponseField>
 
 <ResponseField name="signMessage" type="(message: Uint8Array) => Promise<Uint8Array>">
-  Sign a message for authentication
+  Sign a message for authentication. Returns the signature bytes.
+
+  ```typescript
+  const message = new TextEncoder().encode('Sign in to MyApp');
+  const signature = await signMessage(message);
+  ```
 </ResponseField>
+
+<ResponseField name="signIn" type="() => Promise<SolanaSignInOutput>">
+  Sign in with Solana (SIWS) - standardized authentication method.
+
+  ```typescript
+  const { account, signedMessage, signature } = await signIn();
+  ```
+</ResponseField>
+
+## Utility Methods
+
+<ResponseField name="getChainId" type="(network: 'mainnet' | 'devnet' | 'testnet') => `solana:${string}`">
+  Get the Wallet Standard chain identifier for a given network.
+
+  ```typescript
+  const devnetChain = getChainId('devnet');
+  // 'solana:EtWTRABZaYq6iMfeYKouRu166VU2xqa1'
+  ```
+</ResponseField>
+
+<ResponseField name="hasFeature" type="(feature: 'signMessage' | 'signTransaction' | 'signAllTransactions' | 'signIn') => boolean">
+  Check if the connected wallet supports a specific feature.
+
+  ```typescript
+  if (hasFeature('signMessage')) {
+    const signature = await signMessage(message);
+  }
+  ```
+</ResponseField>
+
+## Complete Example with Kit
+
+```typescript
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { createSolanaRpc, devnet, pipe, createTransactionMessage,
+         setTransactionMessageFeePayerSigner, setTransactionMessageLifetimeUsingBlockhash,
+         appendTransactionMessageInstruction } from '@solana/kit';
+import { getTransferSolInstruction } from '@solana-program/system';
+import { lamports } from '@solana/kit';
+
+function SendTransaction({ recipientAddress }: { recipientAddress: Address<string> }) {
+  const {
+    address,
+    transactionSigner,
+    connected,
+    signAndSendTransaction
+  } = useWallet();
+  const { connection } = useConnection();
+
+  const handleSend = async () => {
+    if (!address || !transactionSigner) {
+      throw new Error('Wallet not connected');
+    }
+
+    // Get latest blockhash
+    const { value: latestBlockhash } = await connection.getLatestBlockhash().send();
+
+    // Build transaction using Kit
+    const message = pipe(
+      createTransactionMessage({ version: 0 }),
+      m => setTransactionMessageFeePayerSigner(transactionSigner, m),
+      m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+      m => appendTransactionMessageInstruction(
+        getTransferSolInstruction({
+          source: address,
+          destination: recipientAddress,
+          amount: lamports(1000000n)
+        }),
+        m
+      )
+    );
+
+    // Sign and send
+    const signature = await signAndSendTransaction(message, connection);
+    console.log('Transaction signature:', signature);
+  };
+
+  return (
+    <button onClick={handleSend} disabled={!connected}>
+      Send 0.001 SOL
+    </button>
+  );
+}
+```
+
+## Migration from v1
+
+If you're upgrading from v1, here are the key changes:
+
+**New Kit Properties:**
+```typescript
+// v1 (legacy only)
+const { publicKey } = useWallet();
+
+// v2 (dual architecture)
+const {
+  publicKey,           // Still available for web3.js
+  address,             // NEW: Kit Address type
+  transactionSigner,   // NEW: Kit signer
+  messageSigner        // NEW: Kit message signer
+} = useWallet();
+```
+
+**Enhanced Transaction Methods:**
+```typescript
+// v1 - Only web3.js Connection
+await sendTransaction(tx, connection);
+
+// v2 - Both Connection AND Kit Rpc
+await sendTransaction(tx, connection);  // web3.js Connection
+await sendTransaction(tx, rpc);         // Kit Rpc (NEW!)
+```
+
+All legacy APIs remain fully supported - v2 is backward compatible!

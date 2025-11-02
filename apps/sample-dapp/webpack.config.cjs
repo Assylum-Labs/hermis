@@ -4,8 +4,7 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   mode: 'development',
-//   entry: './src/wallet.ts',
-  entry: './src/wallet.ts',
+  entry: './src/docs-validation-ui.ts',
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
@@ -33,6 +32,10 @@ module.exports = {
   },
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx'],
+    extensionAlias: {
+      '.js': ['.ts', '.js'],
+      '.jsx': ['.tsx', '.jsx'],
+    },
     fallback: {
       crypto: require.resolve('crypto-browserify'),
       stream: require.resolve('stream-browserify'),

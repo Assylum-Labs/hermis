@@ -1,223 +1,166 @@
-<!-- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hermis Headless Wallet Demo</title>
+    <title>Documentation Code Validation - Vanilla TypeScript</title>
     <link rel="stylesheet" href="styles.css">
-    <meta name="description" content="Demo of @hermis/solana-headless-sdk - a flexible, UI-agnostic Solana wallet adapter">
-    <meta name="keywords" content="Solana, wallet, adapter, headless, dApp, demo">
+    <meta name="description" content="Test documentation examples for @hermis/solana-headless-sdk">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Solana Headless Wallet Demo</h1>
-            <p class="subtitle">A demonstration of @hermis/solana-headless-adapter-base</p>
+            <h1>📚 Documentation Code Validation</h1>
+            <p class="subtitle">Vanilla TypeScript + @hermis/solana-headless-sdk</p>
         </header>
 
-        <div class="wallet-container">
-            <div class="wallet-section">
-                <h2>Available Wallets</h2>
-                <div id="wallet-list" class="wallet-list">
-                    <div class="loading">Loading wallets...</div>
-                </div>
-            </div>
-            
-            <div class="connection-section">
-                <h2>Wallet Connection</h2>
-                <div class="status-container">
-                    <div id="connection-status" class="status">Not connected (select a wallet)</div>
-                    <div id="wallet-address" class="address">Wallet address: Not available</div>
-                </div>
-                <div class="button-group">
-                    <button id="connect-button" disabled>Connect</button>
-                    <button id="connect-sign-button" disabled>Connect & Sign</button>
-                    <button id="sign-message-button" disabled>Sign Message</button>
-                    <button id="disconnect-button" disabled>Disconnect</button>
-                </div>
-            </div>
-            
-            <div id="wallet-details" class="wallet-details-section">
-                <h2>Wallet Details</h2>
-                <div class="details-container">
-                    <div id="selected-adapter-info">
-                        <p>No wallet selected</p>
-                    </div>
-                </div>
-            </div>
+        <!-- Wallet Selection Panel -->
+        <div class="wallet-selection-panel">
+            <h2>🔌 Select Your Wallet</h2>
+            <div id="wallet-list" class="wallet-list"></div>
+        </div>
 
-            <div id="transaction-actions" class="transaction-section" style="display: none;">
-                <h2>Actions</h2>
-                <div class="action-buttons">
-                    <button id="get-balance-button">Get Balance</button>
-                    <div id="balance-display" class="balance"></div>
+        <!-- Connection Panel -->
+        <div class="connection-panel">
+            <div class="connection-info">
+                <div class="info-item">
+                    <span class="label">Status:</span>
+                    <span id="connection-status" class="status-badge error">❌ Not Connected</span>
                 </div>
+                <div class="info-item">
+                    <span class="label">Wallet:</span>
+                    <span id="wallet-address" class="address">Address: -</span>
+                </div>
+            </div>
+            <div class="connection-buttons">
+                <button id="connect-btn" class="btn btn-primary">Connect Wallet</button>
+                <button id="disconnect-btn" class="btn btn-secondary" style="display: none;">Disconnect</button>
             </div>
         </div>
 
-        <div id="log-container" class="log-section">
-            <h2>Event Log</h2>
-            <div id="event-log" class="event-log"></div>
-            <button id="clear-log-button">Clear Log</button>
+        <!-- Test Sections -->
+        <div class="tests-container">
+
+            <!-- Section: Basic Transfer -->
+            <div class="test-section">
+                <h2>🔄 Basic Transfer</h2>
+                <div class="test-buttons">
+                    <button id="test-basic-web3" class="btn btn-test">
+                        <span class="btn-label">web3.js</span>
+                        <span class="btn-desc">SystemProgram.transfer</span>
+                    </button>
+                    <button id="test-basic-kit" class="btn btn-test">
+                        <span class="btn-label">Kit</span>
+                        <span class="btn-desc">getTransferSolInstruction</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section: Sign Only -->
+            <div class="test-section">
+                <h2>✍️ Sign Only</h2>
+                <div class="test-buttons">
+                    <button id="test-sign-web3" class="btn btn-test">
+                        <span class="btn-label">web3.js</span>
+                        <span class="btn-desc">signTransaction</span>
+                    </button>
+                    <button id="test-sign-kit" class="btn btn-test">
+                        <span class="btn-label">Kit</span>
+                        <span class="btn-desc">signTransaction (Kit)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section: Sign Multiple -->
+            <div class="test-section">
+                <h2>📝 Sign Multiple</h2>
+                <div class="test-buttons">
+                    <button id="test-sign-multiple-web3" class="btn btn-test">
+                        <span class="btn-label">web3.js</span>
+                        <span class="btn-desc">signAllTransactions</span>
+                    </button>
+                    <button id="test-sign-multiple-kit" class="btn btn-test">
+                        <span class="btn-label">Kit</span>
+                        <span class="btn-desc">signAllTransactions (Kit)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section: SPL Token Transfer -->
+            <div class="test-section">
+                <h2>🪙 SPL Token Transfer</h2>
+                <div class="test-buttons">
+                    <button id="test-token-transfer-web3" class="btn btn-test">
+                        <span class="btn-label">web3.js</span>
+                        <span class="btn-desc">spl-token transfer</span>
+                    </button>
+                    <button id="test-token-transfer-kit" class="btn btn-test">
+                        <span class="btn-label">Kit</span>
+                        <span class="btn-desc">@solana-program/token</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section: With Confirmation -->
+            <div class="test-section">
+                <h2>✅ With Confirmation</h2>
+                <div class="test-buttons">
+                    <button id="test-confirmation-web3" class="btn btn-test">
+                        <span class="btn-label">web3.js</span>
+                        <span class="btn-desc">confirmTransaction</span>
+                    </button>
+                    <button id="test-confirmation-kit" class="btn btn-test">
+                        <span class="btn-label">Kit</span>
+                        <span class="btn-desc">getSignatureStatuses</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Section: Priority Fees -->
+            <div class="test-section">
+                <h2>⚡ Priority Fees</h2>
+                <div class="test-buttons">
+                    <button id="test-priority-web3" class="btn btn-test">
+                        <span class="btn-label">web3.js</span>
+                        <span class="btn-desc">ComputeBudgetProgram</span>
+                    </button>
+                    <button id="test-priority-kit" class="btn btn-test">
+                        <span class="btn-label">Kit</span>
+                        <span class="btn-desc">getSetComputeUnitPriceInstruction</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Run All Tests -->
+            <div class="test-section run-all-section">
+                <button id="run-all-tests" class="btn btn-run-all">
+                    🚀 Run All Tests
+                </button>
+            </div>
         </div>
+
+        <!-- Log Panel -->
+        <div class="log-container">
+            <div class="log-header">
+                <h2>📋 Test Log</h2>
+                <button id="clear-log-btn" class="btn btn-small">Clear Log</button>
+            </div>
+            <div id="log-panel" class="log-panel"></div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>
+                Testing code examples from
+                <a href="https://github.com/hermis-ai/solana-headless-sdk" target="_blank">@hermis/solana-headless-sdk</a>
+            </p>
+            <p class="note">
+                ⚠️ Make sure you have devnet SOL in your wallet.
+                Get it from <a href="https://faucet.solana.com" target="_blank">Solana Faucet</a>
+            </p>
+        </footer>
     </div>
 
     <script src="bundle.js"></script>
-</body>
-</html> -->
-
-
-<!-- DEMACTIO -->
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hermis Enterprise OAuth Test</title>
-  <!-- Favicon -->
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪐</text></svg>">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      line-height: 1.6;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    header {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    .section {
-      margin-bottom: 20px;
-      padding: 20px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      background-color: #f9f9f9;
-    }
-    .button {
-      padding: 10px 15px;
-      margin: 5px;
-      background-color: #4f46e5;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    .button:hover {
-      background-color: #4338ca;
-    }
-    .disabled-button {
-      padding: 10px 15px;
-      margin: 5px;
-      background-color: #ccc;
-      color: #666;
-      border: none;
-      border-radius: 5px;
-      font-size: 14px;
-      cursor: not-allowed;
-    }
-    .info-text {
-      margin-top: 10px;
-      padding: 10px;
-      background-color: #e6f7ff;
-      border: 1px solid #91d5ff;
-      border-radius: 5px;
-    }
-    .error-text {
-      margin-top: 10px;
-      padding: 10px;
-      background-color: #fff2f0;
-      border: 1px solid #ffccc7;
-      border-radius: 5px;
-      color: #cf1322;
-    }
-    pre {
-      background-color: #282c34;
-      color: #abb2bf;
-      padding: 15px;
-      border-radius: 5px;
-      overflow-x: auto;
-      white-space: pre-wrap;
-    }
-    .loading {
-      display: none;
-      padding: 20px;
-      text-align: center;
-      font-style: italic;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Hermis Enterprise OAuth Test</h1>
-      <p>Test your OAuth implementation with various providers</p>
-    </header>
-
-    <div id="loading-indicator" class="section loading">
-      <h2>Processing Authentication...</h2>
-      <p>Please wait while we complete the authentication process.</p>
-    </div>
-
-    <div class="section">
-      <h2>Authentication Status</h2>
-      <div id="auth-status">
-        <p>❌ <strong>Not Authenticated</strong></p>
-      </div>
-      <div id="user-info"></div>
-      
-      <div id="error-info" class="error-text" style="display: none;"></div>
-
-      <div id="auth-buttons">
-        <h3>Sign in with:</h3>
-        <div>
-          <button id="google-signin" class="button">Google</button>
-          <button id="github-signin" class="button">GitHub</button>
-          <button id="discord-signin" class="button">Discord</button>
-        </div>
-        <div style="margin-top: 10px;">
-          <button id="twitter-signin" class="button">Twitter</button>
-          <button id="facebook-signin" class="button">Facebook</button>
-          <button id="reddit-signin" class="button">Reddit</button>
-        </div>
-      </div>
-
-      <div id="signout-container" style="display: none;">
-        <button id="signout-button" class="button">Sign Out</button>
-      </div>
-    </div>
-
-    <div id="token-info" class="section" style="display: none;">
-      <h2>Token Information</h2>
-      <p>Your JWT token for API calls:</p>
-      <pre id="jwt-display"></pre>
-      
-      <h3>User Information</h3>
-      <pre id="user-json"></pre>
-    </div>
-
-    <div class="section">
-      <h2>Debug Information</h2>
-      <h3>Current Auth State</h3>
-      <pre id="debug-info">Not authenticated</pre>
-      
-      <div class="info-text">
-        <p>
-          <strong>Note:</strong> This example should be run on the same domain as your backend API,
-          or with proper CORS configuration to allow cross-origin requests.
-        </p>
-      </div>
-    </div>
-  </div>
-
-  <!-- This would be bundled by your build system -->
-  <script src="bundle.js"></script>
 </body>
 </html>

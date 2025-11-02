@@ -6,20 +6,21 @@ description: 'How to create and mint SPL tokens'
 ## Create a New Token
 
 ```tsx
-import { useWallet, useConnection } from '@hermis/solana-headless-react';
-import { createMint, getOrCreateAssociatedTokenAccount, mintTo } from '@solana/spl-token';
+import { useWallet, useConnection, useAnchorWallet } from '@hermis/solana-headless-react';
+import { createMint, getOrCreateAssociatedTokenAccount, mintTo, PublicKey } from '@solana/spl-token';
 
 function MintToken() {
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey } = useWallet();
   const { connection } = useConnection();
+  const wallet = useAnchorWallet(); // Provides Signer interface for SPL token operations
 
   const createToken = async () => {
-    if (!publicKey) return;
+    if (!publicKey || !wallet) return;
 
     // Create mint account
     const mint = await createMint(
       connection,
-      wallet, // Fee payer
+      wallet, // Fee payer (AnchorWallet provides Signer interface)
       publicKey, // Mint authority
       publicKey, // Freeze authority
       9 // Decimals
@@ -30,7 +31,7 @@ function MintToken() {
   };
 
   const mintTokens = async (mintAddress: PublicKey, amount: number) => {
-    if (!publicKey) return;
+    if (!publicKey || !wallet) return;
 
     // Get or create token account
     const tokenAccount = await getOrCreateAssociatedTokenAccount(
@@ -56,8 +57,10 @@ function MintToken() {
 
   return (
     <div>
-      <button onClick={createToken}>Create Token</button>
-      <button onClick={() => mintTokens(mintAddress, 1000)}>
+      <button onClick={createToken} disabled={!wallet}>
+        Create Token
+      </button>
+      <button onClick={() => mintTokens(mintAddress, 1000)} disabled={!wallet}>
         Mint 1000 Tokens
       </button>
     </div>
@@ -68,6 +71,10 @@ function MintToken() {
 ## Complete Example with UI
 
 ```tsx
+import { useState } from 'react';
+import { useWallet, useConnection, useAnchorWallet } from '@hermis/solana-headless-react';
+import { createMint, getOrCreateAssociatedTokenAccount, mintTo, PublicKey } from '@solana/spl-token';
+
 function TokenMinter() {
   const [mint, setMint] = useState<PublicKey | null>(null);
   const [amount, setAmount] = useState('1000');
@@ -75,15 +82,18 @@ function TokenMinter() {
 
   const { publicKey } = useWallet();
   const { connection } = useConnection();
+  const wallet = useAnchorWallet(); // Provides Signer interface for SPL token operations
 
   const handleCreate = async () => {
+    if (!publicKey || !wallet) return;
+
     setLoading(true);
     try {
       const newMint = await createMint(
         connection,
-        wallet,
-        publicKey!,
-        publicKey!,
+        wallet, // AnchorWallet as fee payer
+        publicKey,
+        publicKey,
         9
       );
       setMint(newMint);
@@ -96,20 +106,20 @@ function TokenMinter() {
   };
 
   const handleMint = async () => {
-    if (!mint || !publicKey) return;
+    if (!mint || !publicKey || !wallet) return;
 
     setLoading(true);
     try {
       const tokenAccount = await getOrCreateAssociatedTokenAccount(
         connection,
-        wallet,
+        wallet, // AnchorWallet as fee payer
         mint,
         publicKey
       );
 
       await mintTo(
         connection,
-        wallet,
+        wallet, // AnchorWallet as fee payer
         mint,
         tokenAccount.address,
         publicKey,
@@ -127,7 +137,7 @@ function TokenMinter() {
   return (
     <div>
       {!mint ? (
-        <button onClick={handleCreate} disabled={loading}>
+        <button onClick={handleCreate} disabled={loading || !wallet}>
           {loading ? 'Creating...' : 'Create New Token'}
         </button>
       ) : (
@@ -139,7 +149,7 @@ function TokenMinter() {
             onChange={(e) => setAmount(e.target.value)}
             placeholder="Amount"
           />
-          <button onClick={handleMint} disabled={loading}>
+          <button onClick={handleMint} disabled={loading || !wallet}>
             {loading ? 'Minting...' : 'Mint Tokens'}
           </button>
         </div>
@@ -149,10 +159,110 @@ function TokenMinter() {
 }
 ```
 
-## Best Practices
+## Token Minting (@solana/kit)
 
-<Check>Store mint address securely</Check>
-<Check>Set appropriate decimals (usually 9)</Check>
-<Check>Consider freeze authority</Check>
-<Check>Verify mint authority</Check>
-<Check>Handle associated token accounts</Check>
+```tsx
+import { useState } from 'react';
+import { useWallet, useConnection, useAnchorWallet, createKitTransaction } from '@hermis/solana-headless-react';
+import { createKitSignersFromAdapter } from '@hermis/solana-headless-adapter-base';
+import { address } from '@solana/web-sdk';
+import { createMint, getOrCreateAssociatedTokenAccount, mintTo, PublicKey } from '@solana/spl-token';
+
+function TokenMinterKit() {
+  const [mint, setMint] = useState<PublicKey | null>(null);
+  const [amount, setAmount] = useState('1000');
+  const [loading, setLoading] = useState(false);
+
+  const { wallet, publicKey, addressString } = useWallet();
+  const { connection } = useConnection();
+  const anchorWallet = useAnchorWallet(); // For SPL token functions
+
+  const handleCreate = async () => {
+    if (!publicKey || !anchorWallet) return;
+
+    setLoading(true);
+    try {
+      // Create mint using SPL Token (requires AnchorWallet)
+      const newMint = await createMint(
+        connection,
+        anchorWallet,
+        publicKey,
+        publicKey,
+        9
+      );
+      setMint(newMint);
+      alert(`Token created: ${newMint.toBase58()}`);
+    } catch (error) {
+      console.error('Failed to create token:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMint = async () => {
+    if (!mint || !publicKey || !anchorWallet || !wallet || !addressString) return;
+
+    setLoading(true);
+    try {
+      // Get token account
+      const tokenAccount = await getOrCreateAssociatedTokenAccount(
+        connection,
+        anchorWallet,
+        mint,
+        publicKey
+      );
+
+      // Mint tokens
+      await mintTo(
+        connection,
+        anchorWallet,
+        mint,
+        tokenAccount.address,
+        publicKey,
+        parseInt(amount) * Math.pow(10, 9)
+      );
+
+      alert('Tokens minted successfully!');
+    } catch (error) {
+      console.error('Failed to mint:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div>
+      {!mint ? (
+        <button onClick={handleCreate} disabled={loading || !anchorWallet}>
+          {loading ? 'Creating...' : 'Create New Token (Kit)'}
+        </button>
+      ) : (
+        <div>
+          <p>Mint: {mint.toBase58()}</p>
+          <input
+            type="number"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount"
+          />
+          <button onClick={handleMint} disabled={loading || !anchorWallet}>
+            {loading ? 'Minting...' : 'Mint Tokens (Kit)'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Using Kit with SPL Tokens:**
+- `useAnchorWallet()` provides Signer interface for SPL token functions (createMint, mintTo)
+- `createKitSignersFromAdapter()` provides Kit-native signers for custom transactions
+- Combine both approaches: use AnchorWallet for SPL operations, Kit signers for custom instructions
+- Future: Watch for @solana/spl-token Kit-native equivalents
+
+**When to use Kit for token operations:**
+- Building with @solana/kit architecture
+- Need to combine SPL tokens with Kit-native programs
+- Want automatic blockhash handling via createKitTransaction
+- Prefer type-safe transaction building

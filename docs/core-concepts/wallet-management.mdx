@@ -1,11 +1,11 @@
 ---
 title: 'Wallet Management'
-description: 'Understanding wallet lifecycle and management in Solana Headless SDK'
+description: 'Understanding wallet lifecycle and management in Hermis'
 ---
 
 ## Overview
 
-Wallet management is at the heart of any Solana dApp. Solana Headless SDK provides a comprehensive system for managing wallet connections, state, and interactions across all supported wallets.
+Wallet management is at the heart of any Solana dApp. Hermis provides a comprehensive system for managing wallet connections, state, and interactions across all supported wallets.
 
 ## Wallet Lifecycle
 
@@ -39,39 +39,31 @@ graph LR
 
 ## Supported Wallets
 
-Solana Headless SDK supports all major Solana wallets through the Wallet Standard and wallet adapters:
-
-### Browser Extension Wallets
-- **Phantom** - Most popular Solana wallet
-- **Solflare** - Feature-rich wallet
-- **Backpack** - xNFT-enabled wallet
-- **Coinbase Wallet** - Mainstream crypto wallet
-- **Trust Wallet** - Multi-chain wallet
-- **Ledger** - Hardware wallet support
-- And more...
-
-### Mobile Wallets
-- Phantom Mobile
-- Solflare Mobile
-- Trust Wallet Mobile
-- Coinbase Wallet Mobile
-
-### Wallet Standard
-Any wallet implementing the [Wallet Standard](https://github.com/wallet-standard/wallet-standard) is automatically supported.
+Hermis supports any wallet that implements the [Wallet Standard](https://github.com/wallet-standard/wallet-standard). This includes browser extension wallets, mobile wallets, and hardware wallets that conform to the standard.
 
 ## Wallet Detection
 
-The SDK automatically detects installed wallets and prioritizes them in your UI:
+The SDK automatically detects installed wallets and groups them by ready state:
 
 ```typescript
-import { sortWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { useWalletAdapters } from '@hermis/solana-headless-react';
 
-// Adapters are sorted by:
-// 1. Installed wallets (detected in browser)
-// 2. Loadable wallets (can be loaded on demand)
-// 3. Not detected wallets (not installed)
+function WalletList() {
+  const { installed, loadable, notDetected, all } = useWalletAdapters();
 
-const sorted = sortWalletAdapters(adapters);
+  // installed: Wallets detected in browser
+  // loadable: Wallets that can be loaded on demand
+  // notDetected: Wallets not installed
+  // all: All adapters sorted by priority
+
+  return (
+    <>
+      {installed.map(adapter => (
+        <div key={adapter.name}>{adapter.name} (Installed)</div>
+      ))}
+    </>
+  );
+}
 ```
 
 ### Ready States
@@ -219,17 +211,6 @@ const switchWallet = async (newWalletName: string) => {
 };
 ```
 
-### Multiple Wallet Instances
-
-For advanced use cases, manage multiple wallet connections:
-
-```typescript
-const primaryWallet = useWallet();
-const secondaryManager = new WalletAdapterManager(adapters);
-
-// Use both for different purposes
-```
-
 ## Wallet Events
 
 ### React
@@ -270,40 +251,57 @@ manager.on('walletChanged', (wallet) => {
 
 ## Error Handling
 
-### Common Errors
+Hermis uses `HermisError` for type-safe error handling:
+
+```typescript
+import { isHermisError, HERMIS_ERROR__WALLET_CONNECTION__FAILED } from '@hermis/errors';
+
+try {
+  await connect();
+} catch (error) {
+  if (isHermisError(error, HERMIS_ERROR__WALLET_CONNECTION__FAILED)) {
+    console.log(`Failed to connect: ${error.context.walletName}`);
+  } else if (isHermisError(error)) {
+    console.log(`Error [${error.code}]: ${error.message}`);
+  }
+}
+```
+
+### Common Error Patterns
 
 <AccordionGroup>
-  <Accordion title="User Rejected (Code 4001)">
-    User cancelled the connection in their wallet.
+  <Accordion title="Connection Failed">
+    Handle wallet connection failures with context data:
     ```typescript
-    if (error.code === 4001) {
-      console.log('User rejected the connection');
+    import { isHermisError, HERMIS_ERROR__WALLET_CONNECTION__FAILED } from '@hermis/errors';
+
+    if (isHermisError(error, HERMIS_ERROR__WALLET_CONNECTION__FAILED)) {
+      // Access typed context: walletName, reason, originalError
+      showToast(`Failed to connect to ${error.context.walletName}`);
     }
     ```
   </Accordion>
 
-  <Accordion title="Wallet Not Found">
-    Wallet is not installed or not detected.
+  <Accordion title="Not Connected">
+    Check if wallet is not connected before operations:
     ```typescript
-    if (adapter.readyState === 'NotDetected') {
-      console.log('Please install wallet');
+    import { isHermisError, HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED } from '@hermis/errors';
+
+    if (isHermisError(error, HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED)) {
+      showToast('Please connect your wallet first');
     }
     ```
   </Accordion>
 
-  <Accordion title="Network Mismatch">
-    Wallet is connected to different network.
+  <Accordion title="Generic Error Handling">
+    Handle any HermisError with automatic message formatting:
     ```typescript
-    // Prompt user to switch network in their wallet
-    console.error('Please switch to devnet');
-    ```
-  </Accordion>
+    import { isHermisError } from '@hermis/errors';
 
-  <Accordion title="Connection Timeout">
-    Connection took too long.
-    ```typescript
-    // Retry or show error message
-    console.error('Connection timeout, please try again');
+    if (isHermisError(error)) {
+      // HermisError provides formatted messages automatically
+      showToast(error.message);
+    }
     ```
   </Accordion>
 </AccordionGroup>
@@ -311,14 +309,17 @@ manager.on('walletChanged', (wallet) => {
 ### Global Error Handler
 
 ```tsx
+import { isHermisError } from '@hermis/errors';
+
 <HermisProvider
   onError={(error, adapter) => {
-    console.error(`Error with ${adapter?.name}:`, error);
-
-    // Show user-friendly message
-    if (error.code === 4001) {
-      showToast('Connection cancelled');
+    if (isHermisError(error)) {
+      // HermisError provides formatted messages and typed context
+      console.error(`[${error.code}] ${error.message}`);
+      showToast(error.message);
     } else {
+      // Handle non-Hermis errors
+      console.error(`Error with ${adapter?.name}:`, error);
       showToast(`Error: ${error.message}`);
     }
   }}
@@ -361,13 +362,9 @@ manager.on('walletChanged', (wallet) => {
   </Accordion>
 
   <Accordion title="Support Mobile">
-    Test on mobile devices and handle deep linking:
-    ```typescript
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile) {
-      // Use mobile-specific wallet connection flow
-    }
-    ```
+    Hermis automatically handles mobile wallet detection and deep linking. Simply ensure the Mobile Wallet Adapter is included in your adapters, and users can seamlessly connect from mobile devices.
+
+    For best performance, remind users to disable battery/power saving mode on their devices to ensure reliable connections and smooth deep linking between your dApp and wallet apps.
   </Accordion>
 </AccordionGroup>
 
@@ -391,7 +388,7 @@ manager.on('walletChanged', (wallet) => {
   <Card
     title="API Reference"
     icon="code"
-    href="/api-reference/core/wallet-adapter"
+    href="/api-reference/adapter-base/base-adapter"
   >
     Explore wallet APIs
   </Card>

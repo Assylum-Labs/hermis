@@ -10,7 +10,7 @@ Framework-agnostic wallet adapter management.
 ## Installation
 
 ```bash
-npm install @hermis/solana-headless-adapter-base @hermis/solana-headless-core
+npm install @hermis/solana-headless-adapter-base
 ```
 
 ## WalletAdapterManager
@@ -47,7 +47,7 @@ const adapters = getStandardWalletAdapters(customAdapters);
 
 ### sortWalletAdapters()
 
-Sort adapters by priority (installed first).
+Sort adapters by priority (mobile wallets, then installed wallets first).
 
 ```typescript
 import { sortWalletAdapters } from '@hermis/solana-headless-adapter-base';
@@ -55,15 +55,15 @@ import { sortWalletAdapters } from '@hermis/solana-headless-adapter-base';
 const sorted = sortWalletAdapters(adapters);
 ```
 
-### getWalletAdapters()
+### getAdaptersByReadyState()
 
 Filter adapters by ready state.
 
 ```typescript
-import { getWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { getAdaptersByReadyState } from '@hermis/solana-headless-adapter-base';
 
-const installed = getWalletAdapters(adapters, 'Installed');
-const loadable = getWalletAdapters(adapters, 'Loadable');
+const installed = getAdaptersByReadyState(adapters, 'Installed');
+const loadable = getAdaptersByReadyState(adapters, 'Loadable');
 ```
 
 ## Events

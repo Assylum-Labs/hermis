@@ -1,6 +1,6 @@
-# Solana Headless SDK Documentation
+# Hermis Documentation
 
-This directory contains the complete documentation for Solana Headless SDK, built with [Mintlify](https://mintlify.com).
+This directory contains the complete documentation for Hermis, built with [Mintlify](https://mintlify.com).
 
 ## 📁 Structure
 
@@ -12,7 +12,6 @@ docs/
 ├── installation.mdx          # Installation instructions
 ├── quickstart/               # Quick start guides
 │   ├── react.mdx
-│   ├── core.mdx
 │   └── adapter-base.mdx
 ├── core-concepts/            # Architecture and concepts
 │   ├── architecture.mdx
@@ -20,7 +19,6 @@ docs/
 │   ├── transactions.mdx
 │   └── authentication.mdx
 ├── api-reference/            # API documentation
-│   ├── core/
 │   ├── adapter-base/
 │   └── react/
 ├── cookbook/                 # How-to guides
@@ -130,7 +128,7 @@ Key settings:
 
 ```json
 {
-  "name": "Solana Headless SDK",
+  "name": "Hermis",
   "colors": {
     "primary": "#9945FF",
     "light": "#14F195",

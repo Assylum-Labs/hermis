@@ -1,0 +1,18 @@
+{
+  "mode": "pre",
+  "tag": "beta",
+  "initialVersions": {
+    "sample-dapp": "1.0.8",
+    "sample-react-dapp": "0.0.13",
+    "@hermis/solana-headless-adapter-base": "1.1.2",
+    "@hermis/solana-headless-core": "1.1.2",
+    "@hermis/solana-headless-enterprise-core": "0.0.4",
+    "@hermis/errors": "1.0.0",
+    "@hermis/solana-headless-format-config": "1.0.5",
+    "@hermis/solana-headless-react": "1.1.2",
+    "@hermis/wallet-standard-base": "1.0.0"
+  },
+  "changesets": [
+    "wise-knives-press"
+  ]
+}

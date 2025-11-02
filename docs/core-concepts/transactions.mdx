@@ -1,11 +1,11 @@
 ---
 title: 'Transactions'
-description: 'Understanding transaction handling in Solana Headless SDK'
+description: 'Understanding transaction handling in Hermis'
 ---
 
 ## Overview
 
-Transactions are the primary way to interact with the Solana blockchain. Solana Headless SDK provides comprehensive tools for creating, signing, and sending transactions with proper error handling and confirmation tracking.
+Transactions are the primary way to interact with the Solana blockchain. Hermis provides comprehensive tools for creating, signing, and sending transactions with proper error handling and confirmation tracking.
 
 ## Transaction Lifecycle
 
@@ -35,12 +35,14 @@ Create → Sign → Send → Confirm → Finalize
 
 ### Basic Transfer
 
+<Tabs>
+  <Tab title="React + web3.js">
 ```typescript
 import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js';
 import { useWallet, useConnection } from '@hermis/solana-headless-react';
 
 function SendSOL() {
-  const { publicKey, sendTransaction } = useWallet();
+  const { publicKey, signAndSendTransaction } = useWallet();
   const { connection } = useConnection();
 
   const send = async (recipient: string, amount: number) => {
@@ -60,20 +62,160 @@ function SendSOL() {
     transaction.feePayer = publicKey!;
 
     // Sign and send
-    const signature = await sendTransaction(transaction, connection);
+    const signature = await signAndSendTransaction(transaction, connection);
     return signature;
   };
 
   return <button onClick={() => send('recipient...', 0.1)}>Send 0.1 SOL</button>;
 }
 ```
+  </Tab>
+
+  <Tab title="React + Kit">
+```typescript
+import {
+  address,
+  lamports,
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction,
+  type TransactionSigner,
+} from '@solana/kit';
+import { createSolanaRpc, devnet } from '@solana/kit';
+import { getTransferSolInstruction } from '@solana-program/system';
+import { useWallet } from '@hermis/solana-headless-react';
+
+function SendSOL() {
+  const { addressString, transactionSigner, signAndSendTransaction } = useWallet();
+
+  const send = async (recipient: string, amount: number) => {
+    // Create Kit RPC
+    const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+    // Get latest blockhash
+    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+    // Build transaction using Kit's functional pipe pattern
+    const message = pipe(
+      createTransactionMessage({ version: 0 }),
+      m => setTransactionMessageFeePayerSigner(transactionSigner as TransactionSigner<string>, m),
+      m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+      m => appendTransactionMessageInstruction(
+        getTransferSolInstruction({
+          source: address(addressString!),
+          destination: address(recipient),
+          amount: lamports(BigInt(amount * 1_000_000_000))
+        }),
+        m
+      )
+    );
+
+    // Sign and send
+    const signature = await signAndSendTransaction(message, rpc);
+    return signature;
+  };
+
+  return <button onClick={() => send('recipient...', 0.1)}>Send 0.1 SOL</button>;
+}
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + web3.js">
+```typescript
+import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey, Connection } from '@solana/web3.js';
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+
+// Assuming you have a connected wallet manager
+const manager = new WalletAdapterManager(adapters);
+await manager.connect();
+
+const connection = new Connection('https://api.devnet.solana.com');
+
+const send = async (recipient: string, amount: number) => {
+  const transaction = new Transaction();
+
+  transaction.add(
+    SystemProgram.transfer({
+      fromPubkey: manager.publicKey!,
+      toPubkey: new PublicKey(recipient),
+      lamports: amount * LAMPORTS_PER_SOL
+    })
+  );
+
+  // Set recent blockhash
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = manager.publicKey!;
+
+  // Sign and send
+  const signature = await manager.signAndSendTransaction(connection, transaction);
+  return signature;
+};
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + Kit">
+```typescript
+import {
+  address,
+  lamports,
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction,
+} from '@solana/kit';
+import { createSolanaRpc, devnet } from '@solana/kit';
+import { getTransferSolInstruction } from '@solana-program/system';
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+
+// Assuming you have a connected wallet manager
+const manager = new WalletAdapterManager(adapters);
+await manager.connect();
+
+// Create Kit RPC
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const send = async (recipient: string, amount: number) => {
+  // Get latest blockhash
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+  // Build transaction using Kit's functional pipe pattern
+  const message = pipe(
+    createTransactionMessage({ version: 0 }),
+    m => setTransactionMessageFeePayer(address(manager.publicKey!.toBase58()), m),
+    m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+    m => appendTransactionMessageInstruction(
+      getTransferSolInstruction({
+        source: address(manager.publicKey!.toBase58()),
+        destination: address(recipient),
+        amount: lamports(BigInt(amount * 1_000_000_000))
+      }),
+      m
+    )
+  );
+
+  // Sign and send (adapter methods support Kit TransactionMessage)
+  const signature = await manager.signAndSendTransaction(rpc, message);
+  return signature;
+};
+```
+  </Tab>
+</Tabs>
 
 ## Signing Transactions
 
 ### Sign Only
 
+<Tabs>
+  <Tab title="React + web3.js">
 ```typescript
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+
 const { signTransaction } = useWallet();
+const { connection } = useConnection();
 
 // Sign without sending
 const signedTx = await signTransaction(transaction);
@@ -81,11 +223,68 @@ const signedTx = await signTransaction(transaction);
 // Can be sent later or by another service
 const signature = await connection.sendRawTransaction(signedTx.serialize());
 ```
+  </Tab>
+
+  <Tab title="React + Kit">
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const { signTransaction } = useWallet();
+
+// Create Kit RPC
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+// Sign without sending (works with Kit TransactionMessage)
+const signedMessage = await signTransaction(message);
+
+// Can be sent later
+const signature = await rpc.sendTransaction(signedMessage).send();
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + web3.js">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { Connection } from '@solana/web3.js';
+
+const manager = new WalletAdapterManager(adapters);
+const connection = new Connection('https://api.devnet.solana.com');
+
+// Sign without sending
+const signedTx = await manager.signTransaction(transaction);
+
+// Can be sent later
+const signature = await connection.sendRawTransaction(signedTx.serialize());
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + Kit">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const manager = new WalletAdapterManager(adapters);
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+// Sign without sending (supports Kit TransactionMessage)
+const signedMessage = await manager.signTransaction(message);
+
+// Can be sent later
+const signature = await rpc.sendTransaction(signedMessage).send();
+```
+  </Tab>
+</Tabs>
 
 ### Sign Multiple
 
+<Tabs>
+  <Tab title="React + web3.js">
 ```typescript
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+
 const { signAllTransactions } = useWallet();
+const { connection } = useConnection();
 
 const transactions = [tx1, tx2, tx3];
 const signedTxs = await signAllTransactions(transactions);
@@ -95,24 +294,145 @@ for (const tx of signedTxs) {
   await connection.sendRawTransaction(tx.serialize());
 }
 ```
+  </Tab>
+
+  <Tab title="React + Kit">
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const { signAllTransactions } = useWallet();
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const messages = [message1, message2, message3];
+const signedMessages = await signAllTransactions(messages);
+
+// Send all transactions
+for (const message of signedMessages) {
+  await rpc.sendTransaction(message).send();
+}
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + web3.js">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { Connection } from '@solana/web3.js';
+
+const manager = new WalletAdapterManager(adapters);
+const connection = new Connection('https://api.devnet.solana.com');
+
+const transactions = [tx1, tx2, tx3];
+const signedTxs = await manager.signAllTransactions(transactions);
+
+// Send all transactions
+for (const tx of signedTxs) {
+  await connection.sendRawTransaction(tx.serialize());
+}
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + Kit">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const manager = new WalletAdapterManager(adapters);
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const messages = [message1, message2, message3];
+const signedMessages = await manager.signAllTransactions(messages);
+
+// Send all transactions
+for (const message of signedMessages) {
+  await rpc.sendTransaction(message).send();
+}
+```
+  </Tab>
+</Tabs>
 
 ## Sending Transactions
 
 ### With Confirmation
 
+<Tabs>
+  <Tab title="React + web3.js">
 ```typescript
-const signature = await sendTransaction(transaction, connection);
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+
+const { signAndSendTransaction } = useWallet();
+const { connection } = useConnection();
+
+const signature = await signAndSendTransaction(transaction, connection);
 
 // Wait for confirmation
 await connection.confirmTransaction(signature, 'confirmed');
 
 console.log('Transaction confirmed:', signature);
 ```
+  </Tab>
+
+  <Tab title="React + Kit">
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const { signAndSendTransaction } = useWallet();
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const signature = await signAndSendTransaction(message, rpc);
+
+// Wait for confirmation (Kit RPC pattern)
+const { value } = await rpc.getSignatureStatuses([signature]).send();
+console.log('Transaction confirmed:', signature);
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + web3.js">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { Connection } from '@solana/web3.js';
+
+const manager = new WalletAdapterManager(adapters);
+const connection = new Connection('https://api.devnet.solana.com');
+
+const signature = await manager.sendTransaction(connection, transaction);
+
+// Wait for confirmation
+await connection.confirmTransaction(signature, 'confirmed');
+
+console.log('Transaction confirmed:', signature);
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + Kit">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const manager = new WalletAdapterManager(adapters);
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const signature = await manager.signAndSendTransaction(rpc, message);
+
+// Wait for confirmation
+const { value } = await rpc.getSignatureStatuses([signature]).send();
+console.log('Transaction confirmed:', signature);
+```
+  </Tab>
+</Tabs>
 
 ### With Options
 
+<Tabs>
+  <Tab title="React + web3.js">
 ```typescript
-const signature = await sendTransaction(
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+
+const { signAndSendTransaction } = useWallet();
+const { connection } = useConnection();
+
+const signature = await signAndSendTransaction(
   transaction,
   connection,
   {
@@ -122,6 +442,66 @@ const signature = await sendTransaction(
   }
 );
 ```
+  </Tab>
+
+  <Tab title="React + Kit">
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const { signAndSendTransaction } = useWallet();
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const signature = await signAndSendTransaction(
+  message,
+  rpc,
+  {
+    skipPreflight: false,
+    maxRetries: 3,
+  }
+);
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + web3.js">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { Connection } from '@solana/web3.js';
+
+const manager = new WalletAdapterManager(adapters);
+const connection = new Connection('https://api.devnet.solana.com');
+
+const signature = await manager.wallet!.adapter.sendTransaction(
+  transaction,
+  connection,
+  {
+    skipPreflight: false,
+    preflightCommitment: 'confirmed',
+    maxRetries: 3,
+  }
+);
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + Kit">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const manager = new WalletAdapterManager(adapters);
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const signature = await manager.wallet!.adapter.signAndSendTransaction(
+  message,
+  rpc,
+  {
+    skipPreflight: false,
+    maxRetries: 3,
+  }
+);
+```
+  </Tab>
+</Tabs>
 
 ## Transaction Confirmation
 
@@ -140,6 +520,10 @@ const signature = await sendTransaction(
 </CardGroup>
 
 ### Tracking Status
+
+<Note>
+This hook works universally with transaction signatures from both web3.js and Kit architectures.
+</Note>
 
 ```typescript
 import { useSolanaTransaction } from '@hermis/solana-headless-react';
@@ -163,15 +547,26 @@ function TransactionStatus({ signature }: { signature: string }) {
 
 ### Transfer Tokens
 
+<Tabs>
+  <Tab title="React + web3.js">
 ```typescript
-import { getAssociatedTokenAddress, createTransferInstruction } from '@solana/spl-token';
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  createAssociatedTokenAccountInstruction
+} from '@solana/spl-token';
+import { PublicKey, Transaction } from '@solana/web3.js';
+
+const { publicKey, signAndSendTransaction } = useWallet();
+const { connection } = useConnection();
 
 const transferTokens = async (
   mintAddress: PublicKey,
   recipient: PublicKey,
   amount: number
 ) => {
-  // Get token accounts
+  // Get token accounts (ATAs)
   const fromTokenAccount = await getAssociatedTokenAddress(
     mintAddress,
     publicKey!
@@ -182,9 +577,25 @@ const transferTokens = async (
     recipient
   );
 
+  // Check if recipient's ATA exists
+  const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
+
   // Create transaction
   const transaction = new Transaction();
 
+  // Create recipient's ATA if it doesn't exist
+  if (!toAccountInfo) {
+    transaction.add(
+      createAssociatedTokenAccountInstruction(
+        publicKey!,        // payer
+        toTokenAccount,    // ata
+        recipient,         // owner
+        mintAddress        // mint
+      )
+    );
+  }
+
+  // Add transfer instruction
   transaction.add(
     createTransferInstruction(
       fromTokenAccount,
@@ -198,49 +609,306 @@ const transferTokens = async (
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = publicKey!;
 
-  return await sendTransaction(transaction, connection);
+  return await signAndSendTransaction(transaction, connection);
 };
 ```
+  </Tab>
+
+  <Tab title="React + Kit">
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import {
+  createSolanaRpc,
+  devnet,
+  address,
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstructions,
+  type TransactionSigner,
+} from '@solana/kit';
+import { getTransferInstruction, getCreateAssociatedTokenIdempotentInstruction } from '@solana-program/token';
+import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { PublicKey } from '@solana/web3.js';
+
+const { publicKey, transactionSigner, signAndSendTransaction } = useWallet();
+const { connection } = useConnection();
+
+const transferTokens = async (
+  mintAddress: string,
+  recipient: string,
+  amount: bigint
+) => {
+  const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+  // Get token accounts (ATAs)
+  const mintPubkey = new PublicKey(mintAddress);
+  const recipientPubkey = new PublicKey(recipient);
+
+  const fromTokenAccount = await getAssociatedTokenAddress(mintPubkey, publicKey!);
+  const toTokenAccount = await getAssociatedTokenAddress(mintPubkey, recipientPubkey);
+
+  // Check if recipient's ATA exists
+  const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
+  const instructions = [];
+
+  // Create recipient's ATA if it doesn't exist
+  if (!toAccountInfo) {
+    instructions.push(
+      getCreateAssociatedTokenIdempotentInstruction({
+        payer: transactionSigner as TransactionSigner<string>,
+        ata: address(toTokenAccount.toBase58()),
+        owner: address(recipient),
+        mint: address(mintAddress)
+      })
+    );
+  }
+
+  // Add transfer instruction
+  instructions.push(
+    getTransferInstruction({
+      source: address(fromTokenAccount.toBase58()),
+      destination: address(toTokenAccount.toBase58()),
+      authority: transactionSigner as TransactionSigner<string>,
+      amount
+    })
+  );
+
+  // Get latest blockhash
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+  // Build transaction using Kit's functional pipe pattern
+  const message = pipe(
+    createTransactionMessage({ version: 0 }),
+    m => setTransactionMessageFeePayerSigner(transactionSigner as TransactionSigner<string>, m),
+    m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+    m => appendTransactionMessageInstructions(instructions, m)
+  );
+
+  return await signAndSendTransaction(message, rpc);
+};
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + web3.js">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import {
+  getAssociatedTokenAddress,
+  createTransferInstruction,
+  createAssociatedTokenAccountInstruction
+} from '@solana/spl-token';
+import { PublicKey, Transaction, Connection } from '@solana/web3.js';
+
+const manager = new WalletAdapterManager(adapters);
+const connection = new Connection('https://api.devnet.solana.com');
+
+const transferTokens = async (
+  mintAddress: PublicKey,
+  recipient: PublicKey,
+  amount: number
+) => {
+  // Get token accounts (ATAs)
+  const fromTokenAccount = await getAssociatedTokenAddress(
+    mintAddress,
+    manager.publicKey!
+  );
+
+  const toTokenAccount = await getAssociatedTokenAddress(
+    mintAddress,
+    recipient
+  );
+
+  // Check if recipient's ATA exists
+  const toAccountInfo = await connection.getAccountInfo(toTokenAccount);
+
+  // Create transaction
+  const transaction = new Transaction();
+
+  // Create recipient's ATA if it doesn't exist
+  if (!toAccountInfo) {
+    transaction.add(
+      createAssociatedTokenAccountInstruction(
+        manager.publicKey!,  // payer
+        toTokenAccount,      // ata
+        recipient,           // owner
+        mintAddress          // mint
+      )
+    );
+  }
+
+  // Add transfer instruction
+  transaction.add(
+    createTransferInstruction(
+      fromTokenAccount,
+      toTokenAccount,
+      manager.publicKey!,
+      amount
+    )
+  );
+
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = manager.publicKey!;
+
+  return await manager.signAndSendTransaction(connection, transaction);
+};
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + Kit">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import {
+  createSolanaRpc,
+  devnet,
+  address,
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstructions,
+} from '@solana/kit';
+import {
+  getTransferInstruction,
+  getCreateAssociatedTokenIdempotentInstruction,
+  findAssociatedTokenPda,
+  TOKEN_PROGRAM_ADDRESS
+} from '@solana-program/token';
+
+const manager = new WalletAdapterManager(adapters);
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const transferTokens = async (
+  mintAddress: string,
+  recipient: string,
+  amount: bigint
+) => {
+  const mintAddr = address(mintAddress);
+  const ownerAddr = address(manager.publicKey!.toBase58());
+  const recipientAddr = address(recipient);
+
+  // Find associated token addresses using Kit
+  const [sourceAta] = await findAssociatedTokenPda({
+    mint: mintAddr,
+    owner: ownerAddr,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS
+  });
+  const [destinationAta] = await findAssociatedTokenPda({
+    mint: mintAddr,
+    owner: recipientAddr,
+    tokenProgram: TOKEN_PROGRAM_ADDRESS
+  });
+
+  // Get latest blockhash
+  const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+  // Build transaction with create ATA (idempotent) and transfer
+  const message = pipe(
+    createTransactionMessage({ version: 0 }),
+    m => setTransactionMessageFeePayer(ownerAddr, m),
+    m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+    m => appendTransactionMessageInstructions([
+      // Create destination ATA if it doesn't exist (idempotent instruction)
+      getCreateAssociatedTokenIdempotentInstruction({
+        mint: mintAddr,
+        owner: recipientAddr,
+        ata: destinationAta,
+        payer: ownerAddr
+      }),
+      // Transfer tokens
+      getTransferInstruction({
+        source: sourceAta,
+        destination: destinationAta,
+        authority: ownerAddr,
+        amount
+      })
+    ], m)
+  );
+
+  return await manager.signAndSendTransaction(rpc, message);
+};
+```
+  </Tab>
+</Tabs>
 
 ## Error Handling
 
-### Common Errors
+Hermis uses `HermisError` for type-safe transaction error handling:
+
+```typescript
+import {
+  isHermisError,
+  HERMIS_ERROR__TRANSACTION__SEND_FAILED,
+  HERMIS_ERROR__NETWORK__INSUFFICIENT_BALANCE
+} from '@hermis/errors';
+
+try {
+  await signAndSendTransaction(transaction, connection);
+} catch (error) {
+  if (isHermisError(error, HERMIS_ERROR__NETWORK__INSUFFICIENT_BALANCE)) {
+    console.error(`Insufficient balance: required ${error.context.required}, available ${error.context.available}`);
+  } else if (isHermisError(error, HERMIS_ERROR__TRANSACTION__SEND_FAILED)) {
+    console.error(`Transaction failed: ${error.message}`);
+  } else if (isHermisError(error)) {
+    console.error(`Error [${error.code}]: ${error.message}`);
+  }
+}
+```
+
+### Common Error Patterns
 
 <AccordionGroup>
-  <Accordion title="Insufficient Funds">
-    Account doesn't have enough SOL for transaction + fees.
+  <Accordion title="Insufficient Balance">
+    Handle insufficient funds with typed context:
     ```typescript
-    if (error.message.includes('insufficient funds')) {
-      console.error('Not enough SOL');
+    import { isHermisError, HERMIS_ERROR__NETWORK__INSUFFICIENT_BALANCE } from '@hermis/errors';
+
+    if (isHermisError(error, HERMIS_ERROR__NETWORK__INSUFFICIENT_BALANCE)) {
+      // Access typed context: address, required, available
+      const needed = error.context.required - error.context.available;
+      showToast(`Need ${needed} more lamports`);
     }
     ```
   </Accordion>
 
-  <Accordion title="Blockhash Not Found">
-    Transaction blockhash expired (valid for ~60 seconds).
+  <Accordion title="Transaction Failed">
+    Handle transaction send failures:
     ```typescript
-    // Get fresh blockhash and retry
-    const { blockhash } = await connection.getLatestBlockhash('finalized');
-    transaction.recentBlockhash = blockhash;
-    ```
-  </Accordion>
+    import { isHermisError, HERMIS_ERROR__TRANSACTION__SEND_FAILED } from '@hermis/errors';
 
-  <Accordion title="Transaction Simulation Failed">
-    Transaction would fail on-chain.
-    ```typescript
-    try {
-      await connection.simulateTransaction(transaction);
-    } catch (error) {
-      console.error('Simulation failed:', error.logs);
+    if (isHermisError(error, HERMIS_ERROR__TRANSACTION__SEND_FAILED)) {
+      // HermisError provides formatted message
+      showToast(error.message);
+
+      // Optionally retry or get fresh blockhash
+      const { blockhash } = await connection.getLatestBlockhash('finalized');
+      transaction.recentBlockhash = blockhash;
     }
     ```
   </Accordion>
 
-  <Accordion title="User Rejected">
-    User cancelled in wallet.
+  <Accordion title="Signature Failed">
+    Handle transaction signing failures:
     ```typescript
-    if (error.code === 4001) {
-      console.log('User rejected transaction');
+    import { isHermisError, HERMIS_ERROR__TRANSACTION__SIGNATURE_FAILED } from '@hermis/errors';
+
+    if (isHermisError(error, HERMIS_ERROR__TRANSACTION__SIGNATURE_FAILED)) {
+      showToast('Failed to sign transaction');
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Generic Error Handling">
+    Handle any HermisError with automatic formatting:
+    ```typescript
+    import { isHermisError } from '@hermis/errors';
+
+    if (isHermisError(error)) {
+      // All HermisErrors provide formatted messages
+      console.error(`[${error.code}] ${error.message}`);
+      showToast(error.message);
     }
     ```
   </Accordion>
@@ -248,7 +916,15 @@ const transferTokens = async (
 
 ### Retry Logic
 
+<Tabs>
+  <Tab title="React + web3.js">
 ```typescript
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { Transaction } from '@solana/web3.js';
+
+const { signAndSendTransaction } = useWallet();
+const { connection } = useConnection();
+
 const sendWithRetry = async (
   transaction: Transaction,
   maxRetries = 3
@@ -261,7 +937,7 @@ const sendWithRetry = async (
         transaction.recentBlockhash = blockhash;
       }
 
-      const signature = await sendTransaction(transaction, connection);
+      const signature = await signAndSendTransaction(transaction, connection);
       await connection.confirmTransaction(signature);
       return signature;
     } catch (error) {
@@ -271,12 +947,118 @@ const sendWithRetry = async (
   }
 };
 ```
+  </Tab>
+
+  <Tab title="React + Kit">
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const { signAndSendTransaction } = useWallet();
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const sendWithRetry = async (
+  message: any,
+  maxRetries = 3
+) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      // Refresh blockhash on retry
+      if (i > 0) {
+        const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+        message = { ...message, ...latestBlockhash };
+      }
+
+      const signature = await signAndSendTransaction(message, rpc);
+      const { value } = await rpc.getSignatureStatuses([signature]).send();
+      return signature;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+};
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + web3.js">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { Connection, Transaction } from '@solana/web3.js';
+
+const manager = new WalletAdapterManager(adapters);
+const connection = new Connection('https://api.devnet.solana.com');
+
+const sendWithRetry = async (
+  transaction: Transaction,
+  maxRetries = 3
+) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      // Refresh blockhash on retry
+      if (i > 0) {
+        const { blockhash } = await connection.getLatestBlockhash();
+        transaction.recentBlockhash = blockhash;
+      }
+
+      const signature = await manager.wallet!.adapter.sendTransaction(transaction, connection);
+      await connection.confirmTransaction(signature);
+      return signature;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+};
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + Kit">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const manager = new WalletAdapterManager(adapters);
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const sendWithRetry = async (
+  message: any,
+  maxRetries = 3
+) => {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      // Refresh blockhash on retry
+      if (i > 0) {
+        const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+        message = { ...message, ...latestBlockhash };
+      }
+
+      const signature = await manager.wallet!.adapter.signAndSendTransaction(message, rpc);
+      const { value } = await rpc.getSignatureStatuses([signature]).send();
+      return signature;
+    } catch (error) {
+      if (i === maxRetries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+    }
+  }
+};
+```
+  </Tab>
+</Tabs>
 
 ## Transaction Fees
 
 ### Estimating Fees
 
+<Tabs>
+  <Tab title="React + web3.js">
 ```typescript
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
+
+const { publicKey } = useWallet();
+const { connection } = useConnection();
+
 const estimateFee = async (transaction: Transaction) => {
   const { blockhash } = await connection.getLatestBlockhash();
   transaction.recentBlockhash = blockhash;
@@ -289,11 +1071,75 @@ const estimateFee = async (transaction: Transaction) => {
   return fee.value / LAMPORTS_PER_SOL; // Convert to SOL
 };
 ```
+  </Tab>
+
+  <Tab title="React + Kit">
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import { createSolanaRpc, devnet, lamports } from '@solana/kit';
+
+const { addressString } = useWallet();
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const estimateFee = async (message: any) => {
+  // Get fee for message
+  const { value: fee } = await rpc.getFeeForMessage(message).send();
+
+  return Number(fee) / 1_000_000_000; // Convert lamports to SOL
+};
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + web3.js">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { Connection, Transaction, LAMPORTS_PER_SOL } from '@solana/web3.js';
+
+const manager = new WalletAdapterManager(adapters);
+const connection = new Connection('https://api.devnet.solana.com');
+
+const estimateFee = async (transaction: Transaction) => {
+  const { blockhash } = await connection.getLatestBlockhash();
+  transaction.recentBlockhash = blockhash;
+  transaction.feePayer = manager.publicKey!;
+
+  const fee = await connection.getFeeForMessage(
+    transaction.compileMessage()
+  );
+
+  return fee.value / LAMPORTS_PER_SOL; // Convert to SOL
+};
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + Kit">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { createSolanaRpc, devnet } from '@solana/kit';
+
+const manager = new WalletAdapterManager(adapters);
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+const estimateFee = async (message: any) => {
+  // Get fee for message
+  const { value: fee } = await rpc.getFeeForMessage(message).send();
+
+  return Number(fee) / 1_000_000_000; // Convert lamports to SOL
+};
+```
+  </Tab>
+</Tabs>
 
 ### Priority Fees
 
+<Tabs>
+  <Tab title="React + web3.js">
 ```typescript
-import { ComputeBudgetProgram } from '@solana/web3.js';
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { Transaction, ComputeBudgetProgram } from '@solana/web3.js';
+
+const { publicKey, signAndSendTransaction } = useWallet();
+const { connection } = useConnection();
 
 // Add priority fee to transaction
 transaction.add(
@@ -301,7 +1147,106 @@ transaction.add(
     microLamports: 1000, // Priority fee
   })
 );
+
+const signature = await signAndSendTransaction(transaction, connection);
 ```
+  </Tab>
+
+  <Tab title="React + Kit">
+```typescript
+import { useWallet } from '@hermis/solana-headless-react';
+import {
+  createSolanaRpc,
+  devnet,
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstructions,
+  type TransactionSigner,
+} from '@solana/kit';
+import { getSetComputeUnitPriceInstruction } from '@solana-program/compute-budget';
+
+const { transactionSigner, signAndSendTransaction } = useWallet();
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+// Get latest blockhash
+const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+// Create priority fee instruction
+const priorityFeeInstruction = getSetComputeUnitPriceInstruction({
+  microLamports: 1000n
+});
+
+// Build transaction with multiple instructions using pipe
+const message = pipe(
+  createTransactionMessage({ version: 0 }),
+  m => setTransactionMessageFeePayerSigner(transactionSigner as TransactionSigner<string>, m),
+  m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+  m => appendTransactionMessageInstructions([priorityFeeInstruction, ...otherInstructions], m)
+);
+
+const signature = await signAndSendTransaction(message, rpc);
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + web3.js">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { Connection, Transaction, ComputeBudgetProgram } from '@solana/web3.js';
+
+const manager = new WalletAdapterManager(adapters);
+const connection = new Connection('https://api.devnet.solana.com');
+
+// Add priority fee to transaction
+transaction.add(
+  ComputeBudgetProgram.setComputeUnitPrice({
+    microLamports: 1000, // Priority fee
+  })
+);
+
+const signature = await manager.sendTransaction(connection, transaction);
+```
+  </Tab>
+
+  <Tab title="Vanilla TS + Kit">
+```typescript
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import {
+  createSolanaRpc,
+  devnet,
+  address,
+  pipe,
+  createTransactionMessage,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstructions,
+} from '@solana/kit';
+import { getSetComputeUnitPriceInstruction } from '@solana-program/compute-budget';
+
+const manager = new WalletAdapterManager(adapters);
+const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+
+// Get latest blockhash
+const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+// Create priority fee instruction
+const priorityFeeInstruction = getSetComputeUnitPriceInstruction({
+  microLamports: 1000n
+});
+
+// Build transaction with multiple instructions using pipe
+const message = pipe(
+  createTransactionMessage({ version: 0 }),
+  m => setTransactionMessageFeePayer(address(manager.publicKey!.toBase58()), m),
+  m => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, m),
+  m => appendTransactionMessageInstructions([priorityFeeInstruction, ...otherInstructions], m)
+);
+
+const signature = await manager.signAndSendTransaction(rpc, message);
+```
+  </Tab>
+</Tabs>
 
 ## Best Practices
 

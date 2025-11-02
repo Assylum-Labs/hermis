@@ -29,6 +29,7 @@ import {
   SolanaMobileWalletAdapterWalletName,
   createKitSignersFromAdapter,
   getChainId,
+  getNetworkFromConnection,
   type KitSigners,
   type SolanaNetwork,
 } from '@hermis/solana-headless-adapter-base';
@@ -131,8 +132,11 @@ export function WalletProvider({
     publicKey: null
   });
 
-  // Chain state for Kit integration (defaults to devnet)
-  const [currentChain, setCurrentChain] = useState<`solana:${string}`>(getChainId('devnet'));
+  // Chain computed from connection for Kit integration
+  const currentChain = useMemo(() => {
+    const network = getNetworkFromConnection(connection);
+    return getChainId(network);
+  }, [connection]);
 
   const onErrorRef = useRef(onError);
   const isUnloadingRef = useRef(false);
@@ -292,8 +296,8 @@ export function WalletProvider({
   // Compute Kit signers from the current adapter
   const kitSigners = useMemo<KitSigners>(() => {
     const currentAdapter = latestAdapterRef.current || adapterState.adapter;
-    return createKitSignersFromAdapter(currentAdapter, currentChain);
-  }, [adapterState.adapter, adapterState.connected, adapterState.publicKey, currentChain]);
+    return createKitSignersFromAdapter(currentAdapter, connection);
+  }, [adapterState.adapter, adapterState.connected, adapterState.publicKey, connection]);
 
   useEffect(() => {
     if (walletName === SolanaMobileWalletAdapterWalletName && getIsMobile(adaptersWithStandardAdapters)) {

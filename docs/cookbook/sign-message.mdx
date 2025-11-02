@@ -73,40 +73,46 @@ function AuthComponent() {
 }
 ```
 
-## Backend Verification
+## Backend Verification (Conceptual)
 
-```typescript
-// Node.js backend
-import { PublicKey } from '@solana/web3.js';
-import * as nacl from 'tweetnacl';
+On your backend, verify message signatures by following these steps:
 
-function verifySignature(
-  message: string,
-  signature: number[],
-  publicKeyStr: string
-): boolean {
-  const messageBytes = new TextEncoder().encode(message);
-  const signatureBytes = new Uint8Array(signature);
-  const publicKeyBytes = new PublicKey(publicKeyStr).toBytes();
+1. **Receive data from client**: message, signature, and public key
+2. **Verify Ed25519 signature**: Use a cryptographic library (e.g., `tweetnacl`, `@noble/ed25519`)
+3. **Validate message contents**: Check nonce, timestamp, and domain match expectations
+4. **Prevent replay attacks**: Store used nonces temporarily and reject duplicates
+5. **Check expiration**: Verify message timestamp is recent (e.g., within 5 minutes)
+6. **Generate auth token**: Create JWT or session token if signature is valid
 
-  return nacl.sign.detached.verify(
-    messageBytes,
-    signatureBytes,
-    publicKeyBytes
-  );
-}
+**Security Notes:**
+- Never trust client-side verification - always verify server-side
+- Use HTTPS to protect signatures in transit
+- Rate limit verification endpoints to prevent brute force attacks
+- Store nonces with TTL to prevent replay attacks
 
-// Express endpoint
-app.post('/api/auth/verify', (req, res) => {
-  const { message, signature, publicKey } = req.body;
+**Pseudo-code for verification:**
+```
+// 1. Parse and validate input
+message_bytes = utf8_encode(message)
+signature_bytes = decode_signature(signature)
+public_key_bytes = decode_public_key(public_key)
 
-  if (verifySignature(message, signature, publicKey)) {
-    const token = generateJWT(publicKey);
-    res.json({ token });
-  } else {
-    res.status(401).json({ error: 'Invalid signature' });
-  }
-});
+// 2. Verify signature
+if !verify_ed25519(message_bytes, signature_bytes, public_key_bytes):
+    return error("Invalid signature")
+
+// 3. Check nonce not used
+if nonce_exists_in_cache(nonce):
+    return error("Nonce already used")
+cache_nonce(nonce, ttl=300)  // 5 minutes
+
+// 4. Check message not expired
+if timestamp < now() - 300:  // 5 minutes
+    return error("Message expired")
+
+// 5. Generate token
+token = generate_jwt(public_key)
+return success(token)
 ```
 
 ## Sign-In With Solana (SIWS)
@@ -136,10 +142,57 @@ function SignInWithSolana() {
 }
 ```
 
-## Best Practices
+## Message Signing (@solana/kit)
 
-<Check>Always include a nonce or timestamp</Check>
-<Check>Verify signatures on the backend</Check>
-<Check>Use HTTPS for authentication</Check>
-<Check>Handle user rejection gracefully</Check>
-<Check>Clear sensitive data after use</Check>
+```tsx
+import { useWallet, useConnection } from '@hermis/solana-headless-react';
+import { createKitSignersFromAdapter } from '@hermis/solana-headless-adapter-base';
+import { HermisError, HERMIS_ERROR__WALLET_INTERACTION__FEATURE_NOT_SUPPORTED } from '@hermis/errors';
+import { signBytes } from '@solana/kit';
+
+function SignMessageKit() {
+  const { wallet, publicKey } = useWallet();
+  const { connection } = useConnection();
+
+  const handleSign = async () => {
+    if (!wallet || !publicKey) return;
+
+    // Create Kit signers from adapter
+    const { messageSigner } = createKitSignersFromAdapter(
+      wallet.adapter,
+      connection
+    );
+
+    if (!messageSigner) {
+      throw new HermisError(
+        HERMIS_ERROR__WALLET_INTERACTION__FEATURE_NOT_SUPPORTED,
+        { feature: 'message signing' }
+      );
+    }
+
+    const message = `Sign this message to authenticate.\nTimestamp: ${Date.now()}`;
+    const messageBytes = new TextEncoder().encode(message);
+
+    // Sign using Kit message signer
+    const signatures = await signBytes(messageSigner, messageBytes);
+    const signature = signatures[messageSigner.address];
+
+    console.log('Signature:', signature);
+    return {
+      message,
+      signature: Array.from(signature),
+      publicKey: publicKey.toBase58(),
+    };
+  };
+
+  return <button onClick={handleSign}>Sign Message (Kit)</button>;
+}
+```
+
+**When to use Kit for message signing:**
+- Building with @solana/kit architecture
+- Need type-safe signer interfaces
+- Working with Kit-native libraries
+- Want better tree-shaking and smaller bundles
+
+**Note:** The Kit `messageSigner` integrates seamlessly with wallet adapters through `createKitSignersFromAdapter`, providing a bridge between traditional wallet adapters and modern Kit signers.
