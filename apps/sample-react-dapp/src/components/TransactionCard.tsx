@@ -175,7 +175,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
 
     setError(null);
     setIsSendingKit(true);
-    addArchitectureLog('🟦 Starting Kit-style sendTransaction demo...');
+    addArchitectureLog(' Starting Kit-style sendTransaction demo...');
 
     try {
       // Validate inputs
@@ -241,7 +241,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
 
     setError(null);
     setIsSignAndSending(true);
-    addArchitectureLog('🔄 Starting signAndSendTransaction demo...');
+    addArchitectureLog(' Starting signAndSendTransaction demo...');
 
     try {
       // Validate inputs
@@ -413,7 +413,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
 
           <div className="button-group">
             <div className="button-section">
-              <h5>🟦 Web3.js Style (Legacy)</h5>
+              <h5> Web3.js Style (Legacy)</h5>
               <button
                 className="send-button"
                 onClick={handleSendTransaction}
@@ -440,7 +440,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
             </div>
 
             <div className="button-section">
-              <h5>🔄 New Dual Architecture Methods</h5>
+              <h5> New Dual Architecture Methods</h5>
               <button
                 className="send-button new-method-button"
                 onClick={handleSignAndSendTransaction}
@@ -460,7 +460,7 @@ export const TransactionCard: React.FC<TransactionCardProps> = ({ onTransactionS
           </div>
 
           <div className="architecture-info">
-            <p><strong>🎯 Goal:</strong> Same methods handle both web3.js and kit inputs!</p>
+            <p><strong> Goal:</strong> Same methods handle both web3.js and kit inputs!</p>
             <p>Watch the log to see architecture detection in action.</p>
           </div>
         </div>

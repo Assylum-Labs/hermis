@@ -122,7 +122,7 @@
   // ... add instructions
   await signTransaction(tx); // ✅ Works exactly as before
 
-  🎯 Using Kit Architecture (NEW)
+   Using Kit Architecture (NEW)
 
   import {
     useWallet,
@@ -137,7 +137,7 @@
   const { signTransaction } = useWallet();
   await signTransaction(kitTx); // ✅ Automatically uses Kit signing
 
-  🔄 Mixed Architecture Usage
+   Mixed Architecture Usage
 
   import { signTransaction } from '@hermis/solana-headless-react';
 

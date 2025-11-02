@@ -335,7 +335,7 @@ Here's a complete example of testing one section:
 
 ---
 
-## 🎯 Testing Priorities
+##  Testing Priorities
 
 Test in this order:
 

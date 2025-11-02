@@ -43,7 +43,7 @@ export const TransactionMethodsDemo: React.FC<TransactionMethodsDemoProps> = ({ 
   };
 
   const logArchitecturePath = (method: string, architecture: 'web3.js' | 'kit', details: string) => {
-    const emoji = architecture === 'web3.js' ? '🟦' : '🟢';
+    const emoji = architecture === 'web3.js' ? '' : '🟢';
     console.log(`${emoji} ${method} - ${architecture.toUpperCase()} Path: ${details}`);
   };
 
@@ -260,7 +260,7 @@ export const TransactionMethodsDemo: React.FC<TransactionMethodsDemoProps> = ({ 
     return (
       <div className="transaction-methods-demo">
         <div className="demo-header">
-          <h3>🔄 Dual Architecture Transaction Methods Demo</h3>
+          <h3> Dual Architecture Transaction Methods Demo</h3>
           <p>Please connect a wallet to test all dual architecture methods</p>
         </div>
       </div>
@@ -270,10 +270,10 @@ export const TransactionMethodsDemo: React.FC<TransactionMethodsDemoProps> = ({ 
   return (
     <div className="transaction-methods-demo">
       <div className="demo-header">
-        <h3>🔄 Dual Architecture Transaction Methods Demo</h3>
+        <h3> Dual Architecture Transaction Methods Demo</h3>
         <p>Test all 5 core operations with automatic architecture detection</p>
         <div className="architecture-legend">
-          <span className="legend-item web3js">🟦 Web3.js Path</span>
+          <span className="legend-item web3js"> Web3.js Path</span>
           <span className="legend-item kit">🟢 Kit Path</span>
         </div>
       </div>
@@ -437,7 +437,7 @@ export const TransactionMethodsDemo: React.FC<TransactionMethodsDemoProps> = ({ 
       </div>
 
       <div className="demo-footer">
-        <p>🎯 <strong>Goal Achieved:</strong> ONE method handles BOTH web3.js and kit architectures!</p>
+        <p> <strong>Goal Achieved:</strong> ONE method handles BOTH web3.js and kit architectures!</p>
         <p>Check the console for detailed architecture path logging.</p>
       </div>
     </div>

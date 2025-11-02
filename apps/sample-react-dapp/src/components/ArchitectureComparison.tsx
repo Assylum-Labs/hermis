@@ -34,7 +34,7 @@ export const ArchitectureComparison: React.FC = () => {
 
   const logStep = (step: string) => {
     setCurrentStep(step);
-    console.log(`🔄 ${step}`);
+    console.log(` ${step}`);
   };
 
   const runComparison = async () => {
@@ -47,7 +47,7 @@ export const ArchitectureComparison: React.FC = () => {
 
     try {
       // Web3.js Approach
-      logStep('🟦 Creating Web3.js Transaction...');
+      logStep(' Creating Web3.js Transaction...');
       const web3StartTime = performance.now();
 
       const web3Transaction = new Transaction();
@@ -63,7 +63,7 @@ export const ArchitectureComparison: React.FC = () => {
         })
       );
 
-      logStep('🟦 Signing Web3.js Transaction with Dual Architecture...');
+      logStep(' Signing Web3.js Transaction with Dual Architecture...');
       console.log('   Input: Transaction + WalletAdapter');
       console.log('   Expected Path: Legacy wallet detection → sign via adapter');
 
@@ -113,7 +113,7 @@ export const ArchitectureComparison: React.FC = () => {
 
     } catch (error) {
       console.error('Comparison error:', error);
-      if (currentStep.includes('🟦')) {
+      if (currentStep.includes('')) {
         setWeb3Results({ error: (error as Error).message });
       } else {
         setKitResults({ error: (error as Error).message });
@@ -128,7 +128,7 @@ export const ArchitectureComparison: React.FC = () => {
     return (
       <div className="architecture-comparison">
         <div className="comparison-header">
-          <h3>🔄 Architecture Comparison: Web3.js vs Kit</h3>
+          <h3> Architecture Comparison: Web3.js vs Kit</h3>
           <p>Please connect a wallet to compare architectures</p>
         </div>
       </div>
@@ -138,7 +138,7 @@ export const ArchitectureComparison: React.FC = () => {
   return (
     <div className="architecture-comparison">
       <div className="comparison-header">
-        <h3>🔄 Architecture Comparison: Web3.js vs Kit</h3>
+        <h3> Architecture Comparison: Web3.js vs Kit</h3>
         <p>Side-by-side comparison showing how the SAME dual architecture method handles different inputs</p>
       </div>
 
@@ -161,7 +161,7 @@ export const ArchitectureComparison: React.FC = () => {
         {/* Web3.js Side */}
         <div className="comparison-side web3js-side">
           <div className="side-header">
-            <h4>🟦 Web3.js Architecture</h4>
+            <h4> Web3.js Architecture</h4>
             <p>Traditional Solana development</p>
           </div>
 
@@ -270,7 +270,7 @@ const signed = await signTransactionCore(
       </div>
 
       <div className="comparison-summary">
-        <h4>🎯 Key Takeaway</h4>
+        <h4> Key Takeaway</h4>
         <div className="summary-points">
           <div className="summary-point">
             <strong>Same Method:</strong> <code>signTransaction</code> handles both architectures
@@ -297,12 +297,12 @@ const signed = await signTransactionCore(
           </div>
           <div className="detection-row">
             <span>Transaction + Keypair</span>
-            <span>🟦 Web3.js</span>
+            <span> Web3.js</span>
             <span>Legacy signing</span>
           </div>
           <div className="detection-row">
             <span>Transaction + WalletAdapter</span>
-            <span>🟦 Web3.js</span>
+            <span> Web3.js</span>
             <span>Adapter signing</span>
           </div>
           <div className="detection-row">

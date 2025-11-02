@@ -44,7 +44,7 @@ export const UnifiedAPIDemo: React.FC<UnifiedAPIDemoProps> = ({ recipient, amoun
     if (!publicKey || !connection || !wallet?.adapter || !recipient || !amount) return;
 
     setIsTestingWeb3(true);
-    addLog('🟦 Testing Web3.js Transaction with Unified API', 'info');
+    addLog(' Testing Web3.js Transaction with Unified API', 'info');
 
     try {
       // Step 1: Create web3.js Transaction
@@ -111,7 +111,7 @@ export const UnifiedAPIDemo: React.FC<UnifiedAPIDemoProps> = ({ recipient, amoun
       addLog('Calling signTransaction(kitTx, options) - SAME API!');
       await signTransaction(kitTransaction);
       addLog('✅ signTransaction successfully signed Kit transaction!', 'success');
-      addLog('🎯 Key Point: SAME signTransaction() method handled Kit transaction!', 'success');
+      addLog(' Key Point: SAME signTransaction() method handled Kit transaction!', 'success');
 
       setResults(prev => ({ ...prev, kit: 'Kit transaction signed successfully!' }));
 
@@ -143,7 +143,7 @@ export const UnifiedAPIDemo: React.FC<UnifiedAPIDemoProps> = ({ recipient, amoun
 
       <div className="api-comparison">
         <div className="comparison-section">
-          <h4>🟦 Web3.js Transaction</h4>
+          <h4> Web3.js Transaction</h4>
           <div className="code-example">
             <code>
               const tx = new Transaction();<br/>
@@ -175,7 +175,7 @@ export const UnifiedAPIDemo: React.FC<UnifiedAPIDemoProps> = ({ recipient, amoun
           disabled={isTestingWeb3 || isTestingKit || !recipient || !amount}
           className="test-button web3-button"
         >
-          {isTestingWeb3 ? 'Testing...' : '🟦 Test Web3.js with Unified API'}
+          {isTestingWeb3 ? 'Testing...' : ' Test Web3.js with Unified API'}
         </button>
 
         <button
@@ -220,7 +220,7 @@ export const UnifiedAPIDemo: React.FC<UnifiedAPIDemoProps> = ({ recipient, amoun
 
       <div className="demo-footer">
         <div className="key-point">
-          <strong>🎯 Key Achievement:</strong> ONE API method automatically handles BOTH web3.js and Kit architectures!
+          <strong> Key Achievement:</strong> ONE API method automatically handles BOTH web3.js and Kit architectures!
         </div>
         <div className="benefits">
           <h5>Benefits:</h5>

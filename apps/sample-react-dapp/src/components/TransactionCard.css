@@ -1,152 +1,169 @@
 .transaction-card {
-    background-color: white;
-    border-radius: 10px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    background-color: var(--bg-white);
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(17, 69, 77, 0.08);
     overflow: hidden;
+    transition: all 0.3s ease;
   }
-  
+
+  .transaction-card:hover {
+    box-shadow: 0 8px 24px rgba(17, 69, 77, 0.12);
+  }
+
   .transaction-card-header {
-    background-color: #f5f7fa;
-    padding: 15px 20px;
-    border-bottom: 1px solid #eee;
+    background: linear-gradient(135deg, rgba(17, 69, 77, 0.06) 0%, rgba(95, 184, 165, 0.06) 100%);
+    padding: 18px 24px;
+    border-bottom: 2px solid var(--border-gray);
   }
-  
+
   .transaction-card-header h3 {
     margin: 0;
-    color: #333;
-    font-size: 1.1rem;
+    color: var(--primary-teal);
+    font-size: 1.25rem;
+    font-weight: 600;
   }
-  
+
   .transaction-card-body {
-    padding: 20px;
+    padding: 24px;
   }
-  
+
   .transaction-form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 18px;
   }
-  
+
   .form-group {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 8px;
   }
-  
+
   .form-group label {
-    font-size: 0.9rem;
-    color: #555;
-    font-weight: 500;
-  }
-  
-  .form-group input {
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
     font-size: 0.95rem;
+    color: var(--primary-teal);
+    font-weight: 600;
   }
-  
+
+  .form-group input {
+    padding: 12px 14px;
+    border: 1px solid var(--border-gray);
+    border-radius: 10px;
+    font-size: 0.98rem;
+    transition: all 0.3s ease;
+    background-color: var(--bg-white);
+  }
+
   .form-group input:focus {
     outline: none;
-    border-color: #9945FF;
-    box-shadow: 0 0 0 2px rgba(153, 69, 255, 0.1);
+    border-color: var(--primary-teal);
+    box-shadow: 0 0 0 3px rgba(17, 69, 77, 0.1);
   }
   
   .transaction-error {
-    color: #d73a49;
-    font-size: 0.9rem;
-    padding: 5px 0;
-  }
-  
-  .transaction-result {
-    background-color: #f5f7fa;
-    padding: 10px;
-    border-radius: 5px;
-    font-size: 0.9rem;
-  }
-  
-  .tx-signature {
-    font-family: monospace;
-    word-break: break-all;
-    display: block;
-    background-color: #f0f0f0;
-    padding: 5px;
-    border-radius: 3px;
-    margin-top: 3px;
-  }
-  
-  .tx-status {
+    color: var(--error);
+    font-size: 0.95rem;
+    padding: 8px 0;
     font-weight: 500;
   }
-  
+
+  .transaction-result {
+    background: linear-gradient(135deg, rgba(17, 69, 77, 0.04) 0%, rgba(95, 184, 165, 0.04) 100%);
+    padding: 14px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    border: 1px solid var(--border-gray);
+  }
+
+  .tx-signature {
+    font-family: 'Monaco', 'Menlo', monospace;
+    word-break: break-all;
+    display: block;
+    background-color: rgba(17, 69, 77, 0.06);
+    padding: 8px;
+    border-radius: 8px;
+    margin-top: 6px;
+    color: var(--primary-teal);
+  }
+
+  .tx-status {
+    font-weight: 600;
+  }
+
   .tx-status-pending {
-    color: #e36209;
+    color: var(--warning);
   }
-  
+
   .tx-status-confirmed {
-    color: #0366d6;
+    color: var(--primary-teal-active);
   }
-  
+
   .tx-status-finalized {
-    color: #28a745;
+    color: var(--success);
   }
-  
+
   .tx-status-failed {
-    color: #d73a49;
+    color: var(--error);
   }
-  
+
   .button-group {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    margin-top: 10px;
+    gap: 12px;
+    margin-top: 12px;
   }
 
   .send-button {
-    background-color: #9945FF;
+    background-color: var(--primary-teal);
     color: white;
     border: none;
-    padding: 12px;
-    border-radius: 5px;
+    padding: 14px;
+    border-radius: 10px;
     cursor: pointer;
-    font-size: 0.95rem;
+    font-size: 0.98rem;
     font-weight: 500;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(17, 69, 77, 0.15);
   }
 
   .send-button:hover:not(:disabled) {
-    background-color: #8a3deb;
+    background-color: var(--primary-teal-light);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(17, 69, 77, 0.25);
   }
 
   .send-button:disabled {
-    background-color: #cccccc;
+    background-color: var(--border-gray);
+    color: var(--text-light);
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
 
   .kit-button {
-    background-color: #14F195;
-    color: #000;
+    background: linear-gradient(135deg, var(--accent-mint) 0%, var(--primary-teal-active) 100%);
+    color: white;
   }
 
   .kit-button:hover:not(:disabled) {
-    background-color: #00d084;
+    background: linear-gradient(135deg, var(--primary-teal-active) 0%, var(--accent-mint) 100%);
   }
-  
+
   .transaction-card-message {
-    color: #666;
+    color: var(--text-medium);
     font-style: italic;
     text-align: center;
-    padding: 20px 0;
+    padding: 24px 0;
   }
 
   /* New styles for enhanced dual architecture demo */
   .architecture-log {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 12px;
-    margin: 16px 0;
-    max-height: 200px;
+    background: linear-gradient(135deg, rgba(17, 69, 77, 0.02) 0%, rgba(95, 184, 165, 0.02) 100%);
+    border: 1px solid var(--border-gray);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 20px 0;
+    max-height: 220px;
     overflow-y: auto;
   }
 
@@ -154,98 +171,103 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
   }
 
   .log-header h5 {
     margin: 0;
-    color: #2d3748;
-    font-size: 0.9rem;
+    color: var(--primary-teal);
+    font-size: 0.98rem;
+    font-weight: 600;
   }
 
   .clear-log-button {
-    background: #e53e3e;
+    background: var(--error);
     color: white;
     border: none;
-    border-radius: 4px;
-    padding: 4px 8px;
-    font-size: 0.8rem;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 0.85rem;
     cursor: pointer;
+    transition: all 0.3s ease;
   }
 
   .clear-log-button:hover {
-    background: #c53030;
+    background: #c62828;
+    transform: translateY(-1px);
   }
 
   .log-content {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.8rem;
-    line-height: 1.4;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
   }
 
   .log-entry {
-    color: #4a5568;
-    margin-bottom: 2px;
-    padding: 2px 0;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+    padding: 4px 0;
   }
 
   .button-section {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 12px;
-    margin-bottom: 12px;
+    background: linear-gradient(135deg, rgba(17, 69, 77, 0.04) 0%, rgba(95, 184, 165, 0.04) 100%);
+    border: 1px solid var(--border-gray);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
   }
 
   .button-section h5 {
-    margin: 0 0 8px 0;
-    color: #2d3748;
-    font-size: 0.9rem;
+    margin: 0 0 12px 0;
+    color: var(--primary-teal);
+    font-size: 0.98rem;
+    font-weight: 600;
   }
 
   .button-section:first-child {
-    background: linear-gradient(135deg, #ebf8ff 0%, #f7fafc 100%);
-    border-color: #bee3f8;
+    background: linear-gradient(135deg, rgba(17, 69, 77, 0.05) 0%, rgba(26, 109, 122, 0.05) 100%);
+    border-color: var(--primary-teal-light);
   }
 
   .button-section:last-child {
-    background: linear-gradient(135deg, #f0fff4 0%, #f7fafc 100%);
-    border-color: #9ae6b4;
+    background: linear-gradient(135deg, rgba(95, 184, 165, 0.05) 0%, rgba(42, 141, 156, 0.05) 100%);
+    border-color: var(--accent-mint);
   }
 
   .new-method-button {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, var(--primary-teal) 0%, var(--primary-teal-active) 100%);
     color: white;
   }
 
   .new-method-button:hover:not(:disabled) {
-    background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+    background: linear-gradient(135deg, var(--primary-teal-light) 0%, var(--primary-teal-active) 100%);
   }
 
   .kit-pure-button {
-    background: linear-gradient(135deg, #38b2ac 0%, #319795 100%);
+    background: linear-gradient(135deg, var(--accent-mint) 0%, var(--primary-teal-active) 100%);
     color: white;
   }
 
   .kit-pure-button:hover:not(:disabled) {
-    background: linear-gradient(135deg, #319795 0%, #2c7a7b 100%);
+    background: linear-gradient(135deg, var(--primary-teal-active) 0%, var(--accent-mint) 100%);
   }
 
   .architecture-info {
-    background: linear-gradient(135deg, #fed7d7 0%, #fbb6ce 100%);
-    border: 1px solid #feb2b2;
-    border-radius: 6px;
-    padding: 12px;
-    margin-top: 16px;
+    background: linear-gradient(135deg, rgba(95, 184, 165, 0.1) 0%, rgba(42, 141, 156, 0.1) 100%);
+    border: 1px solid var(--accent-mint);
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 20px;
     text-align: center;
   }
 
   .architecture-info p {
-    margin: 4px 0;
-    font-size: 0.9rem;
-    color: #742a2a;
+    margin: 6px 0;
+    font-size: 0.95rem;
+    color: var(--text-dark);
   }
 
   .architecture-info strong {
-    color: #c53030;
+    color: var(--primary-teal);
+    font-weight: 600;
   }

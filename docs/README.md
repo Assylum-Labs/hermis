@@ -177,7 +177,7 @@ Search is automatically enabled and indexes:
 - Code blocks
 - Metadata
 
-## 🎯 Best Practices
+##  Best Practices
 
 ### Writing Style
 

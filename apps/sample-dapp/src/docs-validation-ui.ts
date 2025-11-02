@@ -104,7 +104,7 @@ async function initializeWalletManager() {
       globalAdapters = sortWalletAdapters(adapters);
       renderWalletList();
 
-      addLog(`🔄 ${adapters.length} wallet adapter(s) detected`, 'info');
+      addLog(` ${adapters.length} wallet adapter(s) detected`, 'info');
     });
 
     // Initially disable connect button until wallet is selected
@@ -159,7 +159,7 @@ async function connectWallet() {
   try {
     connectBtn.disabled = true;
     connectBtn.textContent = 'Connecting...';
-    addLog('🔄 Connecting wallet...', 'info');
+    addLog(' Connecting wallet...', 'info');
 
     // Select the wallet that user clicked
     if (clickedWalletName) {

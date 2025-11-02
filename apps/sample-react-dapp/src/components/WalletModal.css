@@ -4,116 +4,150 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
+    background: linear-gradient(135deg, rgba(17, 69, 77, 0.7) 0%, rgba(10, 42, 48, 0.8) 100%);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+    animation: fadeIn 0.3s ease;
   }
-  
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
   .wallet-modal-content {
-    background-color: white;
-    border-radius: 12px;
+    background-color: var(--bg-white);
+    border-radius: 20px;
     width: 100%;
-    max-width: 400px;
+    max-width: 440px;
     max-height: 90vh;
     overflow-y: auto;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 12px 40px rgba(17, 69, 77, 0.3);
+    animation: slideUp 0.3s ease;
   }
-  
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
   .wallet-modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 16px 20px;
-    border-bottom: 1px solid #eee;
+    padding: 20px 24px;
+    border-bottom: 2px solid var(--border-gray);
+    background: linear-gradient(135deg, rgba(17, 69, 77, 0.03) 0%, rgba(95, 184, 165, 0.03) 100%);
   }
-  
+
   .wallet-modal-header h3 {
     margin: 0;
-    color: #333;
-    font-size: 1.25rem;
+    color: var(--primary-teal);
+    font-size: 1.4rem;
+    font-weight: 600;
   }
-  
+
   .wallet-modal-close {
     background: none;
     border: none;
-    font-size: 24px;
-    color: #999;
+    font-size: 28px;
+    color: var(--text-medium);
     cursor: pointer;
     padding: 0;
     margin: 0;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    transition: all 0.3s ease;
   }
-  
+
   .wallet-modal-close:hover {
-    background-color: #f5f5f5;
+    background-color: rgba(17, 69, 77, 0.08);
+    color: var(--primary-teal);
+    transform: rotate(90deg);
   }
-  
+
   .wallet-modal-body {
-    padding: 20px;
+    padding: 24px;
   }
-  
+
   .wallet-list-section {
-    margin-bottom: 24px;
+    margin-bottom: 28px;
   }
-  
+
   .wallet-list-section h4 {
-    font-size: 1rem;
-    color: #666;
-    margin-bottom: 12px;
+    font-size: 1.05rem;
+    color: var(--primary-teal);
+    margin-bottom: 14px;
+    font-weight: 600;
   }
-  
+
   .wallet-list {
     list-style: none;
     padding: 0;
     margin: 0;
   }
-  
+
   .wallet-list-item {
     display: flex;
     align-items: center;
-    padding: 12px;
-    border-radius: 8px;
+    padding: 14px 16px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
   }
-  
+
   .wallet-list-item:hover {
-    background-color: #f5f7fa;
+    background: linear-gradient(90deg, rgba(17, 69, 77, 0.04) 0%, rgba(95, 184, 165, 0.04) 100%);
+    border-color: var(--primary-teal-light);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(17, 69, 77, 0.1);
   }
-  
+
   .wallet-list-item img {
-    width: 32px;
-    height: 32px;
-    margin-right: 12px;
+    width: 36px;
+    height: 36px;
+    margin-right: 14px;
     object-fit: contain;
+    border-radius: 8px;
   }
-  
+
   .wallet-list-item span {
     font-weight: 500;
-    color: #333;
+    color: var(--text-dark);
+    font-size: 0.98rem;
   }
-  
+
   .wallet-none-message {
-    color: #888;
+    color: var(--text-light);
     font-style: italic;
-    padding: 10px 0;
+    padding: 12px 0;
+    text-align: center;
   }
-  
+
   .wallet-modal-footer {
-    padding: 16px 20px;
-    border-top: 1px solid #eee;
+    padding: 20px 24px;
+    border-top: 2px solid var(--border-gray);
+    background: linear-gradient(135deg, rgba(17, 69, 77, 0.02) 0%, rgba(95, 184, 165, 0.02) 100%);
   }
-  
+
   .wallet-modal-note {
-    font-size: 0.8rem;
-    color: #888;
+    font-size: 0.85rem;
+    color: var(--text-medium);
     margin: 0;
-    line-height: 1.4;
+    line-height: 1.5;
   }

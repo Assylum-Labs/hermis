@@ -2,7 +2,7 @@
 
 **Date Started:** _________
 **Tester:** _________
-**Status:** 🔄 In Progress
+**Status:**  In Progress
 
 ---
 

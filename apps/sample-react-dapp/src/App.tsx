@@ -474,7 +474,7 @@ function HomePage() {
 
   // Handler for dual architecture method results
   // const handleMethodResult = (method: string, _result: string, architecture: string) => {
-  //   addLogEntry(`🔄 ${method} completed using ${architecture} architecture`, 'success');
+  //   addLogEntry(` ${method} completed using ${architecture} architecture`, 'success');
   // };
 
   return (
@@ -668,7 +668,7 @@ function HomePage() {
       {/* Dual Architecture Demo - Always visible */}
       {/* <div className="dual-architecture-showcase">
         <div className="showcase-header">
-          <h2>🔄 Dual Architecture Showcase</h2>
+          <h2> Dual Architecture Showcase</h2>
           <p>Demonstrating true backward compatibility: ONE method handles BOTH web3.js and kit architectures</p>
         </div>
 

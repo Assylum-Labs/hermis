@@ -587,7 +587,7 @@ Hook for accessing and updating persistent storage.
 const [value, setValue, loading] = useLocalStorage('my-key', 'default-value');
 ```
 
-## 🔄 Advanced Usage
+##  Advanced Usage
 
 ### Sending Transactions
 
