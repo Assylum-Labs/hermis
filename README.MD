@@ -1,65 +1,30 @@
-# 🪐 Solana Headless SDK
+# Solana Headless SDK
 
-### **A Modular & Fully Headless Wallet Adapter for Solana**
+[![npm version](https://img.shields.io/npm/v/@hermis/solana-headless-adapter-base.svg)](https://www.npmjs.com/package/@hermis/solana-headless-adapter-base)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
-🚀 **Solana Headless SDK** is a **UI-agnostic wallet adapter** that enables developers to integrate Solana authentication, wallet management, and transactions **without enforcing any UI constraints**.
+A modular, UI-agnostic wallet adapter for Solana applications. Build wallet integrations with complete flexibility—no enforced UI constraints.
 
-This SDK provides **complete flexibility** for dApp developers, allowing full customization while leveraging Solana's core capabilities.
+## Documentation
 
-## 🧪 **Live Demo**
+Comprehensive documentation is available at **[docs.hermis.io](https://docs.hermis.io)**
 
-Try our playground:
+- [Getting Started](https://docs.hermis.io/getting-started)
+- [Quick Start Guides](https://docs.hermis.io/quickstart)
+- [API Reference](https://docs.hermis.io/api-reference)
+- [Examples](https://docs.hermis.io/examples)
 
-[**View the Demo →**](https://assylum-labs.github.io/hermis/)
+## Packages
 
-This demo showcases the core functionality of our adapter-base package with the React framework, demonstrating how you can integrate Solana wallets with complete UI freedom.
+| Package | Version | Description |
+|---------|---------|-------------|
+| [@hermis/solana-headless-adapter-base](https://www.npmjs.com/package/@hermis/solana-headless-adapter-base) | [![npm](https://img.shields.io/npm/v/@hermis/solana-headless-adapter-base.svg)](https://www.npmjs.com/package/@hermis/solana-headless-adapter-base) | Framework-agnostic wallet adapter |
+| [@hermis/solana-headless-react](https://www.npmjs.com/package/@hermis/solana-headless-react) | [![npm](https://img.shields.io/npm/v/@hermis/solana-headless-react.svg)](https://www.npmjs.com/package/@hermis/solana-headless-react) | React hooks and components |
+| [@hermis/solana-headless-vue](./packages/vue-core) | Coming Soon | Vue composables and components |
 
-## 📚 **Documentation**
+## Development
 
-Comprehensive documentation is available at **[docs.hermis.xyz](https://docs.hermis.xyz)** (or your custom documentation URL).
-
-- **[Getting Started](docs/getting-started.mdx)** – Quick start guide
-- **[Quick Starts](docs/quickstart/)** – Package-specific guides
-- **[Core Concepts](docs/core-concepts/)** – Architecture and design
-- **[API Reference](docs/api-reference/)** – Complete API documentation
-- **[Cookbook](docs/cookbook/)** – Practical examples and recipes
-- **[Migration Guide](docs/migration/)** – Upgrade from v1 to v2
-- **[Examples](docs/examples/)** – Complete example projects
-
-## 🌟 **Community Edition Features**
-
-- **Fully Headless** – No predefined UI, complete developer control
-- **Solana-Native** – Built specifically for Solana, not a general blockchain solution
-- **Multi-Wallet Support** – Compatible with Phantom, Backpack, Ledger, and more
-- **Framework Flexibility** – React, Vue, and vanilla JS support
-- **Modular Architecture** – Pick and use only the parts you need
-
-## 🔐 **Enterprise Edition Features**
-
-- **Enhanced Authentication** – OAuth, email, and session management
-- **Gasless Transactions** – Optional transaction relaying for a seamless UX
-- **MPC Wallet Management** – 2-of-2 non-custodial wallet implementation
-- **Advanced Recovery Options** – Multiple secure methods for wallet recovery
-- **Enterprise Support** – Dedicated assistance for commercial implementations
-
-## 📦 **Packages**
-
-### Community Edition
-| Package | Description | Documentation |
-|---------|-------------|---------------|
-| [@hermis/solana-headless-core](https://www.npmjs.com/package/@hermis/solana-headless-core) | Core wallet functionality and Solana interactions | [README](https://github.com/agateh/solana-headless-sdk/blob/main/packages/core/README.md) |
-| [@hermis/solana-headless-adapter-base](https://www.npmjs.com/package/@hermis/solana-headless-adapter-base) | Base adapter implementations | [README](https://github.com/agateh/solana-headless-sdk/blob/main/packages/adapter-base/README.md) |
-| [@hermis/solana-headless-react](https://www.npmjs.com/package/@hermis/solana-headless-react) | React hooks and components | [README](https://github.com/agateh/solana-headless-sdk/blob/main/packages/react-core/README.md) |
-| [@hermis/solana-headless-vue](./packages/vue-core/README.md) | Vue composables and components | Coming soon |
-
-### Enterprise Edition
-| Package | Description | Access |
-|---------|-------------|--------|
-| [@hermis/solana-headless-enterprise](./packages/enterprise/README.md) | Enterprise authentication & wallet features | Contact for access |
-
-## 🛠️ **Development**
-
-This repository is a **pnpm monorepo** managed with [Turborepo](https://turbo.build/).
+This repository is a pnpm monorepo managed with Turborepo.
 
 ```bash
 # Clone the repository
@@ -70,22 +35,15 @@ pnpm install
 
 # Build all packages
 pnpm build
+
+# Run tests
+pnpm test
 ```
 
-## 📜 **Licensing**
+## Contributing
 
-- **Community Edition**: All Community Edition packages are licensed under the Apache 2.0 license, which allows free use, modification, and distribution, even for commercial purposes.
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-- **Enterprise Edition**: The Enterprise Edition features are available under a separate commercial license that requires a subscription. Contact us for pricing and terms.
+## License
 
-This "open core" model provides a robust open-source foundation while offering advanced features and support through our commercial offering.
-
-## 📮 **Stay Updated**
-
-For updates and discussions:
-- Twitter: [@Hermis_xyz](https://x.com/Hermis_xyz)
-
-## 💼 **Enterprise Inquiries**
-
-For information about Enterprise Edition licensing, features, and support:
-- Contact: [agateh.labs@gmail.com](mailto:agateh.labs@gmail.com)
+Apache 2.0 - see [LICENSE](LICENSE) for details.
