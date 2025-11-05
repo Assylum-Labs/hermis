@@ -131,6 +131,7 @@ export default {
     }),
     new webpack.DefinePlugin({
       'global': 'globalThis',
+      'import.meta.env.BASE_URL': JSON.stringify('/hermis/'),
     })
   ],
   devtool: 'source-map'
