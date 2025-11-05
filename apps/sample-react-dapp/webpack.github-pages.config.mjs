@@ -116,7 +116,7 @@ export default {
     new CopyWebpackPlugin({
       patterns: [
         { from: './src/index.css', to: 'styles.css' },
-        { from: './public/vite.svg', to: 'vite.svg' },
+        // { from: './public/vite.svg', to: 'vite.svg' },
       ],
     }),
     new webpack.ProvidePlugin({
