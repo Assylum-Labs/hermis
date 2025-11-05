@@ -12,12 +12,12 @@
   "metadata": {
     "og:title": "Hermis - Headless Solana Wallet Adapter",
     "og:description": "Framework-agnostic, headless wallet adapter library for Solana. Build wallet integrations with complete UI freedom.",
-    "og:image": "https://docs.hermis.io/hermis_Logo_2.png",
+    "og:image": "https://docs.hermis.io/favicon.png",
     "og:url": "https://docs.hermis.io",
     "twitter:card": "summary_large_image",
     "twitter:site": "@Hermis_xyz"
   },
-  "favicon": "/favicon.svg",
+  "favicon": "/favicon.png",
   "colors": {
     "primary": "#9945FF",
     "light": "#14F195",
