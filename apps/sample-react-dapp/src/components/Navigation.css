@@ -1,5 +1,5 @@
 .navigation {
-  width: 100vw;
+  width: 100%;
   background: rgba(17, 69, 77, 0.9);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
