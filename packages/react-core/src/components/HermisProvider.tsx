@@ -7,13 +7,20 @@ import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
 /**
  * Props for the ContextProvider component
  */
+
+export enum TWalletAdapterNetwork {
+  Mainnet = "mainnet-beta",
+  Devnet = "devnet",
+  Testnet = "testnet",
+  Localnet = "localnet"
+}
 export interface HermisWalletProviderProps {
   /** Children components */
   children: ReactNode;
   /** RPC endpoint for Solana connection */
-  endpoint?: string;
+  endpoint: string;
   /** Network to connect to */
-  network?: WalletAdapterNetwork;
+  network: TWalletAdapterNetwork;
   /** Whether to automatically connect to the last used wallet */
   autoConnect?: boolean;
   /** Key for storing wallet name in storage */
@@ -38,8 +45,8 @@ export interface HermisWalletProviderProps {
  */
 export const HermisProvider = ({
   children,
-  endpoint = 'https://api.mainnet-beta.solana.com',
-  network = WalletAdapterNetwork.Mainnet,
+  endpoint,
+  network,
   autoConnect = false,
   storageKey = 'walletName',
   storageFactory,

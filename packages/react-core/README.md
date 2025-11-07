@@ -21,7 +21,7 @@ import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 function App() {
   return (
     <HermisProvider
-      endpoint="https://api.devnet.solana.com"
+      endpoint="https://devnet.solana.com"
       network={WalletAdapterNetwork.Devnet}
       autoConnect={true}
       wallets={[]}

@@ -4,6 +4,7 @@ import { WalletProvider as BaseWalletProvider } from '../providers/WalletProvide
 import { ConnectionProvider } from '../providers/ConnectionProvider.js';
 import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
 import { getInferredNetworkFromEndpoint } from '@hermis/solana-headless-adapter-base';
+import { TWalletAdapterNetwork } from '../index.js';
 
 /**
  * Props for the combined wallet and connection provider
@@ -16,7 +17,7 @@ export interface ContextProviderProps {
   /** RPC endpoint for Solana connection */
   rpcEndpoint: string;
   /** Network to connect to */
-  network?: WalletAdapterNetwork;
+  network: TWalletAdapterNetwork;
   /** Whether to automatically connect to the last used wallet */
   autoConnect?: boolean;
   /** Key for storing wallet name in storage */

@@ -1,4 +1,4 @@
-import { HermisProvider } from "@hermis/solana-headless-react"
+import { HermisProvider, TWalletAdapterNetwork } from "@hermis/solana-headless-react"
 import { FC, ReactNode, createContext, useContext, useState, useCallback } from "react"
 import { SolanaNetwork } from "../components/NetworkSelector"
 
@@ -59,6 +59,7 @@ const WalletContextProvider: FC<WalletContextProviderProps> = ({
     return (
         <NetworkContext.Provider value={networkContextValue}>
             <HermisProvider
+                network={TWalletAdapterNetwork.Devnet}
                 key={currentNetwork} // Force re-mount when network changes
                 endpoint={currentEndpoint}
                 autoConnect={true}

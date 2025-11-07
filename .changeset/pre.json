@@ -13,6 +13,7 @@
     "@hermis/wallet-standard-base": "1.0.0"
   },
   "changesets": [
+    "hot-drinks-hear",
     "wise-knives-press"
   ]
 }

@@ -1,6 +1,7 @@
 import { FC, ReactNode, useMemo } from 'react';
 import { Connection, ConnectionConfig, WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { ConnectionContext } from '../hooks/useConnection.js';
+import { TWalletAdapterNetwork } from '../index.js';
 
 /**
  * Props for the ConnectionProvider component
@@ -13,7 +14,7 @@ export interface ConnectionProviderProps {
   /** Optional connection configuration */
   config?: ConnectionConfig;
   /**Optional Network value */
-  network: WalletAdapterNetwork
+  network: TWalletAdapterNetwork
 }
 
 /**

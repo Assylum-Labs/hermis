@@ -1,6 +1,7 @@
 import { Connection, WalletAdapterNetwork, DualConnection } from '@hermis/solana-headless-core';
 import { HermisError, HERMIS_ERROR__REACT__CONTEXT_NOT_FOUND } from '@hermis/errors';
 import { createContext, useContext } from 'react';
+import { TWalletAdapterNetwork } from '../index.js';
 
 /**
  * State for the connection context
@@ -16,7 +17,7 @@ export interface ConnectionContextState {
      * thanks to the dual architecture helpers in the core package.
      */
     connection: DualConnection;
-    network?: WalletAdapterNetwork
+    network: TWalletAdapterNetwork
 }
 
 /**
