@@ -1,6 +1,6 @@
 {
   "name": "sample-dapp",
-  "version": "1.0.9-beta.0",
+  "version": "1.0.9",
   "description": "",
   "main": "index.js",
   "type": "module",

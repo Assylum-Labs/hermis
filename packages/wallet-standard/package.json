@@ -22,20 +22,25 @@
       "require": "./dist/index.cjs"
     }
   },
-  "keywords": ["wallet", "standard", "solana", "framework-agnostic"],
+  "keywords": [
+    "wallet",
+    "standard",
+    "solana",
+    "framework-agnostic"
+  ],
   "author": "Mctursh (Ayoade Adenuga)",
   "license": "Apache-2.0",
   "packageManager": "pnpm@10.5.2",
   "dependencies": {
-    "@hermis/errors": "workspace:*",
-    "@hermis/solana-headless-core": "workspace:*",
+    "@hermis/errors": "1.0.0",
+    "@hermis/solana-headless-core": "2.0.0",
     "@solana/wallet-adapter-base": "^0.9.23",
     "@solana/web3.js": "^1.98.0",
     "@solana-mobile/wallet-adapter-mobile": "^2.0.0",
     "@wallet-standard/base": "^1.1.0"
   },
   "devDependencies": {
-    "@hermis/solana-headless-format-config": "workspace:*",
+    "@hermis/solana-headless-format-config": "1.0.5",
     "@types/node": "^22.13.8",
     "tsup": "^8.0.0"
   }

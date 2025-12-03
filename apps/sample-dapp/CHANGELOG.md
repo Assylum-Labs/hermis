@@ -1,5 +1,14 @@
 # sample-dapp
 
+## 1.0.9
+
+### Patch Changes
+
+- Updated dependencies [01dafed]
+  - @hermis/solana-headless-adapter-base@2.0.0
+  - @hermis/solana-headless-core@2.0.0
+  - @hermis/wallet-standard-base@1.0.0
+
 ## 1.0.9-beta.0
 
 ### Patch Changes
