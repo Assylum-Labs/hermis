@@ -6,6 +6,7 @@
  */
 
 import type { Address } from '@solana/kit'
+import bs58 from 'bs58'
 import type {
   MessageModifyingSigner,
   TransactionSendingSigner,
@@ -139,10 +140,8 @@ export function createTransactionSendingSignerFromWallet(
       // Send the transaction and get signature
       const signatureString = await sendTransactionFn(transaction)
 
-      // Convert base58 signature string to bytes
-      // For now, we'll keep it as Uint8Array from base58 decode
-      // In a full implementation, you'd use proper base58 decoder
-      const signatureBytes = new TextEncoder().encode(signatureString) as SignatureBytes
+      // Decode the base58 signature string into the 64-byte Ed25519 signature
+      const signatureBytes = bs58.decode(signatureString) as SignatureBytes
 
       return [signatureBytes]
     }
