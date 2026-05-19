@@ -4,10 +4,10 @@ import react from '@vitejs/plugin-react-swc'
 // https://vite.dev/config/
 export default defineConfig(({ command }) => {
   const isProduction = command === 'build'
-  const isGithubPages = process.env.GITHUB_PAGES === 'true'
-  
+
   return {
-    base: isGithubPages ? '/hermis/' : '/',
+    // Custom domain (hermis.dev) serves at root, not a GH Pages subpath.
+    base: '/',
     plugins: [
       react(),
     ],
