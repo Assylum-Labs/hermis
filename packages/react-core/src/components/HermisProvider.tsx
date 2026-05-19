@@ -5,6 +5,20 @@ import { useStandardWalletAdapters } from '../hooks/useStandardWalletAdapters.js
 import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
 
 /**
+ * Convert {@link TWalletAdapterNetwork} (which includes Localnet) into the
+ * upstream {@link WalletAdapterNetwork} enum understood by wallet adapters.
+ * Localnet is mapped to Devnet for cluster-aware features since wallets do
+ * not have a chain identifier for local validators.
+ */
+export function toWalletAdapterNetwork(network: TWalletAdapterNetwork): WalletAdapterNetwork {
+  if (network === TWalletAdapterNetwork.Localnet) {
+    return WalletAdapterNetwork.Devnet;
+  }
+  // Mainnet/Devnet/Testnet share string values with WalletAdapterNetwork.
+  return network as unknown as WalletAdapterNetwork;
+}
+
+/**
  * Props for the ContextProvider component
  */
 
@@ -55,19 +69,19 @@ export const HermisProvider = ({
 }: HermisWalletProviderProps) => {
   const [adapters, setAdapters] = useState<Adapter[]>([]);
 
-  const memoizedAdapters = useMemo(() =>
-    wallets, [
-
-    wallets.length,
-  ]);
+  // Identity-stable key over the wallet set. Memoising on `.length` would
+  // miss swaps where the array length stays the same but the wallets differ.
+  const walletNamesKey = useMemo(
+    () => wallets.map(w => w.name).join('|'),
+    [wallets],
+  );
 
   useEffect(() => {
-    const baseAdapters: Adapter[] = [];
+    setAdapters([...wallets]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletNamesKey]);
 
-    setAdapters([...baseAdapters, ...wallets]);
-  }, [memoizedAdapters]);
-
-  const allAdapters = useStandardWalletAdapters(adapters, endpoint);
+  const allAdapters = useStandardWalletAdapters(adapters, endpoint, toWalletAdapterNetwork(network));
 
   return (
     <ContextProvider

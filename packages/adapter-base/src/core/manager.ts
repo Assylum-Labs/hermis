@@ -1,4 +1,4 @@
-import { Adapter, WalletName, WalletReadyState, EventEmitter, WalletAdapterEvents } from '../types/index.js';
+import { Adapter, WalletName, WalletReadyState, EventEmitter, WalletAdapterEvents, WalletAdapterNetwork } from '../types/index.js';
 import { PublicKey, Transaction, TransactionSignature } from '@solana/web3.js';
 import { createLocalStorageUtility } from '../utils/storage.js';
 import { addWalletAdapterEventListeners } from './adapters.js';
@@ -22,15 +22,21 @@ import {
 
 /**
  * Create a simple wallet connection manager with built-in adapter management
+ *
+ * The `network` parameter is required — wallet adapters now need an explicit
+ * cluster so their chain hints can't be spoofed by URL substring inference.
+ *
  * @param adapters Array of adapters to manage
+ * @param network Active Solana network for the cluster hint
  * @param localStorageKey Key to store the selected wallet name
  * @param endpoint Optional RPC endpoint for wallet detection
  * @returns Wallet connection manager object
  */
 export function createWalletConnectionManager(
     adapters: Adapter[],
+    network: WalletAdapterNetwork,
     localStorageKey = 'walletName',
-    endpoint?: string
+    endpoint?: string,
 ): WalletConnectionManager {
     // Internal state for adapters
     let currentAdapters: Adapter[] = [];
@@ -52,7 +58,7 @@ export function createWalletConnectionManager(
 
     // Initialize wallet detection and get initial adapters
     (async () => {
-        const detectedAdapters = await getStandardWalletAdapters(adapters, endpoint);
+        const detectedAdapters = await getStandardWalletAdapters(adapters, endpoint, network);
         currentAdapters = detectedAdapters;
 
         // Try to restore previously selected wallet

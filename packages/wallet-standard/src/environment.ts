@@ -129,20 +129,3 @@ export function isIosAndRedirectable(): boolean {
   return isIos && isSafari;
 }
 
-/**
- * Infer Solana cluster from endpoint
- * @param endpoint RPC endpoint URL
- * @returns The inferred cluster/network
- */
-export function getInferredNetworkFromEndpoint(endpoint?: string): WalletAdapterNetwork {
-  if (!endpoint) {
-    return WalletAdapterNetwork.Mainnet;
-  }
-  if (/devnet/i.test(endpoint)) {
-    return WalletAdapterNetwork.Devnet;
-  } else if (/testnet/i.test(endpoint)) {
-    return WalletAdapterNetwork.Testnet;
-  } else {
-    return WalletAdapterNetwork.Mainnet;
-  }
-}

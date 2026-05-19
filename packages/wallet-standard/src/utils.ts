@@ -16,7 +16,7 @@ import {
   toUiWallet,
   toUiWalletAccount,
 } from './types.js';
-import { getEnvironment, getUriForAppIdentity, getUserAgent, getInferredNetworkFromEndpoint } from './environment.js';
+import { getEnvironment, getUriForAppIdentity, getUserAgent } from './environment.js';
 import { SolanaMobileWalletAdapterWalletName } from './constants.js';
 
 import { 
@@ -28,52 +28,37 @@ import {
 // isWalletAdapterCompatibleStandardWallet is imported from types.js
 
 /**
- * Create a Mobile Wallet Adapter
- * @param endpoint Optional RPC endpoint
+ * Create a Mobile Wallet Adapter for the given network.
+ *
+ * Network must be supplied explicitly by the caller — inferring a cluster from
+ * the RPC endpoint URL is unsafe (URLs whose path happens to contain "mainnet"
+ * would be misclassified), so this function deliberately does not accept that fallback.
+ *
+ * @param endpoint Optional RPC endpoint (unused for cluster selection; kept for future use)
+ * @param network Solana network the mobile adapter should authorize against
  * @returns Mobile wallet adapter or null if not available
  */
-export async function createMobileWalletAdapter(endpoint?: string): Promise<Adapter | SolanaMobileWalletAdapter | null> {
+export async function createMobileWalletAdapter(
+  endpoint: string | undefined,
+  network: WalletAdapterNetwork,
+): Promise<Adapter | SolanaMobileWalletAdapter | null> {
     // Skip if not in browser environment
     if (typeof window === 'undefined' || !window.navigator) {
-      console.log('not in a browser');
       return null;
     }
-    
-    // Try to import the mobile wallet adapter
-    // let SolanaMobileWalletAdapterState;
-    const { 
-      SolanaMobileWalletAdapter,
-  } = await import( '@solana-mobile/wallet-adapter-mobile')
-    try {
-      console.log(SolanaMobileWalletAdapter);
-    //   SolanaMobileWalletAdapterState = SolanaMobileWalletAdapter;
-    } catch (error) {
-      console.warn('Mobile wallet adapter not available:', error);
-      console.log('null returned');
-      return null;
-    }
-    
-    // Check if adapter class was found
-    if (!SolanaMobileWalletAdapter) {
-      console.log('null returned');
-      return null;
-    }
-    
-    // Try to create the adapter
-    try {
-      console.log('Mobile wallet');
-      const network = getInferredNetworkFromEndpoint(endpoint);
 
-    //   const { 
-    //     SolanaMobileWalletAdapter,
-    //     createDefaultAuthorizationResultCache,
-    //     createDefaultWalletNotFoundHandler
-    //   } = await import( '@solana-mobile/wallet-adapter-mobile')
-      
+    const {
+      SolanaMobileWalletAdapter,
+    } = await import('@solana-mobile/wallet-adapter-mobile');
+
+    if (!SolanaMobileWalletAdapter) {
+      return null;
+    }
+
+    try {
       const adapter = new SolanaMobileWalletAdapter({
         addressSelector: {
           select: (addresses: string[]) => Promise.resolve(addresses[0]),
-        //   resolveImmediately: true,
         },
         appIdentity: {
           name: document.title || 'Solana dApp',
@@ -83,11 +68,10 @@ export async function createMobileWalletAdapter(endpoint?: string): Promise<Adap
         cluster: network,
         onWalletNotFound: createDefaultWalletNotFoundHandler(),
       });
-      
+
       return adapter;
     } catch (error) {
       console.warn('Error creating mobile wallet adapter:', error);
-      console.log('null returned');
       return null;
     }
   }
@@ -102,14 +86,14 @@ let currentAdapters: (Adapter | SolanaMobileWalletAdapter)[] = [];
 const updateCallbacks = new Set<(adapters: (Adapter | SolanaMobileWalletAdapter)[]) => void>();
 
 // Store for existing adapters from different consumers
-const existingAdaptersStore = new Map<string, { adapters: (Adapter | SolanaMobileWalletAdapter)[], endpoint?: string }>();
+const existingAdaptersStore = new Map<string, { adapters: (Adapter | SolanaMobileWalletAdapter)[], endpoint?: string, network: WalletAdapterNetwork }>();
 
 /**
  * Generate a unique key for a consumer based on their adapters
  */
-function generateConsumerKey(adapters: (Adapter | SolanaMobileWalletAdapter)[], endpoint?: string): string {
+function generateConsumerKey(adapters: (Adapter | SolanaMobileWalletAdapter)[], endpoint: string | undefined, network: WalletAdapterNetwork): string {
   const adapterNames = adapters.map(a => a.name).sort().join(',');
-  return `${adapterNames}:${endpoint || 'default'}`;
+  return `${adapterNames}:${endpoint || 'default'}:${network}`;
 }
 
 /**
@@ -169,66 +153,77 @@ async function updateAdapters(consumerKey?: string) {
   try {
     // Get all existing adapters from all consumers
     const allExistingAdapters = getAllExistingAdapters();
-    
-    // Determine endpoint - use the first available endpoint
+
+    // Determine endpoint and network from the first stored consumer entry.
+    // Most setups have a single consumer; for multi-consumer cases the first
+    // win is good enough — adapters created here will have their network
+    // overridden by `setNetwork` below before the call returns.
     let endpoint: string | undefined;
-    for (const { endpoint: consumerEndpoint } of existingAdaptersStore.values()) {
-      if (consumerEndpoint) {
-        endpoint = consumerEndpoint;
-        break;
-      }
+    let network: WalletAdapterNetwork | undefined;
+    for (const entry of existingAdaptersStore.values()) {
+      if (!endpoint && entry.endpoint) endpoint = entry.endpoint;
+      if (!network) network = entry.network;
+      if (endpoint && network) break;
     }
-    
+
     const userAgentString = getUserAgent();
     let adaptersToUse = [...allExistingAdapters];
-    
+
     // Check if we're in a mobile environment
     const isMobileEnv = getEnvironment({
       adapters: allExistingAdapters,
       userAgentString
     }) === Environment.MOBILE_WEB;
-    
+
     // Check if mobile wallet adapter is already included
     const hasMobileWalletAdapter = allExistingAdapters.some(
       adapter => adapter.name === SolanaMobileWalletAdapterWalletName
     );
-    
+
     // Separate mobile wallet adapter from regular adapters
-    const regularAdapters = allExistingAdapters.filter(adapter => 
+    const regularAdapters = allExistingAdapters.filter(adapter =>
       adapter.name !== SolanaMobileWalletAdapterWalletName
     ) as Adapter[];
-    
+
     let mobileAdapter: SolanaMobileWalletAdapter | null = null;
-    
+
     // Add mobile wallet adapter if in mobile environment and not already included
-    if (isMobileEnv && !hasMobileWalletAdapter) {
-      console.log("Created Mobile Adapter");
-      
-      const createdMobileAdapter = await createMobileWalletAdapter(endpoint);
-      
+    if (isMobileEnv && !hasMobileWalletAdapter && network) {
+      const createdMobileAdapter = await createMobileWalletAdapter(endpoint, network);
+
       if (createdMobileAdapter && isMobileWalletAdapter(createdMobileAdapter)) {
         mobileAdapter = createdMobileAdapter;
       }
     } else if (hasMobileWalletAdapter) {
       // Find existing mobile adapter
-      const existingMobileAdapter = allExistingAdapters.find(adapter => 
+      const existingMobileAdapter = allExistingAdapters.find(adapter =>
         adapter.name === SolanaMobileWalletAdapterWalletName
       );
       if (existingMobileAdapter && isMobileWalletAdapter(existingMobileAdapter)) {
         mobileAdapter = existingMobileAdapter;
       }
     }
-    
+
     // Get detected wallets merged with regular adapters only
     const mergedRegularAdapters = getDetectedWalletAdapters(regularAdapters);
 
     // Combine all adapters: mobile adapter first (if exists), then regular adapters
     adaptersToUse = mobileAdapter ? [mobileAdapter, ...mergedRegularAdapters] : mergedRegularAdapters;
 
+    // Tag every standard wallet adapter with the active network so its chain
+    // hint is correct on wallet feature calls.
+    if (network) {
+      for (const adapter of adaptersToUse) {
+        if (hasSetNetwork(adapter)) {
+          adapter.setNetwork(network);
+        }
+      }
+    }
+
     // Update current adapters if they've changed
-    const hasChanged = currentAdapters.length !== adaptersToUse.length || 
+    const hasChanged = currentAdapters.length !== adaptersToUse.length ||
       !currentAdapters.every((adapter, index) => adapter.name === adaptersToUse[index]?.name);
-    
+
     if (hasChanged) {
       currentAdapters = adaptersToUse;
       notifyAdapterChanges();
@@ -241,16 +236,33 @@ async function updateAdapters(consumerKey?: string) {
   }
 }
 
+function hasSetNetwork(adapter: unknown): adapter is { setNetwork(network: WalletAdapterNetwork): void } {
+  return (
+    typeof adapter === 'object' &&
+    adapter !== null &&
+    'setNetwork' in adapter &&
+    typeof (adapter as { setNetwork: unknown }).setNetwork === 'function'
+  );
+}
+
 /**
  * Get wallet adapters for all available standard wallets
- * This function now handles initialization and change detection automatically
+ *
+ * This function handles initialization and change detection automatically.
+ * The `network` parameter is required — every adapter returned will have its
+ * cluster set explicitly. We do **not** infer the cluster from `endpoint` by
+ * URL substring matching, which is unsafe (untrusted URLs containing the
+ * substring "mainnet" would be misclassified as mainnet).
+ *
  * @param existingAdapters Existing (non-standard) adapters to include in result
- * @param endpoint Optional endpoint for mobile wallet adapter
+ * @param endpoint Optional endpoint (used by mobile wallet adapter)
+ * @param network Active Solana network for the cluster hint
  * @returns Array of all adapters including standard wallet adapters
  */
 export async function getStandardWalletAdapters(
-  existingAdapters: (Adapter | SolanaMobileWalletAdapter)[] = [], 
-  endpoint?: string
+  existingAdapters: (Adapter | SolanaMobileWalletAdapter)[] = [],
+  endpoint: string | undefined,
+  network: WalletAdapterNetwork,
 ): Promise<(Adapter | SolanaMobileWalletAdapter)[]> {
   // Skip if not in browser environment
   if (typeof window === 'undefined' || !window.navigator) {
@@ -258,10 +270,10 @@ export async function getStandardWalletAdapters(
   }
 
   // Generate a unique key for this consumer
-  const consumerKey = generateConsumerKey(existingAdapters, endpoint);
-  
+  const consumerKey = generateConsumerKey(existingAdapters, endpoint, network);
+
   // Store the existing adapters for this consumer
-  existingAdaptersStore.set(consumerKey, { adapters: existingAdapters, endpoint });
+  existingAdaptersStore.set(consumerKey, { adapters: existingAdapters, endpoint, network });
 
   // Initialize wallet detection system only once
   if (!isWalletDetectionInitialized) {
@@ -471,26 +483,6 @@ export function getWalletIdentifier(wallet: TypedStandardWallet | Adapter): stri
  */
 export function isSameWallet(wallet1: TypedStandardWallet | Adapter, wallet2: TypedStandardWallet | Adapter): boolean {
   return getWalletIdentifier(wallet1) === getWalletIdentifier(wallet2);
-}
-
-/**
- * Detect cluster/network from RPC endpoint
- */
-export function detectClusterFromEndpoint(endpoint: string): string {
-  const url = endpoint.toLowerCase();
-  
-  if (url.includes('mainnet') || url.includes('api.solana.com')) {
-    return 'solana:mainnet-beta';
-  } else if (url.includes('devnet')) {
-    return 'solana:devnet';
-  } else if (url.includes('testnet')) {
-    return 'solana:testnet';
-  } else if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    return 'solana:localnet';
-  }
-  
-  return 'solana:mainnet-beta';
-  // return 'unknown';
 }
 
 /**

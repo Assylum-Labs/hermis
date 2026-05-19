@@ -1,9 +1,8 @@
 import React, { FC, ReactNode, useMemo } from 'react';
-import { Adapter, ConnectionConfig, WalletAdapterNetwork, WalletError } from '@hermis/solana-headless-core';
+import { Adapter, ConnectionConfig, WalletError } from '@hermis/solana-headless-core';
 import { WalletProvider as BaseWalletProvider } from '../providers/WalletProvider.js';
 import { ConnectionProvider } from '../providers/ConnectionProvider.js';
 import { StorageProviderFactory } from '../hooks/useLocalStorage.js';
-import { getInferredNetworkFromEndpoint } from '@hermis/solana-headless-adapter-base';
 import { TWalletAdapterNetwork } from '../index.js';
 
 /**
@@ -43,17 +42,12 @@ export const ContextProvider: FC<ContextProviderProps> = ({
   children,
   adapters,
   rpcEndpoint,
-  network: explicitNetwork,
+  network,
   autoConnect = false,
   storageKey = 'walletName',
   storageFactory,
   onError,
 }) => {
-  
-  // Infer network if not explicitly provided
-  const network = explicitNetwork || getInferredNetworkFromEndpoint(rpcEndpoint);
-
-
   const connectionConfig = useMemo(() => ({
     commitment: 'confirmed',
   }) as ConnectionConfig, []);

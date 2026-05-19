@@ -11,7 +11,7 @@ import {
   sortWalletAdapters,
   getAdaptersByReadyState
 } from '@hermis/solana-headless-adapter-base';
-import { Adapter, WalletReadyState } from '@hermis/solana-headless-core';
+import { Adapter, WalletAdapterNetwork, WalletReadyState } from '@hermis/solana-headless-core';
 import {
   testBasicTransferWeb3,
   testBasicTransferKit,
@@ -90,7 +90,7 @@ async function initializeApp() {
 async function initializeWalletManager() {
   try {
     // Single call - everything built-in with adapter management
-    manager = createWalletConnectionManager([], 'selectedWallet', 'https://api.devnet.solana.com');
+    manager = createWalletConnectionManager([], WalletAdapterNetwork.Devnet, 'selectedWallet', 'https://api.devnet.solana.com');
 
     // Subscribe to adapter changes (handles both initial load and dynamic updates)
     manager.onAdaptersChange((adapters) => {
