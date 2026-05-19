@@ -1,6 +1,6 @@
 {
   "name": "@hermis/solana-headless-react",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "React hooks and components for Hermis Solana Headless SDK",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -27,15 +27,15 @@
   ],
   "dependencies": {
     "@hermis/errors": "1.0.0",
-    "@hermis/solana-headless-adapter-base": "2.0.0",
-    "@hermis/solana-headless-core": "2.0.0",
-    "@hermis/wallet-standard-base": "1.0.0",
+    "@hermis/solana-headless-adapter-base": "2.1.0",
+    "@hermis/solana-headless-core": "2.1.0",
+    "@hermis/wallet-standard-base": "1.1.0",
     "@solana/kit": "^3.0.0",
     "react": "^19.0.1"
   },
   "peerDependencies": {
     "react": ">=16.8.0",
-    "@hermis/solana-headless-core": ">=2.0.0"
+    "@hermis/solana-headless-core": ">=2.1.0"
   },
   "keywords": [
     "solana",
