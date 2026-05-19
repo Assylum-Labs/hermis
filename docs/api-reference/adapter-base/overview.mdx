@@ -39,10 +39,15 @@ await manager.disconnect();
 
 Get all standard wallet adapters including custom ones.
 
-```typescript
-import { getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+> **Breaking change in v2:** `network` is now a required argument. Inferring the
+> cluster from the RPC endpoint URL has been removed — substring matching is
+> unsafe because untrusted URLs containing "mainnet" would be misclassified.
 
-const adapters = getStandardWalletAdapters(customAdapters);
+```typescript
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+
+const adapters = await getStandardWalletAdapters(customAdapters, undefined, WalletAdapterNetwork.Mainnet);
 ```
 
 ### sortWalletAdapters()

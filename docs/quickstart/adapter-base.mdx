@@ -30,17 +30,19 @@ Set up wallet adapters for your application:
 ```javascript
 import {
   WalletAdapterManager,
-  getStandardWalletAdapters,
   sortWalletAdapters
 } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 
 // Create wallet adapter instances
 const wallets = [
   /** Other wallet that implement the wallet standard */
 ];
 
-// Get all standard wallet adapters (includes Wallet Standard wallets)
-const adapters = getStandardWalletAdapters(wallets);
+// Get all standard wallet adapters (includes Wallet Standard wallets).
+// `network` is required — we no longer infer it from the RPC URL.
+const adapters = await getStandardWalletAdapters(wallets, undefined, WalletAdapterNetwork.Mainnet);
 
 console.log(`Found ${adapters.length} wallet adapters`);
 ```
@@ -247,9 +249,10 @@ Here's a complete vanilla JavaScript example:
 ```javascript app.js
 import {
   WalletAdapterManager,
-  getStandardWalletAdapters,
   sortWalletAdapters,
 } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 
 class WalletApp {
   constructor() {
@@ -257,11 +260,11 @@ class WalletApp {
     this.init();
   }
 
-  init() {
+  async init() {
     // Auto-detect wallet-standard compatible wallets
     const wallets = []; // Add custom wallet adapters here if needed
 
-    const adapters = getStandardWalletAdapters(wallets);
+    const adapters = await getStandardWalletAdapters(wallets, undefined, WalletAdapterNetwork.Mainnet);
     const sorted = sortWalletAdapters(adapters);
 
     // Create wallet manager
@@ -391,9 +394,14 @@ const app = new WalletApp();
 ### Utility Functions
 
 <ResponseField name="getStandardWalletAdapters" type="function">
-  Gets all standard wallet adapters including custom ones
+  Gets all standard wallet adapters including custom ones. **Network is required**
+  — substring-based inference from the RPC URL was removed for security.
   ```javascript
-  getStandardWalletAdapters(customAdapters?: Adapter[]): Adapter[]
+  getStandardWalletAdapters(
+    customAdapters: Adapter[] | undefined,
+    endpoint: string | undefined,
+    network: WalletAdapterNetwork,
+  ): Promise<Adapter[]>
   ```
 </ResponseField>
 

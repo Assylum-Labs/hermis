@@ -14,11 +14,13 @@ The Kit integration utilities allow you to convert legacy wallet adapters into K
 Convert a wallet adapter to Kit-compatible signers.
 
 ```typescript
-import { createKitSignersFromAdapter, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { createKitSignersFromAdapter } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { Connection } from '@solana/web3.js';
 
 // Auto-detect wallet-standard compatible wallets
-const adapters = getStandardWalletAdapters([]);
+const adapters = await getStandardWalletAdapters([], undefined, WalletAdapterNetwork.Mainnet);
 const adapter = adapters[0]; // Use first detected wallet
 await adapter.connect();
 
@@ -69,7 +71,9 @@ const { address, addressString, messageSigner, transactionSigner } =
 ### Usage with Kit
 
 ```typescript
-import { createKitSignersFromAdapter, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { createKitSignersFromAdapter } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { createSolanaRpc, devnet } from '@solana/kit';
 import { getTransferSolInstruction } from '@solana-program/system';
 import {
@@ -81,7 +85,7 @@ import {
 } from '@solana/kit';
 
 // Auto-detect wallet-standard compatible wallets
-const adapters = getStandardWalletAdapters([]);
+const adapters = await getStandardWalletAdapters([], undefined, WalletAdapterNetwork.Mainnet);
 const adapter = adapters[0]; // Use first detected wallet
 await adapter.connect();
 
@@ -314,15 +318,16 @@ import {
   createKitSignersFromAdapter,
   createKitTransaction,
   adapterSupportsMessageSigning,
-  adapterSupportsTransactionSending,
-  getStandardWalletAdapters
+  adapterSupportsTransactionSending
 } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { createSolanaRpc, devnet } from '@solana/kit';
 import { getTransferSolInstruction } from '@solana-program/system';
 import { lamports } from '@solana/kit';
 
 // Auto-detect wallet-standard compatible wallets
-const adapters = getStandardWalletAdapters([]);
+const adapters = await getStandardWalletAdapters([], undefined, WalletAdapterNetwork.Mainnet);
 const adapter = adapters[0]; // Use first detected wallet
 await adapter.connect();
 

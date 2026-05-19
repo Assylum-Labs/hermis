@@ -150,11 +150,13 @@ After installation, verify everything works:
 
 **For Adapter Base:**
 ```typescript
-import { WalletAdapterManager, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 
 // Auto-detect wallet-standard compatible wallets
 const wallets = []; // Add custom wallet adapters here if needed
-const adapters = getStandardWalletAdapters(wallets);
+const adapters = await getStandardWalletAdapters(wallets, undefined, WalletAdapterNetwork.Mainnet);
 const manager = new WalletAdapterManager(adapters);
 console.log('Hermis Adapter Base initialized successfully!');
 ```
