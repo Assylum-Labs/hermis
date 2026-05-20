@@ -7,12 +7,12 @@ A modular, UI-agnostic wallet adapter for Solana applications. Build wallet inte
 
 ## Documentation
 
-Comprehensive documentation is available at **[docs.hermis.io](https://docs.hermis.io)**
+Comprehensive documentation is available at **[docs.hermis.dev](https://docs.hermis.dev)**
 
-- [Getting Started](https://docs.hermis.io/getting-started)
-- [Quick Start Guides](https://docs.hermis.io/quickstart)
-- [API Reference](https://docs.hermis.io/api-reference)
-- [Examples](https://docs.hermis.io/examples)
+- [Getting Started](https://docs.hermis.dev/getting-started)
+- [Quick Start Guides](https://docs.hermis.dev/quickstart)
+- [API Reference](https://docs.hermis.dev/api-reference)
+- [Examples](https://docs.hermis.dev/examples)
 
 ## Packages
 

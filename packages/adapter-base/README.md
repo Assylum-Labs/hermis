@@ -51,12 +51,12 @@ if (phantomAdapter) {
 
 ## Documentation
 
-For complete documentation, visit [docs.hermis.io/quickstart/adapter-base](https://docs.hermis.io/quickstart/adapter-base)
+For complete documentation, visit [docs.hermis.dev/quickstart/adapter-base](https://docs.hermis.dev/quickstart/adapter-base)
 
 ## API Reference
 
-- [WalletAdapterManager](https://docs.hermis.io/api-reference/adapter-base/wallet-manager)
-- [Utility Functions](https://docs.hermis.io/api-reference/adapter-base/utilities)
+- [WalletAdapterManager](https://docs.hermis.dev/api-reference/adapter-base/wallet-manager)
+- [Utility Functions](https://docs.hermis.dev/api-reference/adapter-base/utilities)
 
 ## License
 
