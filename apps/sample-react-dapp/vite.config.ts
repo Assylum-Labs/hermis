@@ -14,6 +14,8 @@ export default defineConfig(({ command }) => {
     define: {
       global: 'globalThis',
       'process.env': {},
+      // Enable development mode for better error messages from @hermis/errors
+      __DEV__: !isProduction,
     },
     resolve: {
       alias: {

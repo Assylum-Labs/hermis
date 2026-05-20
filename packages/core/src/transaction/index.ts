@@ -112,6 +112,7 @@ import {
 import * as ed25519 from '@noble/ed25519';
 import bs58 from 'bs58';
 import nacl from 'tweetnacl';
+import { withOffchainMessagePrefix } from './offchain-message.js';
 
 
 // Import kit functions with correct names based on actual exports
@@ -1161,21 +1162,7 @@ async function signAllTransactionsLegacy<T extends Transaction | VersionedTransa
 
 /**
  * Sends a transaction to the Solana network (supports both legacy and kit architectures)
- * @param connectionOrTransaction The Solana connection to use, or transaction when used with default connection
- * @param transactionOrWallet The transaction to send, or wallet when connection is omitted
- * @param walletOrOptions The wallet to sign with, or options when connection is omitted
- * @param options Optional configuration for dual architecture behavior
- * @returns A promise that resolves to the transaction signature
- */
-export async function sendTransaction(
-  connectionOrTransaction: DualConnection | DualTransaction,
-  transactionOrWallet: DualTransaction | DualWallet,
-  walletOrOptions?: DualWallet | DualArchitectureOptions,
-  options?: DualArchitectureOptions
-): Promise<TransactionSignature>;
-
-/**
- * Sends a transaction to the Solana network (supports both legacy and kit architectures)
+ *
  * @param connection The Solana connection to use (supports both Legacy Connection and Kit Rpc)
  * @param transaction The transaction to send
  * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
@@ -1186,44 +1173,9 @@ export async function sendTransaction(
   connection: DualConnection,
   transaction: DualTransaction,
   wallet: DualWallet,
-  options?: DualArchitectureOptions
-): Promise<TransactionSignature>;
-
-/**
- * Implementation for sendTransaction with flexible parameter handling
- */
-export async function sendTransaction(
-  connectionOrTransaction: DualConnection | DualTransaction,
-  transactionOrWallet?: DualTransaction | DualWallet,
-  walletOrOptions?: DualWallet | DualArchitectureOptions,
-  options: DualArchitectureOptions = {}
+  options: DualArchitectureOptions = {},
 ): Promise<TransactionSignature> {
-  let connection: DualConnection;
-  let transaction: DualTransaction;
-  let wallet: DualWallet;
-  let finalOptions: DualArchitectureOptions;
-
-  // Parse parameters based on overload usage
-  // Check if first parameter is a connection (either legacy Connection or Kit Rpc)
-  // First check if it looks like a transaction
-  const looksLikeTransaction = typeof connectionOrTransaction === 'object' && connectionOrTransaction !== null &&
-    ('recentBlockhash' in connectionOrTransaction || 'instructions' in connectionOrTransaction || 'message' in connectionOrTransaction);
-
-  if (!looksLikeTransaction) {
-    // Standard usage: connection, transaction, wallet, options
-    connection = connectionOrTransaction as DualConnection;
-    transaction = transactionOrWallet as DualTransaction;
-    wallet = walletOrOptions as DualWallet;
-    finalOptions = options;
-  } else {
-    // Alternative usage: transaction, wallet, options (creates default connection)
-    transaction = connectionOrTransaction as DualTransaction;
-    wallet = transactionOrWallet as DualWallet;
-    finalOptions = (walletOrOptions as DualArchitectureOptions) || {};
-
-    // Create a default connection to devnet
-    connection = createConnection('https://api.devnet.solana.com');
-  }
+  const finalOptions = options;
   try {
     // Handle kit architecture
     if (isKitWallet(wallet)) {
@@ -1389,7 +1341,7 @@ async function sendTransactionLegacy(
  * @returns A promise that resolves to the signed message bytes
  */
 export async function signMessage(
-  message: string | Uint8Array, 
+  message: string | Uint8Array,
   wallet: DualWallet,
   options: DualArchitectureOptions = {}
 ): Promise<Uint8Array> {
@@ -1401,23 +1353,27 @@ export async function signMessage(
 
     // Handle kit architecture
     if (isKitWallet(wallet)) {
+      // Kit local-key signers sign raw bytes — wrap with the off-chain message
+      // domain separator so the signature can't be re-used as a transaction
+      // signature.
+      const offchainBytes = withOffchainMessagePrefix(messageBytes);
+
       if (isMessagePartialSigner(wallet)) {
         // It's already a MessagePartialSigner (KeyPairSigner)
-        return await signMessageKit(messageBytes, wallet);
+        return await signMessageKit(offchainBytes, wallet);
       } else if (isCryptoKeyPair(wallet)) {
         // Use kit's message signing capabilities
         const messageSigner = await convertCryptoKeyPairToMessageSigner(wallet);
-        return await signMessageKit(messageBytes, messageSigner);
+        return await signMessageKit(offchainBytes, messageSigner);
       } else if (typeof wallet === 'string') {
         // Address without private key - cannot sign
         throw new HermisError(HERMIS_ERROR__SIGNING__PRIVATE_KEY_UNAVAILABLE, {});
       }
-      //  else {
-      //   throw new Error('Unsupported kit wallet type');
-      // }
     }
 
-    // Everything else uses legacy implementation (Keypair, Adapter, Standard Wallet)
+    // Everything else uses legacy implementation (Keypair, Adapter, Standard Wallet).
+    // The Keypair branch inside signMessageLegacy applies the off-chain prefix
+    // itself; external wallets (Standard Wallet / Adapter) apply their own.
     return await signMessageLegacy(messageBytes, wallet as LegacyWallet);
   } catch (error) {
     console.error('Failed to sign message:', error);
@@ -1692,11 +1648,13 @@ async function signMessageLegacy(
   messageBytes: Uint8Array,
   wallet: LegacyWallet
 ): Promise<Uint8Array> {
-  
+
   // Handle different wallet types
   if ('secretKey' in wallet) {
-    // It's a Keypair
-    const signature = nacl.sign.detached(messageBytes, wallet.secretKey);
+    // It's a Keypair — local signing, wrap with the off-chain message domain
+    // separator so the signature is provably not a transaction signature.
+    const offchainBytes = withOffchainMessagePrefix(messageBytes);
+    const signature = nacl.sign.detached(offchainBytes, wallet.secretKey);
     return signature;
   } else if ("_connectedAccount" in wallet && "_wallet" in wallet) {
     // It's a Standard Wallet
@@ -2034,40 +1992,20 @@ export async function signTransactionWithSigner<T extends DualTransaction>(
 }
 
 /**
- * Implementation for signAndSendTransaction with flexible parameter handling
+ * Sign and send a transaction (supports both legacy and kit architectures).
+ *
+ * @param connection The Solana connection to use (supports both legacy Connection and Kit Rpc)
+ * @param transaction The transaction to sign and send
+ * @param wallet The wallet to sign with (can be Keypair, Adapter, CryptoKeyPair, or Address)
+ * @param options Optional configuration for dual architecture behavior
  */
 export async function signAndSendTransaction(
-  connectionOrTransaction: DualConnection | DualTransaction,
-  transactionOrWallet?: DualTransaction | DualWallet,
-  walletOrOptions?: DualWallet | DualArchitectureOptions,
-  options: DualArchitectureOptions = {}
+  connection: DualConnection,
+  transaction: DualTransaction,
+  wallet: DualWallet,
+  options: DualArchitectureOptions = {},
 ): Promise<TransactionSignature> {
-  let connection: DualConnection;
-  let transaction: DualTransaction;
-  let wallet: DualWallet;
-  let finalOptions: DualArchitectureOptions;
-
-  // Parse parameters based on overload usage
-  // Check if first parameter is a connection (either legacy Connection or Kit Rpc)
-  // First check if it looks like a transaction
-  const looksLikeTransaction = typeof connectionOrTransaction === 'object' && connectionOrTransaction !== null &&
-    ('recentBlockhash' in connectionOrTransaction || 'instructions' in connectionOrTransaction || 'message' in connectionOrTransaction);
-
-  if (!looksLikeTransaction) {
-    // Standard usage: connection, transaction, wallet, options
-    connection = connectionOrTransaction as DualConnection;
-    transaction = transactionOrWallet as DualTransaction;
-    wallet = walletOrOptions as DualWallet;
-    finalOptions = options;
-  } else {
-    // Alternative usage: transaction, wallet, options (creates default connection)
-    transaction = connectionOrTransaction as DualTransaction;
-    wallet = transactionOrWallet as DualWallet;
-    finalOptions = (walletOrOptions as DualArchitectureOptions) || {};
-
-    // Create a default connection to devnet
-    connection = createConnection('https://api.devnet.solana.com');
-  }
+  const finalOptions = options;
 
   try {
     // Handle kit architecture

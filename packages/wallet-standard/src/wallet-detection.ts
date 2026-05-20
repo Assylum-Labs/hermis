@@ -317,29 +317,34 @@ export function initializeWalletDetection(): () => void {
       console.warn("Failed to dispatch app ready event:", error);
     }
 
-    // Set up periodic check for delayed wallet registration
-    const periodicCheck = setInterval(() => {
-      try {
-        // Re-dispatch app ready event to catch any wallets that registered late
-        const appReadyEvent = new CustomEvent("wallet-standard:app-ready", {
-          detail: api,
-          bubbles: false,
-          cancelable: false,
-          composed: false,
-        });
-        window.dispatchEvent(appReadyEvent);
-      } catch (error) {
-        console.warn("Failed to dispatch periodic app ready event:", error);
-      }
-    }, 1000); // Check every second for the first 10 seconds
+    // Re-dispatch `wallet-standard:app-ready` on a short backoff schedule to
+    // catch wallets that register slightly after the page loads. Previously
+    // this fired every second for 10 seconds — 10 dispatches, each of which
+    // re-registered every wallet and re-rendered every subscriber even after
+    // the wallet set had stabilized. Backed-off 4-shot schedule covers the
+    // same window with materially less churn.
+    const RETRY_DELAYS = [100, 300, 1000, 3000];
+    const retryTimeouts: ReturnType<typeof setTimeout>[] = [];
 
-    // Clear periodic check after 10 seconds
-    setTimeout(() => {
-      clearInterval(periodicCheck);
-    }, 10000);
+    RETRY_DELAYS.forEach((delay) => {
+      const id = setTimeout(() => {
+        try {
+          const appReadyEvent = new CustomEvent("wallet-standard:app-ready", {
+            detail: api,
+            bubbles: false,
+            cancelable: false,
+            composed: false,
+          });
+          window.dispatchEvent(appReadyEvent);
+        } catch (error) {
+          console.warn("Failed to dispatch periodic app ready event:", error);
+        }
+      }, delay);
+      retryTimeouts.push(id);
+    });
 
     cleanupFunctions.push(() => {
-      clearInterval(periodicCheck);
+      retryTimeouts.forEach((id) => clearTimeout(id));
     });
 
   } catch (error) {

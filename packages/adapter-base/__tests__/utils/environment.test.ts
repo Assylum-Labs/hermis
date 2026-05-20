@@ -114,11 +114,6 @@ namespace TestEnvironment {
     export const isMobileDevice = jest.fn((ua: string) =>
         (ua.includes('iPhone') || ua.includes('Android')) && !ua.includes('wv)'));
     export const isIosAndRedirectable = jest.fn(() => true);
-    export const getInferredNetworkFromEndpoint = jest.fn((endpoint?: string) => {
-        if (endpoint?.includes('devnet')) return WalletAdapterNetwork.Devnet;
-        if (endpoint?.includes('testnet')) return WalletAdapterNetwork.Testnet;
-        return WalletAdapterNetwork.Mainnet;
-    });
     export const getUriForAppIdentity = jest.fn(() => {
         if (typeof window === 'undefined') return undefined;
 

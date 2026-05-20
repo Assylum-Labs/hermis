@@ -129,6 +129,77 @@ Improved wallet detection with CAIP-2 compliant chain identifiers:
 
 If you were using HermisProvider in early/pre-release versions, the following props were renamed for consistency:
 
+### `signMessage` now applies the Solana off-chain message domain separator on local-key paths
+
+When the SDK signs a message with an in-SDK key (`Keypair`, `CryptoKeyPair`,
+`KeyPairSigner`), it now prepends the Solana off-chain message header
+(`0xff` + `"solana offchain"` + version + format + length) before signing.
+Without this domain separator, signature bytes are structurally
+indistinguishable from a Solana transaction signature, and a caller can be
+tricked into producing a valid transaction signature by handing the signer
+bytes that happen to encode a Solana transaction message.
+
+This is a behaviour change for **local-key signers only**. External wallets
+(Phantom / Backpack / Solflare / any Standard Wallet or Adapter) already
+apply this header themselves — those paths are unchanged.
+
+**If you verify these signatures server-side**, apply the same domain header
+to the message before verification:
+
+```typescript
+const SIGNING_DOMAIN = Buffer.concat([
+  Buffer.from([0xff]),
+  Buffer.from('solana offchain', 'utf-8'),
+]);
+
+function withOffchainPrefix(message: Uint8Array): Uint8Array {
+  const header = Buffer.alloc(4);
+  header.writeUInt8(0, 0);                // header version
+  header.writeUInt8(1, 1);                // format: UTF-8
+  header.writeUInt16LE(message.length, 2); // length, LE
+  return Buffer.concat([SIGNING_DOMAIN, header, Buffer.from(message)]);
+}
+
+// Then verify against the wrapped bytes:
+nacl.sign.detached.verify(withOffchainPrefix(originalMessage), signature, publicKey);
+```
+
+### Explicit network required (no more URL inference)
+
+v2 removes substring-based cluster inference from RPC endpoint URLs. URLs whose
+path happens to contain `mainnet` or `devnet` were silently classified as that
+cluster — unsafe whenever the URL came from an untrusted source.
+
+`getStandardWalletAdapters` and `createWalletConnectionManager` now require
+an explicit `network` argument:
+
+<CodeGroup>
+```typescript Before (v1)
+import { getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+
+const adapters = await getStandardWalletAdapters(wallets, endpoint);
+```
+
+```typescript After (v2)
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
+
+const adapters = await getStandardWalletAdapters(
+  wallets,
+  endpoint,
+  WalletAdapterNetwork.Mainnet, // required
+);
+```
+</CodeGroup>
+
+`detectClusterFromEndpoint` and `getInferredNetworkFromEndpoint` have been
+removed from the public API. `StandardWalletAdapter` no longer derives its
+cluster from `setRpcEndpoint`; call the new `setNetwork(network)` method
+instead — `HermisProvider` does this automatically when you pass `network`.
+
+`HermisProvider`'s `network` prop was already required after v2.0; no change
+is needed there.
+
 ### HermisProvider Props Standardized
 
 To match `WalletProvider` interface and follow web3.js conventions:

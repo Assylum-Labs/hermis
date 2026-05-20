@@ -1,32 +1,40 @@
-import { Adapter } from '@hermis/solana-headless-core';
-import { 
+import { Adapter, WalletAdapterNetwork } from '@hermis/solana-headless-core';
+import {
   getStandardWalletAdapters as getBaseStandardWalletAdapters,
-  subscribeToWalletAdapterChanges 
+  subscribeToWalletAdapterChanges
 } from '@hermis/wallet-standard-base';
 import { useEffect, useMemo, useState } from 'react';
 
 /**
  * Hook for getting standard wallet adapters
- * 
- * This hook integrates with @hermis/solana-headless-adapter-base's
+ *
+ * This hook integrates with @hermis/wallet-standard-base's
  * getStandardWalletAdapters function to discover and initialize
  * wallet adapters including standard wallets.
- * 
+ *
  * The base library handles all initialization and change detection automatically.
- * 
+ *
+ * `network` must be supplied explicitly — we do not infer the cluster from the
+ * RPC endpoint URL (substring matching is unsafe).
+ *
  * @param existingAdapters Existing adapters to include
  * @param endpoint Optional RPC endpoint for mobile wallet adapter
+ * @param network Active Solana network for the cluster hint
  * @returns Array of Adapters
  */
 export function useStandardWalletAdapters(
     existingAdapters: Adapter[] = [],
-    endpoint?: string
+    endpoint: string | undefined,
+    network: WalletAdapterNetwork,
 ): Adapter[] {
     const [adapters, setAdapters] = useState<Adapter[]>(existingAdapters);
 
-    const memoizedAdapters = useMemo(() => existingAdapters, [
-        existingAdapters.length,
-    ]);
+    // Identity-stable key over the adapter set. Memoising on `.length` would
+    // miss swaps where the array length stays the same but the adapters differ.
+    const adapterNamesKey = useMemo(
+        () => existingAdapters.map(a => a.name).join('|'),
+        [existingAdapters],
+    );
 
     // Initial fetch of adapters
     useEffect(() => {
@@ -37,7 +45,8 @@ export function useStandardWalletAdapters(
                 // The base library handles initialization and change detection automatically
                 const standardAdapters = await getBaseStandardWalletAdapters(
                     existingAdapters,
-                    endpoint
+                    endpoint,
+                    network,
                 );
 
                 if (mounted) {
@@ -57,7 +66,8 @@ export function useStandardWalletAdapters(
         return () => {
             mounted = false;
         };
-    }, [memoizedAdapters, endpoint]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [adapterNamesKey, endpoint, network]);
 
     // Subscribe to dynamic adapter changes
     useEffect(() => {
@@ -82,7 +92,8 @@ export function useStandardWalletAdapters(
             mounted = false;
             unsubscribe();
         };
-    }, [existingAdapters]); // Add existingAdapters as dependency
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [adapterNamesKey]);
 
     return adapters;
 }

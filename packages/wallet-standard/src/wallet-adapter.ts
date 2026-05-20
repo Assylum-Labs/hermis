@@ -1,4 +1,5 @@
 import {
+  WalletAdapterNetwork,
   WalletReadyState,
   WalletName,
   WalletAdapterEvents,
@@ -58,10 +59,8 @@ import {
   StandardEventsChangeEvent
 } from './types.js';
 import { WalletAccount } from '@wallet-standard/base';
-import {
-  detectClusterFromEndpoint,
-  ClusterMismatchError
-} from './utils.js';
+import { ClusterMismatchError } from './utils.js';
+import { networkToChainId } from './chain.js';
 
 import bs58 from 'bs58';
 
@@ -111,10 +110,10 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   private _eventEmitter = new EventEmitter<WalletAdapterEvents>();
   private _removeAccountChangeListener: (() => void) | null = null;
   private _connectedAccount: StandardWalletAccount[] | null = null;
-  private _currentCluster: string | null = null;
+  private _currentCluster: `solana:${string}` | null = null;
   private _rpcEndpoint: string | null = null;
 
-  constructor(wallet: TypedStandardWallet) {
+  constructor(wallet: TypedStandardWallet, network?: WalletAdapterNetwork) {
     if (!isWalletAdapterCompatibleStandardWallet(wallet)) {
       throw new Error('Wallet is not adapter compatible');
     }
@@ -123,6 +122,10 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
     this.name = wallet.name as WalletName;
     this.url = wallet.website || '';
     this.icon = wallet.icon || '';
+
+    if (network) {
+      this._currentCluster = networkToChainId(network);
+    }
 
     // Setup account change listener - following official wallet-standard pattern
     if (StandardEventsMethod in wallet.features) {
@@ -331,8 +334,6 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   async connect(): Promise<void> {
     try {
       if (this.connected || this.connecting) {
-        console.log("DEBUG connected:", this.connected);
-        console.log("DEBUG connecting:", this.connecting);
         return;
       }
       this._connecting = true;
@@ -348,8 +349,6 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
       }
 
       const connectResult = await connectFeature.connect();
-
-      console.log("DEBUG connectResult", connectResult);
 
       if (!connectResult || !connectResult.accounts || !Array.isArray(connectResult.accounts)) {
         throw new Error('Invalid connect result from wallet');
@@ -427,10 +426,6 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
     try {
       // Path 1: If connection is provided, delegate to core for sign + send
       if (connection) {
-        console.log('🔍 [StandardWalletAdapter.sendTransaction] Received transaction:', transaction);
-        console.log('🔍 [StandardWalletAdapter.sendTransaction] Transaction type:', transaction.constructor.name);
-        // console.log('🔍 [StandardWalletAdapter.sendTransaction] Transaction.signatures:', transaction.signatures);
-
         // Set recent blockhash if not already set (for legacy Transaction)
         if (transaction instanceof Transaction && !transaction.recentBlockhash) {
           const { blockhash } = await getLatestBlockhash(connection, options.preflightCommitment);
@@ -439,14 +434,11 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
 
         // Check if transaction is already signed
         // Note: Don't use instanceof - it fails with bundling/prototype issues
-        console.log('🔍 [StandardWalletAdapter.sendTransaction] About to check if signed...');
         const isSigned = isTransactionSigned(transaction as any);
-        console.log(`🔍 [StandardWalletAdapter.sendTransaction] isSigned result: ${isSigned}`);
 
         let rawTransaction: Uint8Array;
 
         if (isSigned) {
-          console.log('✅ [StandardWalletAdapter.sendTransaction] Transaction is SIGNED - sending directly without wallet prompt');
           // Transaction is already signed - serialize and send directly (no wallet prompt)
           if (transaction instanceof Transaction) {
             rawTransaction = transaction.serialize();
@@ -458,7 +450,6 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
             throw new Error('Signed transaction does not have a serialize method');
           }
         } else {
-          console.log('⚠️ [StandardWalletAdapter.sendTransaction] Transaction is UNSIGNED - signing first (will prompt wallet)');
           // Transaction is unsigned - sign it first using core
           const dualOptions = {
             chain: this._currentCluster || 'solana:mainnet'
@@ -659,7 +650,6 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   }
 
   async signMessage(message: Uint8Array): Promise<Uint8Array> {
-    console.log("DEBUG wallet", this._wallet);
     if (!this.connected) {
       throw new HermisError(
         HERMIS_ERROR__WALLET_CONNECTION__NOT_CONNECTED,
@@ -731,11 +721,24 @@ export class StandardWalletAdapter implements IStandardWalletAdapter {
   }
 
   /**
-   * Set the current RPC endpoint for cluster detection
+   * Record the RPC endpoint this adapter is currently connected to.
+   *
+   * Does not touch the active cluster — call {@link setNetwork} for that.
+   * Inferring the cluster from a URL by substring match is unsafe because
+   * untrusted URLs ("example.com/mainnet-rpc") would be classified as mainnet
+   * and produce mismatched chain hints to wallets. Networks must be supplied
+   * explicitly by the consumer.
    */
   setRpcEndpoint(endpoint: string): void {
     this._rpcEndpoint = endpoint;
-    this._currentCluster = detectClusterFromEndpoint(endpoint);
+  }
+
+  /**
+   * Set the active Solana network so chain-aware features (signAndSendTransaction
+   * etc.) tag their requests with the right chain identifier.
+   */
+  setNetwork(network: WalletAdapterNetwork): void {
+    this._currentCluster = networkToChainId(network);
   }
 
   /**

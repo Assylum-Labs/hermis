@@ -12,7 +12,7 @@
     "minor": "changeset add --minor",
     "major": "changeset add --major",
     "patch": "changeset add --patch",
-    "prerelease": "changeset pre enter next",
+    "enter-prerelease": "changeset pre enter next",
     "graduate": "changeset pre exit"
   },
   "publishConfig": {

@@ -113,10 +113,9 @@ function WalletButton() {
 ```
 
 ```typescript Adapter Base (web3.js)
-import {
-  WalletAdapterManager,
-  getStandardWalletAdapters
-} from '@hermis/solana-headless-adapter-base';
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { Connection, clusterApiUrl } from '@solana/web3.js';
 
 // Create connection
@@ -124,7 +123,7 @@ const connection = new Connection(clusterApiUrl('devnet'));
 
 // Auto-detect wallet-standard compatible wallets
 const wallets = []; // Add custom wallet adapters here if needed
-const adapters = getStandardWalletAdapters(wallets);
+const adapters = await getStandardWalletAdapters(wallets, connection.rpcEndpoint, WalletAdapterNetwork.Devnet);
 
 // Create wallet manager
 const manager = new WalletAdapterManager(adapters);
@@ -144,10 +143,9 @@ await manager.connect();
 ```
 
 ```typescript Adapter Base (@solana/kit)
-import {
-  WalletAdapterManager,
-  getStandardWalletAdapters
-} from '@hermis/solana-headless-adapter-base';
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { createSolanaRpc, devnet } from '@solana/kit';
 
 // Create connection
@@ -155,7 +153,7 @@ const rpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
 
 // Auto-detect wallet-standard compatible wallets
 const wallets = []; // Add custom wallet adapters here if needed
-const adapters = getStandardWalletAdapters(wallets);
+const adapters = await getStandardWalletAdapters(wallets, undefined, WalletAdapterNetwork.Devnet);
 
 // Create wallet manager
 const manager = new WalletAdapterManager(adapters);

@@ -117,7 +117,7 @@ function NetworkInfo() {
 
 ## Documentation
 
-For complete documentation, examples, and API reference, visit [docs.hermis.io/quickstart/react](https://docs.hermis.io/quickstart/react)
+For complete documentation, examples, and API reference, visit [docs.hermis.dev/quickstart/react](https://docs.hermis.dev/quickstart/react)
 
 ## License
 

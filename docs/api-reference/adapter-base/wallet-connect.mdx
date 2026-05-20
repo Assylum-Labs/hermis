@@ -8,14 +8,17 @@ description: 'Manage wallet connections in vanilla TypeScript'
 Factory function that creates a wallet connection manager for vanilla TypeScript applications.
 
 ```typescript
-import { createWalletConnectionManager, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { createWalletConnectionManager } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 
 // Auto-detect wallet-standard compatible wallets
 const wallets = []; // Add custom wallet adapters here if needed
-const adapters = getStandardWalletAdapters(wallets);
+const adapters = await getStandardWalletAdapters(wallets, undefined, WalletAdapterNetwork.Mainnet);
 
 const manager = createWalletConnectionManager(
   adapters,
+  WalletAdapterNetwork.Mainnet,
   'wallet-name-storage-key',
   'https://api.devnet.solana.com'  // Optional: for wallet detection
 );
@@ -25,6 +28,12 @@ const manager = createWalletConnectionManager(
 
 <ParamField path="adapters" type="Adapter[]" required>
   Array of wallet adapters to manage
+</ParamField>
+
+<ParamField path="network" type="WalletAdapterNetwork" required>
+  Active Solana network. Required so wallet adapters can set their chain hint
+  explicitly — previous versions inferred this from the RPC URL which was
+  unsafe (untrusted URLs containing "mainnet" would be misclassified).
 </ParamField>
 
 <ParamField path="localStorageKey" type="string" default="walletName">
@@ -214,12 +223,14 @@ unsubscribe();
 ## Complete Example
 
 ```typescript
-import { createWalletConnectionManager, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { createWalletConnectionManager } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { Connection, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // Auto-detect wallet-standard compatible wallets
 const wallets = []; // Add custom wallet adapters here if needed
-const adapters = getStandardWalletAdapters(wallets);
+const adapters = await getStandardWalletAdapters(wallets, undefined, WalletAdapterNetwork.Mainnet);
 
 // Create manager
 const manager = createWalletConnectionManager(

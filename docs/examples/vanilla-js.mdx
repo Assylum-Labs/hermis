@@ -175,7 +175,9 @@ h1 {
 
 <CodeGroup>
 ```javascript app.js (Web3.js)
-import { WalletAdapterManager, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { WalletAdapterManager } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { Connection, clusterApiUrl, LAMPORTS_PER_SOL } from '@solana/web3.js';
 
 // Global state
@@ -183,12 +185,12 @@ let manager;
 let connection;
 
 // Initialize wallet manager and connection
-function initWalletManager() {
+async function initWalletManager() {
   connection = new Connection(clusterApiUrl('devnet'));
 
   // Auto-detect wallet-standard compatible wallets
   const wallets = []; // Add custom wallet adapters here if needed
-  const adapters = getStandardWalletAdapters(wallets);
+  const adapters = await getStandardWalletAdapters(wallets, connection.rpcEndpoint, WalletAdapterNetwork.Devnet);
 
   manager = new WalletAdapterManager(adapters);
   setupEventListeners();
@@ -281,7 +283,9 @@ initWalletManager();
 ```
 
 ```javascript app.js (Kit)
-import { WalletAdapterManager, createKitSignersFromAdapter, getStandardWalletAdapters } from '@hermis/solana-headless-adapter-base';
+import { WalletAdapterManager, createKitSignersFromAdapter } from '@hermis/solana-headless-adapter-base';
+import { getStandardWalletAdapters } from '@hermis/wallet-standard-base';
+import { WalletAdapterNetwork } from '@hermis/solana-headless-core';
 import { Connection, clusterApiUrl } from '@solana/web3.js';
 
 // Global state
@@ -290,12 +294,12 @@ let connection;
 let kitSigners;
 
 // Initialize wallet manager with Kit support
-function initWalletManager() {
+async function initWalletManager() {
   connection = new Connection(clusterApiUrl('devnet'));
 
   // Auto-detect wallet-standard compatible wallets
   const wallets = []; // Add custom wallet adapters here if needed
-  const adapters = getStandardWalletAdapters(wallets);
+  const adapters = await getStandardWalletAdapters(wallets, connection.rpcEndpoint, WalletAdapterNetwork.Devnet);
 
   manager = new WalletAdapterManager(adapters);
   setupEventListeners();

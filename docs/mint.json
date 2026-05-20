@@ -12,8 +12,8 @@
   "metadata": {
     "og:title": "Hermis - Headless Solana Wallet Adapter",
     "og:description": "Framework-agnostic, headless wallet adapter library for Solana. Build wallet integrations with complete UI freedom.",
-    "og:image": "https://docs.hermis.io/favicon.png",
-    "og:url": "https://docs.hermis.io",
+    "og:image": "https://docs.hermis.dev/favicon.png",
+    "og:url": "https://docs.hermis.dev",
     "twitter:card": "summary_large_image",
     "twitter:site": "@Hermis_xyz"
   },
@@ -55,7 +55,7 @@
     {
       "name": "Live Demo",
       "icon": "play",
-      "url": "https://assylum-labs.github.io/hermis/"
+      "url": "https://hermis.dev/"
     },
     {
       "name": "Community",

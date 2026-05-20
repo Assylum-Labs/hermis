@@ -254,7 +254,7 @@ Add useTokenBalance hook for querying SPL token balances
 
 ## Documentation
 
-Our documentation is built with **Mintlify** and hosted at [docs.hermis.io](https://docs.hermis.io).
+Our documentation is built with **Mintlify** and hosted at [docs.hermis.dev](https://docs.hermis.dev).
 
 ### Contributing to Docs
 
@@ -367,7 +367,7 @@ Use workspace protocol for internal dependencies:
 
 If you have questions or need help:
 
-1. Check the [documentation](https://docs.hermis.io)
+1. Check the [documentation](https://docs.hermis.dev)
 2. Search existing [GitHub Issues](https://github.com/Assylum-Labs/hermis/issues)
 3. Open a new issue with your question
 4. Be specific and provide context

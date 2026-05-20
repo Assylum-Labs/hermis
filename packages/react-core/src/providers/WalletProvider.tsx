@@ -7,6 +7,7 @@ import {
   signMessage,
   signTransaction,
   Transaction,
+  WalletAdapterNetwork,
   WalletError,
   WalletName,
   WalletNotReadyError,
@@ -23,6 +24,7 @@ import {
   DualConnection,
   DualArchitectureOptions
 } from '@hermis/solana-headless-core';
+import { toWalletAdapterNetwork } from '../components/HermisProvider.js';
 import { HermisError, HERMIS_ERROR__STANDARD_WALLET__FEATURE_NOT_FOUND } from '@hermis/errors';
 import {
   getIsMobile,
@@ -111,10 +113,14 @@ export function WalletProvider({
   storageFactory,
   onError,
 }: WalletProviderProps) {
-  const { connection } = useConnection();
+  const { connection, network } = useConnection();
   // Safely access rpcEndpoint - only exists on legacy Connection, not Kit Rpc
   const rpcEndpoint = connection && 'rpcEndpoint' in connection ? (connection.rpcEndpoint as string) : undefined;
-  const adaptersWithStandardAdapters = useStandardWalletAdapters(adapters, rpcEndpoint);
+  const adaptersWithStandardAdapters = useStandardWalletAdapters(
+    adapters,
+    rpcEndpoint,
+    toWalletAdapterNetwork(network),
+  );
 
   const [walletName, setWalletName] = useLocalStorage<WalletName | null>(
     storageKey,
@@ -679,37 +685,69 @@ export function WalletProvider({
     }
   }, [adapterState.adapter]);
 
+  // Resolve the public key once per render from the most reliable source.
+  // Reading refs during render is fine for derivation — they're stable for the
+  // life of this render and the memo below only re-runs when the actual fields
+  // changed.
+  const publicKey =
+    wallet?.adapter.publicKey ||
+    adapterState.adapter?.publicKey ||
+    adapterState.publicKey ||
+    null;
+
+  const contextValue = useMemo(
+    () => ({
+      autoConnect: !!autoConnect,
+      wallets,
+      wallet,
+      publicKey,
+      connecting: adapterState.connecting,
+      connected: adapterState.connected,
+      disconnecting: adapterState.disconnecting,
+      // Kit-friendly properties
+      address: kitSigners.address,
+      addressString: kitSigners.addressString,
+      chain: currentChain,
+      messageSigner: kitSigners.messageSigner,
+      transactionSigner: kitSigners.transactionSigner,
+      getChainId: handleGetChainId,
+      select: updateWalletNameAsync,
+      connect: handleConnect,
+      disconnect: handleDisconnect,
+      signTransaction: handleSignTransactionExtended,
+      sendTransaction: handleSendTransactionExtended,
+      signAndSendTransaction: handleSignAndSendTransactionExtended,
+      signAllTransactions: handleSignAllTransactionsExtended,
+      signMessage: handleSignMessage,
+      signIn: handleSignIn,
+      hasFeature,
+    }),
+    [
+      autoConnect,
+      wallets,
+      wallet,
+      publicKey,
+      adapterState.connecting,
+      adapterState.connected,
+      adapterState.disconnecting,
+      kitSigners,
+      currentChain,
+      handleGetChainId,
+      updateWalletNameAsync,
+      handleConnect,
+      handleDisconnect,
+      handleSignTransactionExtended,
+      handleSendTransactionExtended,
+      handleSignAndSendTransactionExtended,
+      handleSignAllTransactionsExtended,
+      handleSignMessage,
+      handleSignIn,
+      hasFeature,
+    ],
+  );
+
   return (
-    <WalletContext.Provider
-      value={{
-        autoConnect: !!autoConnect,
-        wallets,
-        wallet,
-        publicKey: wallet?.adapter.publicKey || latestAdapterRef.current?.publicKey || adapterState.adapter?.publicKey || adapterState.publicKey || null,
-        connecting: latestAdapterRef.current?.connecting || adapterState.connecting,
-        connected: latestAdapterRef.current?.connected || adapterState.connected,
-        disconnecting: adapterState.disconnecting,
-        // Kit-friendly properties
-        address: kitSigners.address,
-        addressString: kitSigners.addressString,
-        chain: currentChain,
-        messageSigner: kitSigners.messageSigner,
-        transactionSigner: kitSigners.transactionSigner,
-        getChainId: handleGetChainId,
-        select: updateWalletNameAsync,
-        connect: handleConnect,
-        disconnect: handleDisconnect,
-        // EXTENDED METHODS: Now support BOTH web3.js AND Kit architectures!
-        // These replace the old legacy-only implementations
-        signTransaction: handleSignTransactionExtended,
-        sendTransaction: handleSendTransactionExtended,
-        signAndSendTransaction: handleSignAndSendTransactionExtended,
-        signAllTransactions: handleSignAllTransactionsExtended,
-        signMessage: handleSignMessage,
-        signIn: handleSignIn,
-        hasFeature,
-      }}
-    >
+    <WalletContext.Provider value={contextValue}>
       {children}
     </WalletContext.Provider>
   );
