@@ -17,7 +17,7 @@ export default {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
     clean: true,
-    publicPath: '/hermis/'
+    publicPath: '/'
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx', '.jsx'],
@@ -131,7 +131,7 @@ export default {
     }),
     new webpack.DefinePlugin({
       'global': 'globalThis',
-      'import.meta.env.BASE_URL': JSON.stringify('/hermis/'),
+      'import.meta.env.BASE_URL': JSON.stringify('/'),
     })
   ],
   devtool: 'source-map'
